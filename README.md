@@ -75,9 +75,9 @@ OpenSpec genera specs formales, tareas, y trackea el progreso.
 | Tarea | Modelo recomendado | Por qué |
 |-------|-------------------|---------|
 | Planning / diseño | **Opus 4.6** | Mejor razonamiento, piensa antes de actuar |
-| Implementación (Agent) | **Codex 5.3** | Optimizado para código, rápido y preciso |
+| Implementación (Agent) | **Codex 5.3** / **Sonnet 4.6**(lento pero misma perfomance que codex) | Optimizado para código, rápido y preciso |
 | Commits, PRs, docs | **Gemini 3 Flash** | Barato, rápido, suficiente para texto |
-| Ajustes de UI/CSS | **Gemini 3 Pro** | Buen balance costo/calidad para visual |
+| Ajustes de UI/CSS | **Gemini 3.1 Pro** | Buen balance costo/calidad para visual |
 | Code review básica | **Gemini 3 Flash** / **Haiku 4.5** | Económico para checks rutinarios |
 | Code review crítica | **Codex 5.3** | Detecta bugs sutiles, entiende contexto |
 
