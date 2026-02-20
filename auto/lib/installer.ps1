@@ -238,7 +238,8 @@ function Set-ProjectConfiguration {
     param(
         [string]$Provider = "opencode",
         [string]$TargetDir = ".",
-        [bool]$SkipGga = $false
+        [bool]$SkipGga = $false,
+        [bool]$InstallBiome = $false
     )
     
     Write-InfoMsg "Configuring project at $TargetDir..."
@@ -371,7 +372,7 @@ function Set-ProjectConfiguration {
     } else {
         Write-InfoMsg "Lefthook not installed, skipping hook configuration"
     }
-    
+
     # Update .gitignore - only add missing patterns
     $gitignoreTarget = Join-Path $TargetDir ".gitignore"
     
@@ -444,6 +445,10 @@ function Set-ProjectConfiguration {
         Write-InfoMsg ".gitignore already up to date"
     }
 
+    if ($InstallBiome) {
+        Set-BiomeBaseline -TargetDir $TargetDir | Out-Null
+    }
+
     $vscodeDir = Join-Path $TargetDir ".vscode"
     New-Item -ItemType Directory -Path $vscodeDir -Force | Out-Null
     
@@ -459,6 +464,117 @@ function Set-ProjectConfiguration {
     
     Write-Success "Project configured successfully"
     return $true
+}
+
+function Set-BiomeBaseline {
+        param(
+                [string]$TargetDir = "."
+        )
+
+        Write-InfoMsg "Configuring optional Biome baseline..."
+
+        $biomeConfig = Join-Path $TargetDir "biome.json"
+        $packageJson = Join-Path $TargetDir "package.json"
+
+        if (Test-Path $biomeConfig) {
+                Write-InfoMsg "biome.json already exists, skipping baseline config file"
+        } else {
+                $biomeContent = @'
+{
+    "$schema": "https://biomejs.dev/schemas/2.3.2/schema.json",
+    "formatter": {
+        "enabled": true,
+        "indentStyle": "space",
+        "indentWidth": 2,
+        "lineWidth": 100
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "recommended": true,
+            "correctness": {
+                "noUnusedImports": "error",
+                "noUnusedVariables": "error",
+                "useParseIntRadix": "warn"
+            },
+            "style": {
+                "useConst": "error",
+                "useImportType": "warn"
+            },
+            "suspicious": {
+                "noDoubleEquals": "warn",
+                "noGlobalIsNan": "error"
+            }
+        }
+    },
+    "organizeImports": {
+        "enabled": true
+    }
+}
+'@
+                Set-Content -Path $biomeConfig -Value $biomeContent
+                Write-Success "Created biome.json baseline"
+        }
+
+        if (-not (Test-Path $packageJson)) {
+                Write-WarningMsg "package.json not found, skipping Biome package/scripts setup"
+                return $true
+        }
+
+        $pkgRaw = Get-Content $packageJson -Raw
+        if ($pkgRaw -match '"@biomejs/biome"') {
+                Write-InfoMsg "@biomejs/biome already present in package.json"
+        } else {
+                Write-InfoMsg "Installing @biomejs/biome..."
+                Push-Location $TargetDir
+                npm install --save-dev "@biomejs/biome" 2>&1 | Out-Null
+                Pop-Location
+                if ($LASTEXITCODE -eq 0) {
+                        Write-Success "Installed @biomejs/biome"
+                } else {
+                        Write-WarningMsg "Failed to install @biomejs/biome automatically"
+                }
+        }
+
+        if (Get-Command node -ErrorAction SilentlyContinue) {
+                Push-Location $TargetDir
+                try {
+                        & node -e "
+const fs = require('fs');
+const path = require('path');
+const packagePath = path.resolve('package.json');
+if (!fs.existsSync(packagePath)) process.exit(0);
+const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+pkg.scripts = pkg.scripts || {};
+const desired = {
+    lint: 'biome check .',
+    'lint:fix': 'biome check --write .',
+    format: 'biome format --write .',
+    'format:check': 'biome format .'
+};
+let changed = false;
+for (const [name, command] of Object.entries(desired)) {
+    if (!pkg.scripts[name]) {
+        pkg.scripts[name] = command;
+        changed = true;
+    }
+}
+if (changed) {
+    fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\\n');
+}
+" 2>&1 | Out-Null
+
+                        if ($LASTEXITCODE -eq 0) {
+                                Write-Success "Applied Biome scripts (without overriding existing scripts)"
+                        } else {
+                                Write-WarningMsg "Failed to update package.json scripts for Biome"
+                        }
+                } finally {
+                        Pop-Location
+                }
+        }
+
+        return $true
 }
 
 function Install-Hooks {

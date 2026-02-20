@@ -25,7 +25,8 @@ param(
     [switch]$Silent,
     [switch]$DryRun,
     [switch]$Help,
-    [switch]$Hooks
+    [switch]$Hooks,
+    [switch]$Biome
 )
 
 $ErrorActionPreference = "Stop"
@@ -167,6 +168,7 @@ INSTALLATION OPTIONS:
     -InstallOpenSpec        Install only OpenSpec
     -InstallVSCode          Install only VS Code extensions
     -Hooks                  Install OpenCode command hooks plugin
+    -Biome                  Install optional Biome baseline (minimal rules)
 
 SKIP OPTIONS:
     -SkipGGA                Skip GGA installation
@@ -304,14 +306,17 @@ function Invoke-AutomatedInstallation {
         }
     }
     
-    if ($InstallGGA -or $InstallOpenSpec -or $Hooks) {
+    if ($InstallGGA -or $InstallOpenSpec -or $Hooks -or $Biome) {
         Write-Step "Configuring project..."
         if (-not $DryRun) {
-            Set-ProjectConfiguration -Provider $Provider -TargetDir $script:TargetPath -SkipGGA:$SkipGGA
+            Set-ProjectConfiguration -Provider $Provider -TargetDir $script:TargetPath -SkipGGA:$SkipGGA -InstallBiome:$Biome
         } else {
             Write-InfoMsg "[DRY RUN] Would configure project in $script:TargetPath"
             if ($Provider) {
                 Write-InfoMsg "[DRY RUN] Would set provider to: $Provider"
+            }
+            if ($Biome) {
+                Write-InfoMsg "[DRY RUN] Would apply optional Biome baseline"
             }
         }
     }
@@ -388,6 +393,7 @@ function Invoke-InteractiveInstallation {
     if ($vscodeAvailable) {
         $script:InstallVSCode = Ask-YesNo -Prompt "Install VS Code extensions?" -Default "y"
     }
+    $script:Biome = Ask-YesNo -Prompt "Install optional Biome baseline (minimal lint/format rules)?" -Default "n"
     
     Write-Host ""
     
@@ -396,6 +402,7 @@ function Invoke-InteractiveInstallation {
     if ($script:InstallGGA) { Write-Host "  - GGA" }
     if ($script:InstallOpenSpec) { Write-Host "  - OpenSpec" }
     if ($script:InstallVSCode) { Write-Host "  - VS Code Extensions" }
+    if ($script:Biome) { Write-Host "  - Biome Baseline (optional)" }
     Write-Host "  -> Target: $script:TargetPath"
     Write-Host ""
     
@@ -437,7 +444,7 @@ function Invoke-InteractiveInstallation {
     # Configure project
     Write-Step "Configuring project..."
     $skipGgaFlag = -not $script:InstallGGA
-    Set-ProjectConfiguration -Provider $script:Provider -TargetDir $script:TargetPath -SkipGGA:$skipGgaFlag | Out-Null
+    Set-ProjectConfiguration -Provider $script:Provider -TargetDir $script:TargetPath -SkipGGA:$skipGgaFlag -InstallBiome:$script:Biome | Out-Null
     Write-SuccessMsg "Project configured"
     
     Show-NextSteps -RepoPath $script:TargetPath
@@ -459,6 +466,7 @@ function Show-NextSteps {
     if ($script:InstallOpenSpec) { Write-Host "  - OpenSpec (Spec-First methodology)" -ForegroundColor $CYAN }
     if ($script:InstallVSCode) { Write-Host "  - VS Code Extensions" -ForegroundColor $CYAN }
     if ($script:Hooks) { Write-Host "  - OpenCode Command Hooks" -ForegroundColor $CYAN }
+    if ($script:Biome) { Write-Host "  - Biome Baseline (optional)" -ForegroundColor $CYAN }
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor $YELLOW
     if ($script:InstallGGA -and $script:Provider) { Write-Host "  1. Review .gga config (provider: $($script:Provider))" -ForegroundColor $WHITE }
@@ -486,7 +494,7 @@ if ($All) {
     $InstallVSCode = $true
 }
 
-if ($InstallGGA -or $InstallOpenSpec -or $InstallVSCode -or $UpdateAll -or $Hooks) {
+if ($InstallGGA -or $InstallOpenSpec -or $InstallVSCode -or $UpdateAll -or $Hooks -or $Biome) {
     $InteractiveMode = $false
 }
 

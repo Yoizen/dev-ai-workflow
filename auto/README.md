@@ -83,6 +83,7 @@ The `bootstrap` script automatically:
    - **GGA** (Guardian Agent) - Globally in `~/.local/share/yoizen/gga-copilot`
    - **OpenSpec** - Locally via npm in the project
    - **VS Code Extensions** - GitHub Copilot & Copilot Chat
+  - **Biome Baseline (optional)** - Minimal lint/format rules for new projects
 3. **Configures the Target Repository**:
    - Copies `AGENTS.MD`, `REVIEW.md`
    - Copies `skills/` directory (OpenCode skills)
@@ -104,6 +105,7 @@ The `bootstrap` script automatically:
 | `--install-gga` | Install only GGA |
 | `--install-openspec` | Install only OpenSpec |
 | `--install-vscode` | Install only VS Code extensions |
+| `--biome` | Install optional Biome baseline (minimal rules) |
 
 #### Skip Options
 | Flag | Description |
@@ -136,6 +138,7 @@ The `bootstrap` script automatically:
 | `-InstallGGA` | Install only GGA |
 | `-InstallOpenSpec` | Install only OpenSpec |
 | `-InstallVSCode` | Install only VS Code extensions |
+| `-Biome` | Install optional Biome baseline (minimal rules) |
 
 #### Skip Options
 | Parameter | Description |
@@ -196,6 +199,9 @@ The `bootstrap` script automatically:
 # Install GGA and OpenSpec, skip VS Code
 ./bootstrap.sh --install-gga --install-openspec --skip-vscode
 
+# Install optional Biome baseline for a new project
+./bootstrap.sh --install-gga --install-openspec --biome
+
 # Update all components in a specific project
 ./bootstrap.sh --update-all --target=/home/user/my-project
 
@@ -212,6 +218,9 @@ The `bootstrap` script automatically:
 
 # PowerShell - Custom installation
 .\bootstrap.ps1 -InstallGGA -InstallOpenSpec -Provider gemini
+
+# PowerShell - Optional Biome baseline
+.\bootstrap.ps1 -InstallGGA -InstallOpenSpec -Biome
 
 # PowerShell - Update all
 .\bootstrap.ps1 -UpdateAll -Target C:\Users\dev\project

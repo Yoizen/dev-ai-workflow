@@ -105,6 +105,7 @@ Instala GGA, SpecKit/OpenSpec, VS Code extensions, y configura el repo.
 - `-SkipSpecKit` / `--skip-speckit` - No instalar SpecKit
 - `-SkipGGA` / `--skip-gga` - No instalar GGA
 - `-SkipVSCode` / `--skip-vscode` - No instalar extensiones
+- `-Biome` / `--biome` - Instalar baseline opcional de Biome (reglas mínimas)
 - `-Force` / `--force` - Sobrescribir configs
 
 **update-all:**

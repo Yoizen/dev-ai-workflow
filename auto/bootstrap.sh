@@ -62,6 +62,7 @@ SILENT=false
 DRY_RUN=false
 SHOW_HELP=false
 INSTALL_HOOKS=false
+INSTALL_BIOME=false
 
 # ============================================================================
 # Helper Functions
@@ -129,6 +130,7 @@ INSTALLATION OPTIONS:
     --install-openspec      Install only OpenSpec
     --install-vscode        Install only VS Code extensions
     --hooks                 Install OpenCode command hooks plugin
+    --biome                 Install optional Biome baseline (minimal rules)
 
 SKIP OPTIONS:
     --skip-gga              Skip GGA installation
@@ -253,6 +255,11 @@ parse_arguments() {
                 INSTALL_HOOKS=true
                 shift
                 ;;
+            --biome|--install-biome)
+                INTERACTIVE_MODE=false
+                INSTALL_BIOME=true
+                shift
+                ;;
             -*)
                 print_error "Unknown option: $1"
                 echo "Use --help for usage information"
@@ -368,15 +375,16 @@ run_automated_installation() {
         fi
     fi
     
-    if [[ "$INSTALL_GGA" == true ]] || [[ "$INSTALL_OPENSPEC" == true ]] || [[ "$INSTALL_HOOKS" == true ]]; then
+    if [[ "$INSTALL_GGA" == true ]] || [[ "$INSTALL_OPENSPEC" == true ]] || [[ "$INSTALL_HOOKS" == true ]] || [[ "$INSTALL_BIOME" == true ]]; then
         print_step "Configuring project..."
         if [[ "$DRY_RUN" == false ]]; then
             local skip_gga_flag="false"
             [[ "$SKIP_GGA" == true ]] && skip_gga_flag="true"
-            configure_project "$PROVIDER" "$TARGET_DIR" "$skip_gga_flag"
+            configure_project "$PROVIDER" "$TARGET_DIR" "$skip_gga_flag" "$INSTALL_BIOME"
         else
             print_info "[DRY RUN] Would configure project in $TARGET_DIR"
             [[ -n "$PROVIDER" ]] && print_info "[DRY RUN] Would set provider to: $PROVIDER"
+            [[ "$INSTALL_BIOME" == true ]] && print_info "[DRY RUN] Would apply optional Biome baseline"
         fi
     fi
     
@@ -451,10 +459,12 @@ run_interactive_installation() {
     INSTALL_GGA=false
     INSTALL_OPENSPEC=false
     INSTALL_VSCODE=false
+    INSTALL_BIOME=false
     
     ask_yes_no "Install GGA (AI code review)?" "y" && INSTALL_GGA=true
     ask_yes_no "Install OpenSpec (spec-first dev)?" "y" && INSTALL_OPENSPEC=true
     [[ "$vscode_status" == "available" ]] && ask_yes_no "Install VS Code extensions?" "y" && INSTALL_VSCODE=true
+    ask_yes_no "Install optional Biome baseline (minimal lint/format rules)?" "n" && INSTALL_BIOME=true
     
     echo ""
     
@@ -463,6 +473,7 @@ run_interactive_installation() {
     [[ "$INSTALL_GGA" == true ]] && echo "  • GGA"
     [[ "$INSTALL_OPENSPEC" == true ]] && echo "  • OpenSpec"
     [[ "$INSTALL_VSCODE" == true ]] && echo "  • VS Code Extensions"
+    [[ "$INSTALL_BIOME" == true ]] && echo "  • Biome Baseline (optional)"
     echo "  → Target: $TARGET_DIR"
     echo ""
     
@@ -508,7 +519,7 @@ run_interactive_installation() {
     print_step "Configuring project..."
     local skip_gga_flag="false"
     [[ "$INSTALL_GGA" == false ]] && skip_gga_flag="true"
-    configure_project "$PROVIDER" "$TARGET_DIR" "$skip_gga_flag"
+    configure_project "$PROVIDER" "$TARGET_DIR" "$skip_gga_flag" "$INSTALL_BIOME"
     
     show_next_steps "$TARGET_DIR"
 }
@@ -534,6 +545,7 @@ show_next_steps() {
     [[ "$INSTALL_OPENSPEC" == true ]] && echo -e "${CYAN}  • OpenSpec (Spec-First methodology)${NC}"
     [[ "$INSTALL_VSCODE" == true ]] && echo -e "${CYAN}  • VS Code Extensions${NC}"
     [[ "$INSTALL_HOOKS" == true ]] && echo -e "${CYAN}  • OpenCode Command Hooks${NC}"
+    [[ "$INSTALL_BIOME" == true ]] && echo -e "${CYAN}  • Biome Baseline (optional)${NC}"
     echo ""
     echo -e "${YELLOW}Next steps:${NC}"
     [[ "$INSTALL_GGA" == true ]] && [[ -n "$PROVIDER" ]] && echo -e "${WHITE}  1. Review .gga config (provider: $PROVIDER)${NC}"

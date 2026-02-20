@@ -156,6 +156,16 @@ curl -sSL https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-s
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.ps1))) -Hooks
 ```
 
+### Con baseline opcional de Biome
+
+```bash
+# macOS / Linux
+curl -sSL https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.sh | bash -s -- --biome
+
+# Windows (PowerShell)
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.ps1))) -Biome
+```
+
 Ver [instalación avanzada](auto/README.md) para más opciones.
 
 ---

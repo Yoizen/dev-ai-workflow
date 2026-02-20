@@ -91,12 +91,19 @@ npm uninstall eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin
     "enabled": true,
     "rules": {
       "recommended": true,
-      "a11y": "warn",
-      "correctness": "warn",
-      "complexity": "warn",
-      "performance": "warn",
-      "style": "warn",
-      "suspicious": "warn"
+      "correctness": {
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error",
+        "useParseIntRadix": "warn"
+      },
+      "style": {
+        "useConst": "error",
+        "useImportType": "warn"
+      },
+      "suspicious": {
+        "noDoubleEquals": "warn",
+        "noGlobalIsNan": "error"
+      }
     }
   },
   "organizeImports": {

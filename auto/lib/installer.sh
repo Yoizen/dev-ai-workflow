@@ -351,6 +351,7 @@ configure_project() {
     local provider="$1"
     local target_dir="$2"
     local skip_gga="${3:-false}"
+    local install_biome="${4:-false}"
     
     print_info "Configuring project at $target_dir..."
     
@@ -556,6 +557,10 @@ configure_project() {
     else
         print_info "Lefthook not installed, skipping hook configuration"
     fi
+
+    if [[ "$install_biome" == "true" ]]; then
+        configure_biome_baseline "$target_dir"
+    fi
     
     # Create VS Code settings (minimal configuration)
     local vscode_dir="$target_dir/.vscode"
@@ -573,6 +578,110 @@ EOF
     
     print_success "Project configured successfully"
     return 0
+}
+
+configure_biome_baseline() {
+        local target_dir="$1"
+        local biome_config="$target_dir/biome.json"
+        local package_json="$target_dir/package.json"
+
+        print_info "Configuring optional Biome baseline..."
+
+        if [[ -f "$biome_config" ]]; then
+                print_info "biome.json already exists, skipping baseline config file"
+        else
+                cat > "$biome_config" << 'EOF'
+{
+    "$schema": "https://biomejs.dev/schemas/2.3.2/schema.json",
+    "formatter": {
+        "enabled": true,
+        "indentStyle": "space",
+        "indentWidth": 2,
+        "lineWidth": 100
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "recommended": true,
+            "correctness": {
+                "noUnusedImports": "error",
+                "noUnusedVariables": "error",
+                "useParseIntRadix": "warn"
+            },
+            "style": {
+                "useConst": "error",
+                "useImportType": "warn"
+            },
+            "suspicious": {
+                "noDoubleEquals": "warn",
+                "noGlobalIsNan": "error"
+            }
+        }
+    },
+    "organizeImports": {
+        "enabled": true
+    }
+}
+EOF
+                print_success "Created biome.json baseline"
+        fi
+
+        if [[ ! -f "$package_json" ]]; then
+                print_warning "package.json not found, skipping Biome package/scripts setup"
+                return 0
+        fi
+
+        if grep -q '"@biomejs/biome"' "$package_json" 2>/dev/null; then
+                print_info "@biomejs/biome already present in package.json"
+        else
+                print_info "Installing @biomejs/biome..."
+                if (cd "$target_dir" && npm install --save-dev @biomejs/biome >/dev/null 2>&1); then
+                        print_success "Installed @biomejs/biome"
+                else
+                        print_warning "Failed to install @biomejs/biome automatically"
+                fi
+        fi
+
+        if command -v node >/dev/null 2>&1; then
+                if (cd "$target_dir" && node <<'EOF'
+const fs = require('fs');
+const path = require('path');
+
+const packagePath = path.resolve('package.json');
+if (!fs.existsSync(packagePath)) {
+    process.exit(0);
+}
+
+const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+pkg.scripts = pkg.scripts || {};
+
+const desiredScripts = {
+    lint: 'biome check .',
+    'lint:fix': 'biome check --write .',
+    format: 'biome format --write .',
+    'format:check': 'biome format .'
+};
+
+let changed = false;
+for (const [name, command] of Object.entries(desiredScripts)) {
+    if (!pkg.scripts[name]) {
+        pkg.scripts[name] = command;
+        changed = true;
+    }
+}
+
+if (changed) {
+    fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\n');
+}
+EOF
+                ); then
+                        print_success "Applied Biome scripts (without overriding existing scripts)"
+                else
+                        print_warning "Failed to update package.json scripts for Biome"
+                fi
+        fi
+
+        return 0
 }
 
 # Install OpenCode command hooks plugin
@@ -875,7 +984,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             install_vscode_extensions "install"
             ;;
         configure)
-            configure_project "${2:-opencode}" "${3:-.}"
+            configure_project "${2:-opencode}" "${3:-.}" "${4:-false}" "${5:-false}"
             ;;
         update-all)
             update_all_components "${2:-.}"

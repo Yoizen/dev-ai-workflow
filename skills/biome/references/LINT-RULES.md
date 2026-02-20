@@ -14,7 +14,7 @@ Biome is used as a replacement for ESLint in projects. It provides:
 
 Biome uses `biome.json` configuration file in each project.
 
-Example from `GGA Team.this project.WebApi/biome.json`:
+Minimal baseline for new projects:
 
 ```json
 {
@@ -25,7 +25,7 @@ Example from `GGA Team.this project.WebApi/biome.json`:
       "correctness": {
         "noUnusedVariables": "error",
         "noUnusedImports": "error",
-        "useParseIntRadix": "error"
+        "useParseIntRadix": "warn"
       },
       "suspicious": {
         "noExplicitAny": "off",
@@ -35,7 +35,7 @@ Example from `GGA Team.this project.WebApi/biome.json`:
       },
       "style": {
         "useConst": "error",
-        "useImportType": "off",
+        "useImportType": "warn",
         "useTemplate": "warn",
         "noNonNullAssertion": "warn"
       },
@@ -61,7 +61,7 @@ Example from `GGA Team.this project.WebApi/biome.json`:
 |------|-------|-------------|---------|
 | `noUnusedVariables` | error | Disallow unused variables | `const x = 1;` (x not used) |
 | `noUnusedImports` | error | Disallow unused imports | `import { foo } from 'bar';` (foo not used) |
-| `useParseIntRadix` | error | Require radix in parseInt | `parseInt('10')` → `parseInt('10', 10)` |
+| `useParseIntRadix` | warn | Require radix in parseInt | `parseInt('10')` → `parseInt('10', 10)` |
 | `noUnusedPrivateMembers` | error | Disallow unused private class members | Private method/property never used |
 
 ### Suspicious Rules
@@ -83,7 +83,7 @@ Example from `GGA Team.this project.WebApi/biome.json`:
 | Rule | Level | Description | Example |
 |------|-------|-------------|---------|
 | `useConst` | error | Use const when possible | `let x = 1;` (never reassigned) |
-| `useImportType` | off | Use import type for type-only imports | `import { type Foo } from 'bar';` |
+| `useImportType` | warn | Prefer type-only imports when applicable | `import { type Foo } from 'bar';` |
 | `useTemplate` | warn | Use template literals instead of concatenation | `a + b` → `${a}${b}` |
 | `noNonNullAssertion` | warn | Disallow non-null assertion | `x!` → remove or use optional chaining |
 
