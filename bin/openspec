@@ -1,0 +1,10 @@
+#!/bin/bash
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OPENSPEC_EXE="$PROJECT_ROOT/node_modules/.bin/openspec"
+
+if [ -f "$OPENSPEC_EXE" ]; then
+    "$OPENSPEC_EXE" "$@"
+else
+    echo "OpenSpec not found at $OPENSPEC_EXE. Run auto/bootstrap.sh --use-openspec to install."
+    exit 1
+fi

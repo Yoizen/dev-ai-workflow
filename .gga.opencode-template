@@ -1,0 +1,31 @@
+# Guardian Agent Configuration
+# Template for: Opencode AI Coding Agent
+# 
+# Setup:
+# 1. Copy this file as .gga in your project root
+# 2. Install Opencode: curl -fsSL https://opencode.ai/install | bash
+# 3. Configure Opencode: Run 'opencode' and use '/connect' command
+# 4. Run: gga install
+
+# AI Provider: Opencode AI Coding Agent
+# When connected to GitHub Copilot, you can specify models using:
+#   PROVIDER="opencode:github-copilot/<model>"
+# Examples:
+PROVIDER="opencode:github-copilot/claude-haiku-4.5"
+# PROVIDER="opencode:github-copilot/gemini-3-flash"
+# Available models: curl https://models.dev/api.json
+
+# File patterns to review (comma-separated globs)
+# Include your language-specific files
+FILE_PATTERNS="*.ts,*.tsx,*.js,*.jsx,*.py,*.go"
+
+# File patterns to exclude from review (comma-separated globs)
+# Exclude test files, generated code, and type definitions
+EXCLUDE_PATTERNS="*.test.ts,*.spec.ts,*.test.tsx,*.spec.tsx,*.d.ts,*.test.py,test_*.py,*_test.go,dist/*,build/*"
+
+# File containing your coding standards
+RULES_FILE="REVIEW.md"
+
+# Strict mode: fail if AI response is ambiguous
+# Recommended for CI/CD pipelines
+STRICT_MODE="true"

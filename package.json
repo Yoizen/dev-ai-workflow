@@ -1,0 +1,28 @@
+{
+  "name": "gga-copilot",
+  "version": "3.0.12",
+  "description": "**Provider-agnostic AI code review** — Enforce coding standards on every commit using Claude, Gemini, Codex, Ollama, or any LLM. **Pure Bash** (Linux/Mac) or **PowerShell** (Windows).",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yoizen/gga-copilot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Yoizen/gga-copilot/issues"
+  },
+  "homepage": "https://github.com/Yoizen/gga-copilot#readme",
+  "devDependencies": {
+    "@fission-ai/openspec": "^0.17.2"
+  }
+}

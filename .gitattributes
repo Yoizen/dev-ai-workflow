@@ -1,0 +1,24 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Shell scripts always use LF
+*.sh text eol=lf
+bin/gga text eol=lf
+auto/*.sh text eol=lf
+auto/lib/*.sh text eol=lf
+lib/*.sh text eol=lf
+install.sh text eol=lf
+uninstall.sh text eol=lf
+
+# PowerShell scripts can use CRLF
+*.ps1 text eol=crlf
+
+# Windows batch files use CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Keep JSON with LF for consistency
+*.json text eol=lf
+
+# Markdown
+*.md text eol=lf

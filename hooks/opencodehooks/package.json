@@ -1,0 +1,64 @@
+{
+  "name": "opencode-command-hooks",
+  "version": "0.1.8",
+  "description": "OpenCode plugin for declaratively attaching shell commands to agent/tool/slash-command lifecycle events",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "echo 'No tests configured'",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "hooks",
+    "shell",
+    "commands",
+    "lifecycle"
+  ],
+  "author": "Shane Bishop <71288697+shanebishop1@users.noreply.github.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shanebishop1/opencode-command-hooks.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shanebishop1/opencode-command-hooks/issues"
+  },
+  "homepage": "https://github.com/shanebishop1/opencode-command-hooks#readme",
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.0.0",
+    "@opencode-ai/sdk": "^1.0.65",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/bun": "^1.2.0",
+    "@types/js-yaml": "^4.0.5",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "jiti": "^2.6.1",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.47.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  }
+}
