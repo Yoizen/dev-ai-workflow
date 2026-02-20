@@ -355,8 +355,16 @@ configure_project() {
     
     print_info "Configuring project at $target_dir..."
     
-    # Source files from GGA installation, not from current directory
+    # Source files from GGA installation, preferring local source if running from repo
+    local auto_lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local gga_repo_root="$(cd "$auto_lib_dir/../.." && pwd)"
     local gga_install_dir="$GGA_DIR"
+    
+    # Use local repo source if available and contains the files
+    if [[ -f "$gga_repo_root/auto/AGENTS.MD" ]]; then
+        gga_install_dir="$gga_repo_root"
+    fi
+
     local auto_dir="$gga_install_dir/auto"
     
     # Only copy configuration files, NOT GGA code itself
@@ -394,6 +402,25 @@ configure_project() {
         fi
     else
         print_warning "skills/ directory not found in GGA installation"
+    fi
+
+    # Copy .github/prompts directory
+    local prompts_source="$gga_install_dir/.github/prompts"
+    local prompts_target="$target_dir/.github/prompts"
+    
+    # Skip if source and target are the same
+    if [[ "$prompts_source" -ef "$prompts_target" ]]; then
+        print_info ".github/prompts directory already in place"
+    elif [[ -d "$prompts_source" ]]; then
+        if [[ -d "$prompts_target" ]]; then
+            print_warning ".github/prompts directory already exists in target, skipping copy"
+        else
+            mkdir -p "$(dirname "$prompts_target")"
+            cp -r "$prompts_source" "$prompts_target"
+            print_success "Copied .github/prompts directory"
+        fi
+    else
+        print_warning ".github/prompts directory not found in GGA installation"
     fi
 
     # Configure AI skills for Copilot and OpenCode

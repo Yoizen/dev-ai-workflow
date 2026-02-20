@@ -288,6 +288,27 @@ function Set-ProjectConfiguration {
         Write-WarningMsg "skills/ directory not found in source"
     }
     
+    $promptsSource = Join-Path $projectRoot ".github\prompts"
+    $promptsTarget = Join-Path $TargetDir ".github\prompts"
+    
+    $promptsSourceNorm = [System.IO.Path]::GetFullPath($promptsSource)
+    $promptsTargetNorm = [System.IO.Path]::GetFullPath($promptsTarget)
+    
+    if ($promptsSourceNorm -eq $promptsTargetNorm) {
+        Write-InfoMsg ".github/prompts directory already in place"
+    } elseif (Test-Path $promptsSource) {
+        if (Test-Path $promptsTarget) {
+            Write-WarningMsg ".github/prompts directory already exists in target, skipping copy"
+        } else {
+            $parentPrompts = Split-Path -Parent $promptsTarget
+            New-Item -ItemType Directory -Path $parentPrompts -Force | Out-Null
+            Copy-Item $promptsSource $promptsTarget -Recurse -Force
+            Write-Success "Copied .github/prompts directory"
+        }
+    } else {
+        Write-WarningMsg ".github/prompts directory not found in source"
+    }
+    
     $openspecDir = Join-Path $TargetDir "openspec"
     $agentsMdSource = Join-Path $autoDir "AGENTS.MD"
     if ((Test-Path $openspecDir) -and (Test-Path $agentsMdSource)) {
