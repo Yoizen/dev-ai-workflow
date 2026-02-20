@@ -309,14 +309,11 @@ function Invoke-AutomatedInstallation {
     if ($InstallGGA -or $InstallOpenSpec -or $Hooks -or $Biome) {
         Write-Step "Configuring project..."
         if (-not $DryRun) {
-            Set-ProjectConfiguration -Provider $Provider -TargetDir $script:TargetPath -SkipGGA:$SkipGGA -InstallBiome:$Biome
+            Set-ProjectConfiguration -Provider $Provider -TargetDir $script:TargetPath -SkipGGA:$SkipGGA -InstallBiome:$false
         } else {
             Write-InfoMsg "[DRY RUN] Would configure project in $script:TargetPath"
             if ($Provider) {
                 Write-InfoMsg "[DRY RUN] Would set provider to: $Provider"
-            }
-            if ($Biome) {
-                Write-InfoMsg "[DRY RUN] Would apply optional Biome baseline"
             }
         }
     }
@@ -327,6 +324,15 @@ function Invoke-AutomatedInstallation {
             Install-Hooks -Action "install" -TargetDir $script:TargetPath
         } else {
             Write-InfoMsg "[DRY RUN] Would install OpenCode command hooks"
+        }
+    }
+
+    if ($Biome) {
+        Write-Step "Installing Biome baseline..."
+        if (-not $DryRun) {
+            Install-Biome -Action "install" -TargetDir $script:TargetPath
+        } else {
+            Write-InfoMsg "[DRY RUN] Would install optional Biome baseline"
         }
     }
     
@@ -444,8 +450,14 @@ function Invoke-InteractiveInstallation {
     # Configure project
     Write-Step "Configuring project..."
     $skipGgaFlag = -not $script:InstallGGA
-    Set-ProjectConfiguration -Provider $script:Provider -TargetDir $script:TargetPath -SkipGGA:$skipGgaFlag -InstallBiome:$script:Biome | Out-Null
+    Set-ProjectConfiguration -Provider $script:Provider -TargetDir $script:TargetPath -SkipGGA:$skipGgaFlag -InstallBiome:$false | Out-Null
     Write-SuccessMsg "Project configured"
+
+    if ($script:Biome) {
+        Write-Step "Installing Biome baseline..."
+        Install-Biome -Action "install" -TargetDir $script:TargetPath | Out-Null
+        Write-SuccessMsg "Biome baseline installed"
+    }
     
     Show-NextSteps -RepoPath $script:TargetPath
 }

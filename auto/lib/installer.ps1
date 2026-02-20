@@ -658,6 +658,29 @@ if (changed) {
         return $true
 }
 
+function Install-Biome {
+    param(
+        [string]$Action = "install",
+        [string]$TargetDir = "."
+    )
+
+    switch ($Action) {
+        "install" {
+            return (Set-BiomeBaseline -TargetDir $TargetDir)
+        }
+
+        "skip" {
+            Write-InfoMsg "Skipping Biome baseline installation"
+            return $true
+        }
+
+        default {
+            Write-ErrorMsg "Unknown action: $Action"
+            return $false
+        }
+    }
+}
+
 function Install-Hooks {
     param(
         [string]$Action = "install",
@@ -983,6 +1006,10 @@ if ($MyInvocation.InvocationName -ne '.') {
         "install-vscode" {
             Install-VscodeExtensions -Action "install"
         }
+        "install-biome" {
+            $targetDir = if ($args.Count -gt 1) { $args[1] } else { "." }
+            Install-Biome -Action "install" -TargetDir $targetDir
+        }
         "configure" {
             $provider = if ($args.Count -gt 1) { $args[1] } else { "opencode" }
             $targetDir = if ($args.Count -gt 2) { $args[2] } else { "." }
@@ -993,7 +1020,7 @@ if ($MyInvocation.InvocationName -ne '.') {
             Update-AllComponents -TargetDir $targetDir
         }
         default {
-            Write-Host "Usage: .\installer.ps1 {install-gga|install-openspec|install-vscode|configure|update-all}"
+            Write-Host "Usage: .\installer.ps1 {install-gga|install-openspec|install-vscode|install-biome|configure|update-all}"
             exit 1
         }
     }

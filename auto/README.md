@@ -83,6 +83,7 @@ The `bootstrap` script automatically:
    - **GGA** (Guardian Agent) - Globally in `~/.local/share/yoizen/gga-copilot`
    - **OpenSpec** - Locally via npm in the project
    - **VS Code Extensions** - GitHub Copilot & Copilot Chat
+  - **OpenCode Command Hooks (optional)** - Post-edit automation hooks
   - **Biome Baseline (optional)** - Minimal lint/format rules for new projects
 3. **Configures the Target Repository**:
    - Copies `AGENTS.MD`, `REVIEW.md`
@@ -90,7 +91,8 @@ The `bootstrap` script automatically:
    - Initializes OpenSpec (`openspec/`)
    - Initializes GGA (`.gga`)
    - Sets up `.vscode/settings.json`
-   - Installs GGA git hooks (or Lefthook if available)
+    - Installs GGA git hooks (or Lefthook if available)
+    - Creates `lefthook.yml` from template (includes optional `biome-check` example when `biome.json` is present)
 
 ---
 
@@ -105,6 +107,7 @@ The `bootstrap` script automatically:
 | `--install-gga` | Install only GGA |
 | `--install-openspec` | Install only OpenSpec |
 | `--install-vscode` | Install only VS Code extensions |
+| `--hooks` | Install OpenCode command hooks plugin |
 | `--biome` | Install optional Biome baseline (minimal rules) |
 
 #### Skip Options
@@ -138,6 +141,7 @@ The `bootstrap` script automatically:
 | `-InstallGGA` | Install only GGA |
 | `-InstallOpenSpec` | Install only OpenSpec |
 | `-InstallVSCode` | Install only VS Code extensions |
+| `-Hooks` | Install OpenCode command hooks plugin |
 | `-Biome` | Install optional Biome baseline (minimal rules) |
 
 #### Skip Options
@@ -202,6 +206,9 @@ The `bootstrap` script automatically:
 # Install optional Biome baseline for a new project
 ./bootstrap.sh --install-gga --install-openspec --biome
 
+# Install OpenCode hooks + Biome baseline together
+./bootstrap.sh --install-gga --hooks --biome
+
 # Update all components in a specific project
 ./bootstrap.sh --update-all --target=/home/user/my-project
 
@@ -221,6 +228,9 @@ The `bootstrap` script automatically:
 
 # PowerShell - Optional Biome baseline
 .\bootstrap.ps1 -InstallGGA -InstallOpenSpec -Biome
+
+# PowerShell - Hooks + Biome baseline together
+.\bootstrap.ps1 -InstallGGA -Hooks -Biome
 
 # PowerShell - Update all
 .\bootstrap.ps1 -UpdateAll -Target C:\Users\dev\project

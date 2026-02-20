@@ -374,13 +374,22 @@ run_automated_installation() {
             print_info "[DRY RUN] Would install OpenCode command hooks"
         fi
     fi
+
+    if [[ "$INSTALL_BIOME" == true ]]; then
+        print_step "Installing Biome baseline..."
+        if [[ "$DRY_RUN" == false ]]; then
+            install_biome "install" "$TARGET_DIR"
+        else
+            print_info "[DRY RUN] Would install optional Biome baseline"
+        fi
+    fi
     
     if [[ "$INSTALL_GGA" == true ]] || [[ "$INSTALL_OPENSPEC" == true ]] || [[ "$INSTALL_HOOKS" == true ]] || [[ "$INSTALL_BIOME" == true ]]; then
         print_step "Configuring project..."
         if [[ "$DRY_RUN" == false ]]; then
             local skip_gga_flag="false"
             [[ "$SKIP_GGA" == true ]] && skip_gga_flag="true"
-            configure_project "$PROVIDER" "$TARGET_DIR" "$skip_gga_flag" "$INSTALL_BIOME"
+            configure_project "$PROVIDER" "$TARGET_DIR" "$skip_gga_flag" "false"
         else
             print_info "[DRY RUN] Would configure project in $TARGET_DIR"
             [[ -n "$PROVIDER" ]] && print_info "[DRY RUN] Would set provider to: $PROVIDER"
@@ -514,12 +523,17 @@ run_interactive_installation() {
         print_step "Installing OpenCode command hooks..."
         install_hooks "install" "$TARGET_DIR"
     fi
+
+    if [[ "$INSTALL_BIOME" == true ]]; then
+        print_step "Installing Biome baseline..."
+        install_biome "install" "$TARGET_DIR"
+    fi
     
     # Configure project
     print_step "Configuring project..."
     local skip_gga_flag="false"
     [[ "$INSTALL_GGA" == false ]] && skip_gga_flag="true"
-    configure_project "$PROVIDER" "$TARGET_DIR" "$skip_gga_flag" "$INSTALL_BIOME"
+    configure_project "$PROVIDER" "$TARGET_DIR" "$skip_gga_flag" "false"
     
     show_next_steps "$TARGET_DIR"
 }

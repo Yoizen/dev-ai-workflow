@@ -2,8 +2,18 @@
 # https://github.com/evilmartians/lefthook
 
 # pre-commit:
-  # parallel: false
+  # parallel: true
   # commands:
     # gga-review:
       # run: gga run
       # stage_fixed: false
+    # biome-check:
+      # run: |
+        # if [ -f biome.json ]; then
+        #   if npm run lint:fix --silent >/dev/null 2>&1; then
+        #     npm run lint:fix
+        #   else
+        #     npx @biomejs/biome check --write .
+        #   fi
+        # fi
+      # stage_fixed: true

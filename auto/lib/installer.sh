@@ -765,6 +765,28 @@ EOF
         return 0
 }
 
+install_biome() {
+    local action="${1:-install}"
+    local target_dir="${2:-.}"
+
+    case "$action" in
+        install)
+            configure_biome_baseline "$target_dir"
+            return $?
+            ;;
+
+        skip)
+            print_info "Skipping Biome baseline installation"
+            return 0
+            ;;
+
+        *)
+            print_error "Unknown action: $action"
+            return 1
+            ;;
+    esac
+}
+
 # Install OpenCode command hooks plugin
 install_hooks() {
     local action="${1:-install}"
@@ -1064,6 +1086,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         install-vscode)
             install_vscode_extensions "install"
             ;;
+        install-biome)
+            install_biome "install" "${2:-.}"
+            ;;
         configure)
             configure_project "${2:-opencode}" "${3:-.}" "${4:-false}" "${5:-false}"
             ;;
@@ -1071,7 +1096,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             update_all_components "${2:-.}"
             ;;
         *)
-            echo "Usage: $0 {install-gga|install-openspec|install-vscode|configure|update-all}"
+            echo "Usage: $0 {install-gga|install-openspec|install-vscode|install-biome|configure|update-all}"
             exit 1
             ;;
     esac
