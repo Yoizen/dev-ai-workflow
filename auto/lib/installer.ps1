@@ -372,7 +372,7 @@ function Set-ProjectConfiguration {
     } else {
         Write-InfoMsg "Lefthook not installed, skipping hook configuration"
     }
-
+    
     # Update .gitignore - only add missing patterns
     $gitignoreTarget = Join-Path $TargetDir ".gitignore"
     
@@ -482,33 +482,114 @@ function Set-BiomeBaseline {
                 $biomeContent = @'
 {
     "$schema": "https://biomejs.dev/schemas/2.3.2/schema.json",
+    "files": {
+        "ignoreUnknown": true,
+        "includes": [
+            "**",
+            "!!**/node_modules",
+            "!!**/dist",
+            "!!**/build",
+            "!!**/coverage",
+            "!!**/.next",
+            "!!**/.nuxt",
+            "!!**/.svelte-kit",
+            "!!**/.turbo",
+            "!!**/.vercel",
+            "!!**/.cache",
+            "!!**/__generated__",
+            "!!**/*.generated.*",
+            "!!**/*.gen.*",
+            "!!**/generated",
+            "!!**/codegen"
+        ]
+    },
     "formatter": {
         "enabled": true,
+        "formatWithErrors": true,
         "indentStyle": "space",
         "indentWidth": 2,
-        "lineWidth": 100
+        "lineEnding": "lf",
+        "lineWidth": 80,
+        "bracketSpacing": true
+    },
+    "assist": {
+        "actions": {
+            "source": {
+                "organizeImports": "on",
+                "useSortedAttributes": "on",
+                "noDuplicateClasses": "on",
+                "useSortedInterfaceMembers": "on",
+                "useSortedProperties": "on"
+            }
+        }
     },
     "linter": {
         "enabled": true,
         "rules": {
-            "recommended": true,
             "correctness": {
-                "noUnusedImports": "error",
+                "noUnusedImports": {
+                    "fix": "safe",
+                    "level": "error"
+                },
                 "noUnusedVariables": "error",
-                "useParseIntRadix": "warn"
+                "noUnusedFunctionParameters": "error",
+                "noUndeclaredVariables": "error",
+                "useParseIntRadix": "warn",
+                "useValidTypeof": "error",
+                "noUnreachable": "error"
             },
             "style": {
+                "useBlockStatements": {
+                    "fix": "safe",
+                    "level": "error"
+                },
                 "useConst": "error",
-                "useImportType": "warn"
+                "useImportType": "warn",
+                "noNonNullAssertion": "error",
+                "useTemplate": "warn"
+            },
+            "security": {
+                "noGlobalEval": "error"
             },
             "suspicious": {
+                "noExplicitAny": "error",
+                "noImplicitAnyLet": "error",
                 "noDoubleEquals": "warn",
-                "noGlobalIsNan": "error"
+                "noGlobalIsNan": "error",
+                "noPrototypeBuiltins": "error"
+            },
+            "complexity": {
+                "useOptionalChain": "error",
+                "useLiteralKeys": "warn",
+                "noForEach": "warn"
+            },
+            "nursery": {
+                "useSortedClasses": {
+                    "fix": "safe",
+                    "level": "error",
+                    "options": {
+                        "attributes": ["className"],
+                        "functions": ["clsx", "cva", "tw", "twMerge", "cn", "twJoin", "tv"]
+                    }
+                }
             }
+        }
+    },
+    "javascript": {
+        "formatter": {
+            "arrowParentheses": "always",
+            "semicolons": "always",
+            "trailingCommas": "es5"
         }
     },
     "organizeImports": {
         "enabled": true
+    },
+    "vcs": {
+        "enabled": true,
+        "clientKind": "git",
+        "useIgnoreFile": true,
+        "defaultBranch": "main"
     }
 }
 '@

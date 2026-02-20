@@ -64,66 +64,116 @@ npm uninstall eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin
 **biome.json**:
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/1.7.0/schema.json",
-  "vcs": {
-    "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true
-  },
+  "$schema": "https://biomejs.dev/schemas/2.3.2/schema.json",
   "files": {
-    "ignoreUnknown": false,
-    "ignore": [
-      "node_modules",
-      "dist",
-      "coverage",
-      "build"
+    "ignoreUnknown": true,
+    "includes": [
+      "**",
+      "!!**/node_modules",
+      "!!**/dist",
+      "!!**/build",
+      "!!**/coverage",
+      "!!**/.next",
+      "!!**/.nuxt",
+      "!!**/.svelte-kit",
+      "!!**/.turbo",
+      "!!**/.vercel",
+      "!!**/.cache",
+      "!!**/__generated__",
+      "!!**/*.generated.*",
+      "!!**/*.gen.*",
+      "!!**/generated",
+      "!!**/codegen"
     ]
   },
   "formatter": {
     "enabled": true,
-    "formatWithErrors": false,
+    "formatWithErrors": true,
     "indentStyle": "space",
     "indentWidth": 2,
-    "lineWidth": 100,
-    "lineEnding": "lf"
+    "lineEnding": "lf",
+    "lineWidth": 80,
+    "bracketSpacing": true
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on",
+        "useSortedAttributes": "on",
+        "noDuplicateClasses": "on",
+        "useSortedInterfaceMembers": "on",
+        "useSortedProperties": "on"
+      }
+    }
   },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
       "correctness": {
-        "noUnusedImports": "error",
+        "noUnusedImports": {
+          "fix": "safe",
+          "level": "error"
+        },
         "noUnusedVariables": "error",
-        "useParseIntRadix": "warn"
+        "noUnusedFunctionParameters": "error",
+        "noUndeclaredVariables": "error",
+        "useParseIntRadix": "warn",
+        "useValidTypeof": "error",
+        "noUnreachable": "error"
       },
       "style": {
+        "useBlockStatements": {
+          "fix": "safe",
+          "level": "error"
+        },
         "useConst": "error",
-        "useImportType": "warn"
+        "useImportType": "warn",
+        "noNonNullAssertion": "error",
+        "useTemplate": "warn"
+      },
+      "security": {
+        "noGlobalEval": "error"
       },
       "suspicious": {
+        "noExplicitAny": "error",
+        "noImplicitAnyLet": "error",
         "noDoubleEquals": "warn",
-        "noGlobalIsNan": "error"
+        "noGlobalIsNan": "error",
+        "noPrototypeBuiltins": "error"
+      },
+      "complexity": {
+        "useOptionalChain": "error",
+        "useLiteralKeys": "warn",
+        "noForEach": "warn"
+      },
+      "nursery": {
+        "useSortedClasses": {
+          "fix": "safe",
+          "level": "error",
+          "options": {
+            "attributes": ["className"],
+            "functions": ["clsx", "cva", "tw", "twMerge", "cn", "twJoin", "tv"]
+          }
+        }
       }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "arrowParentheses": "always",
+      "semicolons": "always",
+      "trailingCommas": "es5"
     }
   },
   "organizeImports": {
     "enabled": true
   },
-  "javascript": {
-    "globals": []
-  },
-  "overrides": [
-    {
-      "include": ["*.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noDefaultExport": "off"
-          }
-        }
-      }
-    }
-  ]
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true,
+    "defaultBranch": "main"
+  }
 }
 ```
 
@@ -241,9 +291,7 @@ Add to `package.json`:
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
-    "format:check": "biome check . --write=false",
-    "lint:watch": "biome check --watch",
-    "organize": "biome organize-imports"
+    "format:check": "biome format ."
   }
 }
 ```
