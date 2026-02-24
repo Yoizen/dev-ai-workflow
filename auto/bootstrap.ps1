@@ -1,4 +1,4 @@
-# GGA + OpenSpec Bootstrap - Automated Setup Script
+# GA + SDD Orchestrator Bootstrap - Automated Setup Script
 # Simple interactive installer with full parameter support for automation
 # Usage: .\bootstrap.ps1 [OPTIONS] [target-directory]
 
@@ -8,11 +8,11 @@ param(
     [string]$TargetPath = "",
     
     [switch]$All,
-    [switch]$InstallGGA,
-    [switch]$InstallOpenSpec,
+    [switch]$InstallGA,
+    [switch]$InstallSDD,
     [switch]$InstallVSCode,
-    [switch]$SkipGGA,
-    [switch]$SkipOpenSpec,
+    [switch]$SkipGA,
+    [switch]$SkipSDD,
     [switch]$SkipVSCode,
     
     [ValidateSet('opencode', 'claude', 'gemini', 'ollama')]
@@ -26,7 +26,10 @@ param(
     [switch]$DryRun,
     [switch]$Help,
     [switch]$Hooks,
-    [switch]$Biome
+    [switch]$Biome,
+
+    [string]$Type = "",
+    [switch]$ListTypes
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,8 +44,8 @@ $BootstrapDir = $ScriptDir
 . "$BootstrapDir\lib\installer.ps1"
 
 # Configuration
-$GGA_REPO = "https://github.com/Yoizen/gga-copilot.git"
-$GGA_DIR = Join-Path $env:USERPROFILE ".local\share\yoizen\gga-copilot"
+$GA_REPO = "https://github.com/Yoizen/dev-ai-workflow.git"
+$GA_DIR = Join-Path $env:USERPROFILE ".local\share\yoizen\dev-ai-workflow"
 
 # Prerequisites Check Function
 function Get-Prerequisites {
@@ -101,7 +104,7 @@ function Write-Banner {
     if ($Silent) { return }
     Write-Host ""
     Write-Host "========================================" -ForegroundColor $CYAN
-    Write-Host "  GGA + OpenSpec Bootstrap" -ForegroundColor $CYAN
+    Write-Host "  GA + SDD Orchestrator Bootstrap" -ForegroundColor $CYAN
     Write-Host "========================================" -ForegroundColor $CYAN
     Write-Host ""
 }
@@ -157,27 +160,29 @@ function Ask-YesNo {
 
 function Show-Help {
     @"
-GGA + OpenSpec Bootstrap - Automated Setup
+GA + SDD Orchestrator Bootstrap - Automated Setup
 
 USAGE:
     bootstrap.ps1 [OPTIONS] [target-directory]
 
 INSTALLATION OPTIONS:
     -All                     Install everything (non-interactive mode)
-    -InstallGGA             Install only GGA
-    -InstallOpenSpec        Install only OpenSpec
+    -InstallGA             Install only GA
+    -InstallSDD        Install only SDD Orchestrator
     -InstallVSCode          Install only VS Code extensions
     -Hooks                  Install OpenCode command hooks plugin
     -Biome                  Install optional Biome baseline (minimal rules)
 
 SKIP OPTIONS:
-    -SkipGGA                Skip GGA installation
-    -SkipOpenSpec           Skip OpenSpec installation
+    -SkipGA                Skip GA installation
+    -SkipSDD           Skip SDD Orchestrator installation
     -SkipVSCode             Skip VS Code extensions
 
 CONFIGURATION:
     -Provider <name>        Set AI provider (opencode/claude/gemini/ollama)
     -Target <path>          Target directory (default: current directory)
+    -Type <name>            Project type: nest, python, react, generic
+    -ListTypes              Show all available project types
 
 ADVANCED:
     -UpdateAll              Update all installed components
@@ -195,8 +200,8 @@ EXAMPLES:
     # Install everything automatically
     .\bootstrap.ps1 -All
 
-    # Install only GGA and OpenSpec, skip VS Code
-    .\bootstrap.ps1 -InstallGGA -InstallOpenSpec
+    # Install only GA and SDD Orchestrator, skip VS Code
+    .\bootstrap.ps1 -InstallGA -InstallSDD
 
     # Install with specific provider
     .\bootstrap.ps1 -All -Provider claude
@@ -207,6 +212,12 @@ EXAMPLES:
     # Dry run to see what would happen
     .\bootstrap.ps1 -All -DryRun
 
+    # Install for a NestJS project
+    .\bootstrap.ps1 -All -Type nest
+
+    # List available project types
+    .\bootstrap.ps1 -ListTypes
+
 PROVIDERS:
     opencode                OpenCode AI Coding Agent (default)
     claude                  Anthropic Claude
@@ -214,7 +225,7 @@ PROVIDERS:
     ollama                  Ollama (local models)
 
 For more information, visit:
-    https://github.com/Yoizen/gga-copilot
+    https://github.com/Yoizen/dev-ai-workflow
 "@
 }
 
@@ -253,14 +264,20 @@ function Invoke-AutomatedInstallation {
     $npmVersion = $prereqStatus.NpmVersion
     $vscodeStatus = $prereqStatus.VSCodeAvailable
     
-    if ($gitVersion -eq "NOT_FOUND" -or $nodeVersion -eq "NOT_FOUND" -or $npmVersion -eq "NOT_FOUND") {
-        Write-ErrorMsg "Missing prerequisites. Please install Git, Node.js, and npm."
+    if ($gitVersion -eq "NOT_FOUND") {
+        Write-ErrorMsg "Missing prerequisite: Git is required."
+        exit 1
+    }
+    
+    # node/npm only required when installing hooks (TypeScript build)
+    if ($Hooks -and ($nodeVersion -eq "NOT_FOUND" -or $npmVersion -eq "NOT_FOUND")) {
+        Write-ErrorMsg "Node.js and npm are required to install OpenCode hooks."
         exit 1
     }
     
     Write-SuccessMsg "Git $gitVersion"
-    Write-SuccessMsg "Node.js $nodeVersion"
-    Write-SuccessMsg "npm $npmVersion"
+    if ($nodeVersion -ne "NOT_FOUND") { Write-SuccessMsg "Node.js $nodeVersion" } else { Write-WarningMsg "Node.js not found (only needed for -Hooks)" }
+    if ($npmVersion -ne "NOT_FOUND") { Write-SuccessMsg "npm $npmVersion" } else { Write-WarningMsg "npm not found (only needed for -Hooks)" }
     
     if ($vscodeStatus) {
         Write-SuccessMsg "VS Code CLI available"
@@ -279,21 +296,21 @@ function Invoke-AutomatedInstallation {
         return
     }
     
-    if (-not $SkipGGA -and $InstallGGA) {
-        Write-Step "Installing GGA..."
+    if (-not $SkipGA -and $InstallGA) {
+        Write-Step "Installing GA..."
         if (-not $DryRun) {
-            Install-GGA -Action "install"
+            Install-GA -Action "install"
         } else {
-            Write-InfoMsg "[DRY RUN] Would install GGA to $GGA_DIR"
+            Write-InfoMsg "[DRY RUN] Would install GA to $GA_DIR"
         }
     }
     
-    if (-not $SkipOpenSpec -and $InstallOpenSpec) {
-        Write-Step "Installing OpenSpec..."
+    if (-not $SkipSDD -and $InstallSDD) {
+        Write-Step "Installing SDD Orchestrator..."
         if (-not $DryRun) {
-            Install-OpenSpec -Action "install" -TargetDir $script:TargetPath
+            Install-SDD -Action "install" -TargetDir $script:TargetPath
         } else {
-            Write-InfoMsg "[DRY RUN] Would install OpenSpec in $script:TargetPath"
+            Write-InfoMsg "[DRY RUN] Would install SDD Orchestrator in $script:TargetPath"
         }
     }
     
@@ -306,14 +323,17 @@ function Invoke-AutomatedInstallation {
         }
     }
     
-    if ($InstallGGA -or $InstallOpenSpec -or $Hooks -or $Biome) {
+    if ($InstallGA -or $InstallSDD -or $Hooks -or $Biome) {
         Write-Step "Configuring project..."
         if (-not $DryRun) {
-            Set-ProjectConfiguration -Provider $Provider -TargetDir $script:TargetPath -SkipGGA:$SkipGGA -InstallBiome:$false
+            Set-ProjectConfiguration -Provider $Provider -TargetDir $script:TargetPath -SkipGA:$SkipGA -InstallBiome:$false -ProjectType $Type
         } else {
             Write-InfoMsg "[DRY RUN] Would configure project in $script:TargetPath"
             if ($Provider) {
                 Write-InfoMsg "[DRY RUN] Would set provider to: $Provider"
+            }
+            if ($Type) {
+                Write-InfoMsg "[DRY RUN] Would apply project type: $Type"
             }
         }
     }
@@ -347,7 +367,7 @@ function Invoke-AutomatedInstallation {
 function Invoke-InteractiveInstallation {
     Write-Banner
     
-    Write-Host "This will install GGA + OpenSpec in your project." -ForegroundColor $WHITE
+    Write-Host "This will install GA + SDD Orchestrator in your project." -ForegroundColor $WHITE
     Write-Host ""
     
     Write-Step "Checking prerequisites..."
@@ -358,14 +378,14 @@ function Invoke-InteractiveInstallation {
     $npmVersion = $prereqStatus.NpmVersion
     $vscodeAvailable = $prereqStatus.VSCodeAvailable
     
-    if ($gitVersion -eq "NOT_FOUND" -or $nodeVersion -eq "NOT_FOUND" -or $npmVersion -eq "NOT_FOUND") {
-        Write-ErrorMsg "Missing prerequisites. Please install Git, Node.js, and npm."
+    if ($gitVersion -eq "NOT_FOUND") {
+        Write-ErrorMsg "Missing prerequisite: Git is required."
         exit 1
     }
     
     Write-SuccessMsg "Git $gitVersion"
-    Write-SuccessMsg "Node.js $nodeVersion"
-    Write-SuccessMsg "npm $npmVersion"
+    if ($nodeVersion -ne "NOT_FOUND") { Write-SuccessMsg "Node.js $nodeVersion" } else { Write-WarningMsg "Node.js not found (only needed for -Hooks)" }
+    if ($npmVersion -ne "NOT_FOUND") { Write-SuccessMsg "npm $npmVersion" } else { Write-WarningMsg "npm not found (only needed for -Hooks)" }
     if ($vscodeAvailable) {
         Write-SuccessMsg "VS Code CLI available"
     } else {
@@ -393,8 +413,8 @@ function Invoke-InteractiveInstallation {
     Write-Host ""
     
     # Simple Y/n questions
-    $script:InstallGGA = Ask-YesNo -Prompt "Install GGA (AI code review)?" -Default "y"
-    $script:InstallOpenSpec = Ask-YesNo -Prompt "Install OpenSpec (spec-first dev)?" -Default "y"
+    $script:InstallGA = Ask-YesNo -Prompt "Install GA (AI code review)?" -Default "y"
+    $script:InstallSDD = Ask-YesNo -Prompt "Install SDD Orchestrator (spec-first dev)?" -Default "y"
     $script:InstallVSCode = $false
     if ($vscodeAvailable) {
         $script:InstallVSCode = Ask-YesNo -Prompt "Install VS Code extensions?" -Default "y"
@@ -405,8 +425,8 @@ function Invoke-InteractiveInstallation {
     
     # Summary
     Write-Host "Will install:" -ForegroundColor $WHITE
-    if ($script:InstallGGA) { Write-Host "  - GGA" }
-    if ($script:InstallOpenSpec) { Write-Host "  - OpenSpec" }
+    if ($script:InstallGA) { Write-Host "  - GA" }
+    if ($script:InstallSDD) { Write-Host "  - SDD Orchestrator" }
     if ($script:InstallVSCode) { Write-Host "  - VS Code Extensions" }
     if ($script:Biome) { Write-Host "  - Biome Baseline (optional)" }
     Write-Host "  -> Target: $script:TargetPath"
@@ -429,16 +449,16 @@ function Invoke-InteractiveInstallation {
     }
     
     # Install components
-    if ($script:InstallGGA) {
-        Write-Step "Installing GGA..."
-        Install-GGA -Action "install" | Out-Null
-        Write-SuccessMsg "GGA installed"
+    if ($script:InstallGA) {
+        Write-Step "Installing GA..."
+        Install-GA -Action "install" | Out-Null
+        Write-SuccessMsg "GA installed"
     }
     
-    if ($script:InstallOpenSpec) {
-        Write-Step "Installing OpenSpec..."
-        Install-OpenSpec -Action "install" -TargetDir $script:TargetPath | Out-Null
-        Write-SuccessMsg "OpenSpec installed"
+    if ($script:InstallSDD) {
+        Write-Step "Installing SDD Orchestrator..."
+        Install-SDD -Action "install" -TargetDir $script:TargetPath | Out-Null
+        Write-SuccessMsg "SDD Orchestrator installed"
     }
     
     if ($script:InstallVSCode -and $vscodeAvailable) {
@@ -449,8 +469,8 @@ function Invoke-InteractiveInstallation {
     
     # Configure project
     Write-Step "Configuring project..."
-    $skipGgaFlag = -not $script:InstallGGA
-    Set-ProjectConfiguration -Provider $script:Provider -TargetDir $script:TargetPath -SkipGGA:$skipGgaFlag -InstallBiome:$false | Out-Null
+    $skipGaFlag = -not $script:InstallGA
+    Set-ProjectConfiguration -Provider $script:Provider -TargetDir $script:TargetPath -SkipGA:$skipGaFlag -InstallBiome:$false -ProjectType $Type | Out-Null
     Write-SuccessMsg "Project configured"
 
     if ($script:Biome) {
@@ -474,17 +494,17 @@ function Show-NextSteps {
     Write-Host "================================================================" -ForegroundColor $CYAN
     Write-Host ""
     Write-Host "Your repository is now configured with:" -ForegroundColor $WHITE
-    if ($script:InstallGGA) { Write-Host "  - GGA (Guardian Agent)" -ForegroundColor $CYAN }
-    if ($script:InstallOpenSpec) { Write-Host "  - OpenSpec (Spec-First methodology)" -ForegroundColor $CYAN }
+    if ($script:InstallGA) { Write-Host "  - GA (Guardian Agent)" -ForegroundColor $CYAN }
+    if ($script:InstallSDD) { Write-Host "  - SDD Orchestrator (SDD workflow)" -ForegroundColor $CYAN }
     if ($script:InstallVSCode) { Write-Host "  - VS Code Extensions" -ForegroundColor $CYAN }
     if ($script:Hooks) { Write-Host "  - OpenCode Command Hooks" -ForegroundColor $CYAN }
     if ($script:Biome) { Write-Host "  - Biome Baseline (optional)" -ForegroundColor $CYAN }
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor $YELLOW
-    if ($script:InstallGGA -and $script:Provider) { Write-Host "  1. Review .gga config (provider: $($script:Provider))" -ForegroundColor $WHITE }
+    if ($script:InstallGA -and $script:Provider) { Write-Host "  1. Review .ga config (provider: $($script:Provider))" -ForegroundColor $WHITE }
     Write-Host "  2. Customize AGENTS.MD for your project" -ForegroundColor $WHITE
-    if ($script:InstallOpenSpec) { Write-Host "  3. Use OpenSpec to create specifications" -ForegroundColor $WHITE }
-    if ($script:InstallGGA) { Write-Host "  4. Run 'gga review' before committing code" -ForegroundColor $WHITE }
+    if ($script:InstallSDD) { Write-Host "  3. Use SDD Orchestrator for spec-driven development" -ForegroundColor $WHITE }
+    if ($script:InstallGA) { Write-Host "  4. Run 'ga review' before committing code" -ForegroundColor $WHITE }
     Write-Host ""
     Write-Host "Repository path: $RepoPath" -ForegroundColor $CYAN
     Write-Host ""
@@ -496,17 +516,23 @@ if ($Help) {
     exit 0
 }
 
+if ($ListTypes) {
+    . (Join-Path $PSScriptRoot "lib\installer.ps1") 2>$null
+    List-ProjectTypes
+    exit 0
+}
+
 # Determine mode
 $InteractiveMode = $true
 
 if ($All) {
     $InteractiveMode = $false
-    $InstallGGA = $true
-    $InstallOpenSpec = $true
+    $InstallGA = $true
+    $InstallSDD = $true
     $InstallVSCode = $true
 }
 
-if ($InstallGGA -or $InstallOpenSpec -or $InstallVSCode -or $UpdateAll -or $Hooks -or $Biome) {
+if ($InstallGA -or $InstallSDD -or $InstallVSCode -or $UpdateAll -or $Hooks -or $Biome) {
     $InteractiveMode = $false
 }
 
@@ -514,8 +540,8 @@ if ($InteractiveMode) {
     if (-not (Test-InteractiveEnvironment)) {
         Write-WarningMsg "Non-interactive environment detected, using automated mode with -All"
         $InteractiveMode = $false
-        $InstallGGA = $true
-        $InstallOpenSpec = $true
+        $InstallGA = $true
+        $InstallSDD = $true
         $InstallVSCode = $true
     }
 }

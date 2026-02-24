@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# GGA + OpenSpec Bootstrap - Automated Setup Script
+# GA + SDD Orchestrator Bootstrap - Automated Setup Script
 # ============================================================================
 # Simple interactive installer with full flag support for automation
 # Usage: ./bootstrap.sh [OPTIONS] [target-directory]
@@ -27,8 +27,8 @@ source "$BOOTSTRAP_DIR/lib/installer.sh"
 # Configuration
 # ============================================================================
 
-GGA_REPO="https://github.com/Yoizen/gga-copilot.git"
-GGA_DIR="$HOME/.local/share/yoizen/gga-copilot"
+GA_REPO="https://github.com/Yoizen/dev-ai-workflow.git"
+GA_DIR="$HOME/.local/share/yoizen/dev-ai-workflow"
 
 VSCODE_EXTENSIONS=(
     "github.copilot"
@@ -48,14 +48,15 @@ NC='\033[0m'
 # ============================================================================
 
 INTERACTIVE_MODE=true
-INSTALL_GGA=false
-INSTALL_OPENSPEC=false
+INSTALL_GA=false
+INSTALL_SDD=false
 INSTALL_VSCODE=false
-SKIP_GGA=false
-SKIP_OPENSPEC=false
+SKIP_GA=false
+SKIP_SDD=false
 SKIP_VSCODE=false
 PROVIDER=""
 TARGET_DIR=""
+PROJECT_TYPE=""
 UPDATE_ALL=false
 FORCE=false
 SILENT=false
@@ -74,7 +75,7 @@ print_banner() {
     fi
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${CYAN}  GGA + OpenSpec Bootstrap - Automated Setup${NC}"
+    echo -e "${CYAN}  GA + SDD Orchestrator Bootstrap - Automated Setup${NC}"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 }
@@ -119,27 +120,29 @@ command_exists() {
 
 show_help() {
     cat << 'EOF'
-GGA + OpenSpec Bootstrap - Automated Setup
+GA + SDD Orchestrator Bootstrap - Automated Setup
 
 USAGE:
     bootstrap.sh [OPTIONS] [target-directory]
 
 INSTALLATION OPTIONS:
     --all                    Install everything (non-interactive mode)
-    --install-gga           Install only GGA
-    --install-openspec      Install only OpenSpec
+    --install-ga           Install only GA
+    --install-sdd  Install only SDD Orchestrator
     --install-vscode        Install only VS Code extensions
     --hooks                 Install OpenCode command hooks plugin
     --biome                 Install optional Biome baseline (minimal rules)
 
 SKIP OPTIONS:
-    --skip-gga              Skip GGA installation
-    --skip-openspec         Skip OpenSpec installation
+    --skip-ga              Skip GA installation
+    --skip-sdd    Skip SDD Orchestrator installation
     --skip-vscode           Skip VS Code extensions
 
 CONFIGURATION:
     --provider=<name>       Set AI provider (opencode/claude/gemini/ollama)
     --target=<path>         Target directory (default: current directory)
+    --type=<name>           Project type: nest, python, react, generic (default: generic)
+                            Copies the matching AGENTS.md and REVIEW.md for the stack.
 
 ADVANCED:
     --update-all            Update all installed components
@@ -157,8 +160,8 @@ EXAMPLES:
     # Install everything automatically
     ./bootstrap.sh --all
 
-    # Install only GGA and OpenSpec, skip VS Code
-    ./bootstrap.sh --install-gga --install-openspec
+    # Install only GA and SDD Orchestrator, skip VS Code
+    ./bootstrap.sh --install-ga --install-sdd
 
     # Install with specific provider
     ./bootstrap.sh --all --provider=claude
@@ -176,7 +179,7 @@ PROVIDERS:
     ollama                  Ollama (local models)
 
 For more information, visit:
-    https://github.com/Yoizen/gga-copilot
+    https://github.com/Yoizen/dev-ai-workflow
 EOF
 }
 
@@ -189,19 +192,19 @@ parse_arguments() {
         case $1 in
             --all)
                 INTERACTIVE_MODE=false
-                INSTALL_GGA=true
-                INSTALL_OPENSPEC=true
+                INSTALL_GA=true
+                INSTALL_SDD=true
                 INSTALL_VSCODE=true
                 shift
                 ;;
-            --install-gga)
+            --install-ga)
                 INTERACTIVE_MODE=false
-                INSTALL_GGA=true
+                INSTALL_GA=true
                 shift
                 ;;
-            --install-openspec)
+            --install-sdd)
                 INTERACTIVE_MODE=false
-                INSTALL_OPENSPEC=true
+                INSTALL_SDD=true
                 shift
                 ;;
             --install-vscode)
@@ -209,12 +212,12 @@ parse_arguments() {
                 INSTALL_VSCODE=true
                 shift
                 ;;
-            --skip-gga)
-                SKIP_GGA=true
+            --skip-ga)
+                SKIP_GA=true
                 shift
                 ;;
-            --skip-openspec)
-                SKIP_OPENSPEC=true
+            --skip-sdd)
+                SKIP_SDD=true
                 shift
                 ;;
             --skip-vscode)
@@ -228,6 +231,14 @@ parse_arguments() {
             --target=*)
                 TARGET_DIR="${1#*=}"
                 shift
+                ;;
+            --type=*)
+                PROJECT_TYPE="${1#*=}"
+                shift
+                ;;
+            --list-types)
+                list_project_types 2>/dev/null || true
+                exit 0
                 ;;
             --update-all)
                 INTERACTIVE_MODE=false
@@ -310,15 +321,23 @@ run_automated_installation() {
     local git_version node_version npm_version vscode_status
     IFS='|' read -r git_version node_version npm_version vscode_status <<< "$prereq_status"
     
-    if [[ "$git_version" == "NOT_FOUND" ]] || [[ "$node_version" == "NOT_FOUND" ]] || [[ "$npm_version" == "NOT_FOUND" ]]; then
-        print_error "Missing prerequisites. Please install Git, Node.js, and npm."
+    if [[ "${git_version,,}" == "not_found" ]]; then
+        print_error "Missing prerequisite: Git is required."
         exit 1
     fi
     
-    print_success "Git $git_version"
-    print_success "Node.js $node_version"
-    print_success "npm $npm_version"
+    # node/npm only required when installing hooks (TypeScript build)
+    if [[ "$INSTALL_HOOKS" == true ]]; then
+        if [[ "${node_version,,}" == "not_found" ]] || [[ "${npm_version,,}" == "not_found" ]]; then
+            print_error "Node.js and npm are required to install OpenCode hooks."
+            exit 1
+        fi
+    fi
     
+    print_success "Git $git_version"
+    [[ "${node_version,,}" != "not_found" ]] && print_success "Node.js $node_version" || print_warning "Node.js not found (only needed for --hooks)"
+    [[ "${npm_version,,}" != "not_found" ]] && print_success "npm $npm_version" || print_warning "npm not found (only needed for --hooks)"
+
     if [[ "$vscode_status" == "available" ]]; then
         print_success "VS Code CLI available"
     else
@@ -336,24 +355,24 @@ run_automated_installation() {
         return
     fi
     
-    if [[ "$SKIP_GGA" == false ]] && [[ "$INSTALL_GGA" == true ]]; then
-        print_step "Installing GGA..."
+    if [[ "$SKIP_GA" == false ]] && [[ "$INSTALL_GA" == true ]]; then
+        print_step "Installing GA..."
         if [[ "$DRY_RUN" == false ]]; then
             # Pass true for force if non-interactive mode
             local force_update="false"
             [[ "$INTERACTIVE_MODE" == false ]] && force_update="true"
-            install_gga "install" "$force_update"
+            install_ga "install" "$force_update"
         else
-            print_info "[DRY RUN] Would install GGA to $GGA_DIR"
+            print_info "[DRY RUN] Would install GA to $GA_DIR"
         fi
     fi
     
-    if [[ "$SKIP_OPENSPEC" == false ]] && [[ "$INSTALL_OPENSPEC" == true ]]; then
-        print_step "Installing OpenSpec..."
+    if [[ "$SKIP_SDD" == false ]] && [[ "$INSTALL_SDD" == true ]]; then
+        print_step "Installing SDD Orchestrator..."
         if [[ "$DRY_RUN" == false ]]; then
-            install_openspec "install" "$TARGET_DIR"
+            install_sdd "install" "$TARGET_DIR"
         else
-            print_info "[DRY RUN] Would install OpenSpec in $TARGET_DIR"
+            print_info "[DRY RUN] Would install SDD Orchestrator in $TARGET_DIR"
         fi
     fi
     
@@ -384,15 +403,16 @@ run_automated_installation() {
         fi
     fi
     
-    if [[ "$INSTALL_GGA" == true ]] || [[ "$INSTALL_OPENSPEC" == true ]] || [[ "$INSTALL_HOOKS" == true ]] || [[ "$INSTALL_BIOME" == true ]]; then
+    if [[ "$INSTALL_GA" == true ]] || [[ "$INSTALL_SDD" == true ]] || [[ "$INSTALL_HOOKS" == true ]] || [[ "$INSTALL_BIOME" == true ]]; then
         print_step "Configuring project..."
         if [[ "$DRY_RUN" == false ]]; then
-            local skip_gga_flag="false"
-            [[ "$SKIP_GGA" == true ]] && skip_gga_flag="true"
-            configure_project "$PROVIDER" "$TARGET_DIR" "$skip_gga_flag" "false"
+            local skip_ga_flag="false"
+            [[ "$SKIP_GA" == true ]] && skip_ga_flag="true"
+            configure_project "$PROVIDER" "$TARGET_DIR" "$skip_ga_flag" "false" "$PROJECT_TYPE"
         else
             print_info "[DRY RUN] Would configure project in $TARGET_DIR"
             [[ -n "$PROVIDER" ]] && print_info "[DRY RUN] Would set provider to: $PROVIDER"
+            [[ -n "$PROJECT_TYPE" ]] && print_info "[DRY RUN] Would apply project type: $PROJECT_TYPE" || print_info "[DRY RUN] Would apply project type: generic"
             [[ "$INSTALL_BIOME" == true ]] && print_info "[DRY RUN] Would apply optional Biome baseline"
         fi
     fi
@@ -428,7 +448,7 @@ run_interactive_installation() {
     print_banner
     
     echo ""
-    echo -e "${WHITE}This will install GGA + OpenSpec in your project.${NC}"
+    echo -e "${WHITE}This will install GA + SDD Orchestrator in your project.${NC}"
     echo ""
     
     # Check prerequisites
@@ -439,14 +459,14 @@ run_interactive_installation() {
     local git_version node_version npm_version vscode_status
     IFS='|' read -r git_version node_version npm_version vscode_status <<< "$prereq_status"
     
-    if [[ "$git_version" == "NOT_FOUND" ]] || [[ "$node_version" == "NOT_FOUND" ]] || [[ "$npm_version" == "NOT_FOUND" ]]; then
-        print_error "Missing prerequisites. Please install Git, Node.js, and npm."
+    if [[ "${git_version,,}" == "not_found" ]]; then
+        print_error "Missing prerequisite: Git is required."
         exit 1
     fi
     
     print_success "Git $git_version"
-    print_success "Node.js $node_version"
-    print_success "npm $npm_version"
+    [[ "${node_version,,}" != "not_found" ]] && print_success "Node.js $node_version" || print_warning "Node.js not found (only needed for --hooks)"
+    [[ "${npm_version,,}" != "not_found" ]] && print_success "npm $npm_version" || print_warning "npm not found (only needed for --hooks)"
     [[ "$vscode_status" == "available" ]] && print_success "VS Code CLI available" || print_warning "VS Code CLI not found"
     echo ""
     
@@ -465,13 +485,13 @@ run_interactive_installation() {
     echo ""
     
     # Simple y/n questions
-    INSTALL_GGA=false
-    INSTALL_OPENSPEC=false
+    INSTALL_GA=false
+    INSTALL_SDD=false
     INSTALL_VSCODE=false
     INSTALL_BIOME=false
     
-    ask_yes_no "Install GGA (AI code review)?" "y" && INSTALL_GGA=true
-    ask_yes_no "Install OpenSpec (spec-first dev)?" "y" && INSTALL_OPENSPEC=true
+    ask_yes_no "Install GA (AI code review)?" "y" && INSTALL_GA=true
+    ask_yes_no "Install SDD Orchestrator (spec-first dev)?" "y" && INSTALL_SDD=true
     [[ "$vscode_status" == "available" ]] && ask_yes_no "Install VS Code extensions?" "y" && INSTALL_VSCODE=true
     ask_yes_no "Install optional Biome baseline (minimal lint/format rules)?" "n" && INSTALL_BIOME=true
     
@@ -479,8 +499,8 @@ run_interactive_installation() {
     
     # Confirm
     echo -e "${WHITE}Will install:${NC}"
-    [[ "$INSTALL_GGA" == true ]] && echo "  • GGA"
-    [[ "$INSTALL_OPENSPEC" == true ]] && echo "  • OpenSpec"
+    [[ "$INSTALL_GA" == true ]] && echo "  • GA"
+    [[ "$INSTALL_SDD" == true ]] && echo "  • SDD Orchestrator"
     [[ "$INSTALL_VSCODE" == true ]] && echo "  • VS Code Extensions"
     [[ "$INSTALL_BIOME" == true ]] && echo "  • Biome Baseline (optional)"
     echo "  → Target: $TARGET_DIR"
@@ -501,17 +521,17 @@ run_interactive_installation() {
     fi
     
     # Install components
-    if [[ "$INSTALL_GGA" == true ]]; then
-        print_step "Installing GGA..."
+    if [[ "$INSTALL_GA" == true ]]; then
+        print_step "Installing GA..."
         # Pass true for force if non-interactive mode
         local force_update="false"
         [[ "$INTERACTIVE_MODE" == false ]] && force_update="true"
-        install_gga "install" "$force_update"
+        install_ga "install" "$force_update"
     fi
     
-    if [[ "$INSTALL_OPENSPEC" == true ]]; then
-        print_step "Installing OpenSpec..."
-        install_openspec "install" "$TARGET_DIR"
+    if [[ "$INSTALL_SDD" == true ]]; then
+        print_step "Installing SDD Orchestrator..."
+        install_sdd "install" "$TARGET_DIR"
     fi
     
     if [[ "$INSTALL_VSCODE" == true ]]; then
@@ -531,9 +551,9 @@ run_interactive_installation() {
     
     # Configure project
     print_step "Configuring project..."
-    local skip_gga_flag="false"
-    [[ "$INSTALL_GGA" == false ]] && skip_gga_flag="true"
-    configure_project "$PROVIDER" "$TARGET_DIR" "$skip_gga_flag" "false"
+    local skip_ga_flag="false"
+    [[ "$INSTALL_GA" == false ]] && skip_ga_flag="true"
+    configure_project "$PROVIDER" "$TARGET_DIR" "$skip_ga_flag" "false" "$PROJECT_TYPE"
     
     show_next_steps "$TARGET_DIR"
 }
@@ -555,17 +575,17 @@ show_next_steps() {
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "${WHITE}Your repository is now configured with:${NC}"
-    [[ "$INSTALL_GGA" == true ]] && echo -e "${CYAN}  • GGA (Guardian Agent)${NC}"
-    [[ "$INSTALL_OPENSPEC" == true ]] && echo -e "${CYAN}  • OpenSpec (Spec-First methodology)${NC}"
+    [[ "$INSTALL_GA" == true ]] && echo -e "${CYAN}  • GA (Guardian Agent)${NC}"
+    [[ "$INSTALL_SDD" == true ]] && echo -e "${CYAN}  • SDD Orchestrator (SDD workflow)${NC}"
     [[ "$INSTALL_VSCODE" == true ]] && echo -e "${CYAN}  • VS Code Extensions${NC}"
     [[ "$INSTALL_HOOKS" == true ]] && echo -e "${CYAN}  • OpenCode Command Hooks${NC}"
     [[ "$INSTALL_BIOME" == true ]] && echo -e "${CYAN}  • Biome Baseline (optional)${NC}"
     echo ""
     echo -e "${YELLOW}Next steps:${NC}"
-    [[ "$INSTALL_GGA" == true ]] && [[ -n "$PROVIDER" ]] && echo -e "${WHITE}  1. Review .gga config (provider: $PROVIDER)${NC}"
+    [[ "$INSTALL_GA" == true ]] && [[ -n "$PROVIDER" ]] && echo -e "${WHITE}  1. Review .ga config (provider: $PROVIDER)${NC}"
     echo -e "${WHITE}  2. Customize AGENTS.MD for your project${NC}"
-    [[ "$INSTALL_OPENSPEC" == true ]] && echo -e "${WHITE}  3. Use OpenSpec to create specifications${NC}"
-    [[ "$INSTALL_GGA" == true ]] && echo -e "${WHITE}  4. Run 'gga review' before committing code${NC}"
+    [[ "$INSTALL_SDD" == true ]] && echo -e "${WHITE}  3. Use SDD Orchestrator for spec-driven development${NC}"
+    [[ "$INSTALL_GA" == true ]] && echo -e "${WHITE}  4. Run 'ga review' before committing code${NC}"
     echo ""
     echo -e "${CYAN}Repository path: $repo_path${NC}"
     echo ""
@@ -586,8 +606,8 @@ if [[ "$INTERACTIVE_MODE" == true ]]; then
     if ! is_interactive_environment; then
         print_warning "Non-interactive environment detected, using automated mode with --all"
         INTERACTIVE_MODE=false
-        INSTALL_GGA=true
-        INSTALL_OPENSPEC=true
+        INSTALL_GA=true
+        INSTALL_SDD=true
         INSTALL_VSCODE=true
     fi
 fi

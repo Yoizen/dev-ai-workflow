@@ -1,4 +1,4 @@
-# GGA Agent Skills
+# GA Agent Skills
 
 This directory contains **Agent Skills** that follow the [Agent Skills](https://agentskills.io) standard. The skills capture domain-specific patterns, conventions, and guardrails so AI assistants (Claude Code, OpenCode, Cursor, etc.) understand project requirements.
 
@@ -78,7 +78,7 @@ description: >
   Trigger: When working in X area or doing Y task.
 license: Apache-2.0
 metadata:
-  author: GGA Team
+  author: Yoizen
   version: "1.0"
   scope: [root, area1, area2]
   auto_invoke:

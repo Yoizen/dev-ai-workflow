@@ -12,7 +12,7 @@ $ErrorActionPreference = "Continue"
 
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Cyan
-Write-Host "  GGA Setup Validation" -ForegroundColor Cyan
+Write-Host "  GA Setup Validation" -ForegroundColor Cyan
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -27,7 +27,7 @@ $success = @()
 # Check commands
 Write-Host "Checking installed tools..." -ForegroundColor Yellow
 
-$commands = @("git", "node", "npm", "gga", "code")
+$commands = @("git", "node", "npm", "ga", "code")
 foreach ($cmd in $commands) {
     try {
         $null = Get-Command $cmd -ErrorAction Stop
@@ -69,7 +69,7 @@ $requiredFiles = @(
     "AGENTS.MD",
     "REVIEW.md",
     ".specify/memory/constitution.md",
-    ".gga"
+    ".ga"
 )
 
 foreach ($file in $requiredFiles) {
@@ -77,8 +77,8 @@ foreach ($file in $requiredFiles) {
     if (Test-Path $path) {
         $success += "[OK] $file exists"
     } else {
-        if ($file -eq ".gga") {
-            $warnings += "[WARN] $file is missing (run 'gga init')"
+        if ($file -eq ".ga") {
+            $warnings += "[WARN] $file is missing (run 'ga init')"
         } else {
             $issues += "[ERROR] $file is missing"
         }
@@ -86,22 +86,22 @@ foreach ($file in $requiredFiles) {
 }
 
 Write-Host ""
-Write-Host "Checking GGA configuration..." -ForegroundColor Yellow
+Write-Host "Checking GA configuration..." -ForegroundColor Yellow
 
-$ggaConfig = Join-Path $RepoPath ".gga"
-if (Test-Path $ggaConfig) {
-    $content = Get-Content $ggaConfig -Raw
+$gaConfig = Join-Path $RepoPath ".ga"
+if (Test-Path $gaConfig) {
+    $content = Get-Content $gaConfig -Raw
     
     if ($content -match "PROVIDER=") {
-        $success += "[OK] .gga has PROVIDER configured"
+        $success += "[OK] .ga has PROVIDER configured"
     } else {
-        $warnings += "[WARN] .gga is missing PROVIDER"
+        $warnings += "[WARN] .ga is missing PROVIDER"
     }
     
     if ($content -match "API_KEY=") {
-        $success += "[OK] .gga has API_KEY configured"
+        $success += "[OK] .ga has API_KEY configured"
     } else {
-        $warnings += "[WARN] .gga is missing API_KEY"
+        $warnings += "[WARN] .ga is missing API_KEY"
     }
 }
 

@@ -1,5 +1,5 @@
 # Update All Repositories
-# Updates GGA installation and optionally repository configs
+# Updates GA installation and optionally repository configs
 
 [CmdletBinding()]
 param(
@@ -15,8 +15,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $PSCommandPath
-$GgaRoot = Split-Path -Parent $ScriptDir
-$GgaInstallPath = Join-Path $env:USERPROFILE ".local\share\yoizen\gga-copilot"
+$GaRoot = Split-Path -Parent $ScriptDir
+$GaInstallPath = Join-Path $env:USERPROFILE ".local\share\yoizen\dev-ai-workflow"
 
 function Write-SuccessMsg { param($msg) Write-Host "[OK] $msg" -ForegroundColor Green }
 function Write-ErrorLog { param($msg) Write-Host "[ERROR] $msg" -ForegroundColor Red }
@@ -31,12 +31,12 @@ Usage: update-all.ps1 [OPTIONS] [repository1] [repository2] ...
 Options:
   -DryRun              Show what would be done without making changes
   -Force               Force update even with uncommitted changes
-  -UpdateToolsOnly     Only update GGA tools (not repository configs)
+  -UpdateToolsOnly     Only update GA tools (not repository configs)
   -UpdateConfigsOnly   Only update repository configs (not tools)
   -Help                Show this help message
 
 Examples:
-  # Update GGA tools only
+  # Update GA tools only
   .\update-all.ps1
 
   # Update specific repositories
@@ -63,16 +63,16 @@ function Get-PackageVersion {
     return $null
 }
 
-# Check if GGA updates are available
-function Test-GgaUpdatesAvailable {
-    param([string]$GgaPath)
+# Check if GA updates are available
+function Test-GaUpdatesAvailable {
+    param([string]$GaPath)
     
-    if (-not (Test-Path (Join-Path $GgaPath ".git"))) {
+    if (-not (Test-Path (Join-Path $GaPath ".git"))) {
         return $false
     }
     
     try {
-        Push-Location $GgaPath
+        Push-Location $GaPath
         
         # Fetch latest from origin quietly
         git fetch origin -q 2>$null
@@ -89,7 +89,7 @@ function Test-GgaUpdatesAvailable {
             return $true
         }
     } catch {
-        if ($PWD.Path -ne $GgaPath) { Pop-Location }
+        if ($PWD.Path -ne $GaPath) { Pop-Location }
     }
     
     return $false
@@ -97,21 +97,21 @@ function Test-GgaUpdatesAvailable {
 
 # Prompt user for update
 function Request-Update {
-    param([string]$GgaPath)
+    param([string]$GaPath)
     
-    $currentVersion = Get-PackageVersion (Join-Path $GgaPath "package.json")
+    $currentVersion = Get-PackageVersion (Join-Path $GaPath "package.json")
     
     Write-Host ""
-    Write-InfoMsg "GGA update available!"
+    Write-InfoMsg "GA update available!"
     if ($currentVersion) {
         Write-Host "  Current version: $currentVersion" -ForegroundColor Gray
     }
     Write-Host ""
     
-    $response = Read-Host "  Update GGA now? [Y/n]"
+    $response = Read-Host "  Update GA now? [Y/n]"
     
     if ($response -match "^[nN]") {
-        Write-InfoMsg "Skipping GGA update"
+        Write-InfoMsg "Skipping GA update"
         return $false
     }
     return $true
@@ -124,7 +124,7 @@ if ($Help) {
 
 Write-Host ""
 Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "  GGA Bulk Update" -ForegroundColor Cyan
+Write-Host "  GA Bulk Update" -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -141,25 +141,25 @@ $Skipped = 0
 
 # Update tools globally
 if (-not $UpdateConfigsOnly) {
-    Write-Step "Checking for GGA updates..."
+    Write-Step "Checking for GA updates..."
     
-    if (-not (Test-Path $GgaInstallPath)) {
-        Write-WarnMsg "GGA not installed at $GgaInstallPath"
+    if (-not (Test-Path $GaInstallPath)) {
+        Write-WarnMsg "GA not installed at $GaInstallPath"
     } else {
-        if (Test-GgaUpdatesAvailable $GgaInstallPath) {
-            $shouldUpdate = $Force -or (Request-Update $GgaInstallPath)
+        if (Test-GaUpdatesAvailable $GaInstallPath) {
+            $shouldUpdate = $Force -or (Request-Update $GaInstallPath)
             
             if ($shouldUpdate) {
-                Write-InfoMsg "Updating GGA..."
+                Write-InfoMsg "Updating GA..."
                 
                 if (-not $DryRun) {
                     try {
-                        Push-Location $GgaInstallPath
+                        Push-Location $GaInstallPath
                         
                         # Check for uncommitted changes
                         $status = git status --porcelain 2>&1
                         if ($status -and -not $Force) {
-                            Write-WarnMsg "GGA has uncommitted changes (use -Force to update anyway)"
+                            Write-WarnMsg "GA has uncommitted changes (use -Force to update anyway)"
                             Pop-Location
                         } else {
                             # Pull latest changes
@@ -170,10 +170,10 @@ if (-not $UpdateConfigsOnly) {
                             
                             if ($LASTEXITCODE -eq 0) {
                                 # Reinstall
-                                & (Join-Path $GgaInstallPath "install.ps1") 2>&1 | Out-Null
+                                & (Join-Path $GaInstallPath "install.ps1") 2>&1 | Out-Null
                                 
-                                $newVersion = Get-PackageVersion (Join-Path $GgaInstallPath "package.json")
-                                Write-SuccessMsg "GGA updated to version $newVersion"
+                                $newVersion = Get-PackageVersion (Join-Path $GaInstallPath "package.json")
+                                Write-SuccessMsg "GA updated to version $newVersion"
                             } else {
                                 Write-WarnMsg "Could not fast-forward, manual update may be needed"
                             }
@@ -181,16 +181,16 @@ if (-not $UpdateConfigsOnly) {
                             Pop-Location
                         }
                     } catch {
-                        Write-ErrorLog "Error updating GGA: $_"
-                        if ($PWD.Path -ne $GgaInstallPath) { Pop-Location }
+                        Write-ErrorLog "Error updating GA: $_"
+                        if ($PWD.Path -ne $GaInstallPath) { Pop-Location }
                     }
                 } else {
-                    Write-InfoMsg "[DRY RUN] Would update GGA"
+                    Write-InfoMsg "[DRY RUN] Would update GA"
                 }
             }
         } else {
-            $currentVersion = Get-PackageVersion (Join-Path $GgaInstallPath "package.json")
-            Write-SuccessMsg "GGA is up to date ($currentVersion)"
+            $currentVersion = Get-PackageVersion (Join-Path $GaInstallPath "package.json")
+            Write-SuccessMsg "GA is up to date ($currentVersion)"
         }
     }
     
@@ -237,8 +237,8 @@ if (-not $UpdateToolsOnly) {
             continue
         }
         
-        if (-not (Test-Path (Join-Path $repo ".gga"))) {
-            Write-WarnMsg "GGA not configured (no .gga file)"
+        if (-not (Test-Path (Join-Path $repo ".ga"))) {
+            Write-WarnMsg "GA not configured (no .ga file)"
             $Skipped++
             continue
         }
@@ -246,7 +246,7 @@ if (-not $UpdateToolsOnly) {
         if (-not $DryRun) {
             $bootstrapScript = Join-Path $ScriptDir "bootstrap.ps1"
             
-            $flags = @("-SkipOpenSpec", "-SkipGGA", "-SkipVSCode", "-Target", $repo)
+            $flags = @("-SkipSDD", "-SkipGA", "-SkipVSCode", "-Target", $repo)
             if ($Force) { $flags += "-Force" }
             
             try {

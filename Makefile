@@ -13,7 +13,7 @@ help:
 	@echo "  test-coverage    Run tests with coverage report"
 	@echo "  lint             Run shellcheck linter"
 	@echo "  clean            Clean cache and temp files"
-	@echo "  install          Install gga locally"
+	@echo "  install          Install ga locally"
 	@echo "  help             Show this help"
 
 # Run all tests
@@ -39,19 +39,19 @@ test-coverage:
 # Lint shell scripts
 lint:
 	@echo "Linting shell scripts..."
-	shellcheck bin/gga lib/*.sh
+	shellcheck bin/ga lib/*.sh
 	@echo "✅ Linting passed"
 
 # Clean temp files and cache
 clean:
 	@echo "Cleaning..."
 	rm -rf coverage/
-	rm -rf ~/.cache/gga/
+	rm -rf ~/.cache/ga/
 	@echo "✅ Cleaned"
 
 # Install locally
 install:
-	@echo "Installing gga locally..."
+	@echo "Installing ga locally..."
 	./install.sh
 
 # Quick check before commit

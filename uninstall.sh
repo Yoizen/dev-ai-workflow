@@ -3,7 +3,7 @@
 # ============================================================================
 # Guardian Agent - Uninstaller
 # ============================================================================
-# Removes the gga CLI tool from your system
+# Removes the ga CLI tool from your system
 # ============================================================================
 
 set -e
@@ -24,8 +24,8 @@ echo ""
 
 # Find and remove binary
 LOCATIONS=(
-  "/usr/local/bin/gga"
-  "$HOME/.local/bin/gga"
+  "/usr/local/bin/ga"
+  "$HOME/.local/bin/ga"
 )
 
 FOUND=false
@@ -38,7 +38,7 @@ for loc in "${LOCATIONS[@]}"; do
 done
 
 # Remove lib directory
-LIB_DIR="$HOME/.local/share/gga"
+LIB_DIR="$HOME/.local/share/ga"
 if [[ -d "$LIB_DIR" ]]; then
   rm -rf "$LIB_DIR"
   echo -e "${GREEN}✅ Removed: $LIB_DIR${NC}"
@@ -46,7 +46,7 @@ if [[ -d "$LIB_DIR" ]]; then
 fi
 
 # Remove global config (optional)
-GLOBAL_CONFIG="$HOME/.config/gga"
+GLOBAL_CONFIG="$HOME/.config/ga"
 if [[ -d "$GLOBAL_CONFIG" ]]; then
   echo ""
   read -p "Remove global config ($GLOBAL_CONFIG)? (y/N): " confirm
@@ -59,10 +59,10 @@ if [[ -d "$GLOBAL_CONFIG" ]]; then
 fi
 
 if [[ "$FOUND" == false ]]; then
-  echo -e "${YELLOW}⚠️  gga was not found on this system${NC}"
+  echo -e "${YELLOW}⚠️  ga was not found on this system${NC}"
 fi
 
 echo ""
-echo -e "${BOLD}Note:${NC} Project-specific configs (.gga) and git hooks"
+echo -e "${BOLD}Note:${NC} Project-specific configs (.ga) and git hooks"
 echo "      were not removed. Remove them manually if needed."
 echo ""

@@ -1,20 +1,20 @@
 #!/bin/bash
 # Quick setup - One command installation
-# Usage: curl -sSL https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.sh | bash
-#    or: curl -sSL https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.sh | bash -s -- --all
+# Usage: curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash
+#    or: curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --all
 #    or: ./quick-setup.sh [OPTIONS]
 
 set -e
 
-REPO_URL="https://github.com/Yoizen/gga-copilot.git"
-INSTALL_DIR="/tmp/gga-bootstrap-$$"
+REPO_URL="https://github.com/Yoizen/dev-ai-workflow.git"
+INSTALL_DIR="/tmp/ga-bootstrap-$$"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-echo -e "${CYAN}🚀 GGA + OpenSpec Quick Setup${NC}"
+echo -e "${CYAN}🚀 GA + SDD Orchestrator Quick Setup${NC}"
 echo ""
 
 cleanup() {

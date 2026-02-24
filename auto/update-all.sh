@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# Update All - Actualiza GGA y configs en todos los repositorios
+# Update All - Actualiza GA y configs en todos los repositorios
 # ============================================================================
 
 set -e
@@ -56,7 +56,7 @@ done
 
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}  GGA Bulk Update${NC}"
+echo -e "${CYAN}  GA Bulk Update${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
@@ -67,7 +67,7 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BOOTSTRAP_SCRIPT="$SCRIPT_DIR/bootstrap.sh"
-GGA_ROOT="$(dirname "$SCRIPT_DIR")"
+GA_ROOT="$(dirname "$SCRIPT_DIR")"
 
 if [ ! -f "$BOOTSTRAP_SCRIPT" ]; then
     print_error "bootstrap.sh not found in $SCRIPT_DIR"
@@ -82,21 +82,21 @@ get_version() {
     fi
 }
 
-# Function to check for GGA updates
-check_gga_updates() {
-    local gga_path="$1"
+# Function to check for GA updates
+check_ga_updates() {
+    local ga_path="$1"
     
-    if [ ! -d "$gga_path/.git" ]; then
+    if [ ! -d "$ga_path/.git" ]; then
         return 1
     fi
     
-    local current_version=$(get_version "$gga_path/package.json")
+    local current_version=$(get_version "$ga_path/package.json")
     
     # Fetch latest from origin quietly
-    (cd "$gga_path" && git fetch origin -q 2>/dev/null) || return 1
+    (cd "$ga_path" && git fetch origin -q 2>/dev/null) || return 1
     
     # Check if we're behind origin
-    local behind=$(cd "$gga_path" && git rev-list HEAD..origin/main --count 2>/dev/null || git rev-list HEAD..origin/master --count 2>/dev/null)
+    local behind=$(cd "$ga_path" && git rev-list HEAD..origin/main --count 2>/dev/null || git rev-list HEAD..origin/master --count 2>/dev/null)
     
     if [ -n "$behind" ] && [ "$behind" -gt 0 ]; then
         return 0  # Updates available
@@ -107,19 +107,19 @@ check_gga_updates() {
 
 # Function to prompt for update
 prompt_update() {
-    local gga_path="$1"
-    local current_version=$(get_version "$gga_path/package.json")
+    local ga_path="$1"
+    local current_version=$(get_version "$ga_path/package.json")
     
     echo ""
-    print_info "GGA update available!"
+    print_info "GA update available!"
     [ -n "$current_version" ] && echo -e "${GRAY}  Current version: $current_version${NC}"
     echo ""
     
-    read -p "$(echo -e "${YELLOW}  Update GGA now? [Y/n]: ${NC}")" response
+    read -p "$(echo -e "${YELLOW}  Update GA now? [Y/n]: ${NC}")" response
     
     case "$response" in
         [nN]|[nN][oO])
-            print_info "Skipping GGA update"
+            print_info "Skipping GA update"
             return 1
             ;;
         *)
@@ -136,18 +136,18 @@ SKIPPED=0
 
 # Update tools globally
 if [ "$UPDATE_CONFIGS_ONLY" != true ]; then
-    print_step "Checking for GGA updates..."
+    print_step "Checking for GA updates..."
     
-    GGA_INSTALL_PATH="$HOME/.local/share/yoizen/gga-copilot"
+    GA_INSTALL_PATH="$HOME/.local/share/yoizen/dev-ai-workflow"
     
-    # Check if GGA update is available
-    if check_gga_updates "$GGA_INSTALL_PATH"; then
-        if [ "$FORCE" = true ] || prompt_update "$GGA_INSTALL_PATH"; then
-            print_info "Updating GGA..."
+    # Check if GA update is available
+    if check_ga_updates "$GA_INSTALL_PATH"; then
+        if [ "$FORCE" = true ] || prompt_update "$GA_INSTALL_PATH"; then
+            print_info "Updating GA..."
             
             if [ "$DRY_RUN" != true ]; then
                 (
-                    cd "$GGA_INSTALL_PATH"
+                    cd "$GA_INSTALL_PATH"
                     # Use --ff-only to avoid merge conflicts, redirect stdin to prevent interactive prompts
                     git pull --ff-only origin main < /dev/null 2>/dev/null || \
                     git pull --ff-only origin master < /dev/null 2>/dev/null || \
@@ -159,14 +159,14 @@ if [ "$UPDATE_CONFIGS_ONLY" != true ]; then
                     fi
                     
                     new_version=$(get_version "package.json")
-                    print_success "GGA updated to version ${new_version:-latest}"
+                    print_success "GA updated to version ${new_version:-latest}"
                 )
             else
-                print_info "[DRY RUN] Would update GGA"
+                print_info "[DRY RUN] Would update GA"
             fi
         fi
     else
-        print_success "GGA is up to date"
+        print_success "GA is up to date"
     fi
     
     echo ""
@@ -212,14 +212,14 @@ if [ "$UPDATE_TOOLS_ONLY" != true ]; then
             continue
         fi
         
-        if [ ! -f "$repo/.gga" ]; then
-            print_warning "GGA not configured (no .gga file)"
+        if [ ! -f "$repo/.ga" ]; then
+            print_warning "GA not configured (no .ga file)"
             ((SKIPPED++))
             continue
         fi
         
         if [ "$DRY_RUN" != true ]; then
-            flags=("--skip-openspec" "--skip-gga" "--skip-vscode")
+            flags=("--skip-sdd" "--skip-ga" "--skip-vscode")
             [ "$FORCE" = true ] && flags+=("--force")
             
             if bash "$BOOTSTRAP_SCRIPT" "${flags[@]}" "$repo" 2>/dev/null; then

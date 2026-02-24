@@ -8,7 +8,7 @@ Biome provides integrated code formatting with consistent style across all proje
 
 ## Formatter Configuration
 
-Example from `GGA Team.this project.WebApi/biome.json`:
+Example from `Yoizen.this project.WebApi/biome.json`:
 
 ```json
 {
@@ -300,13 +300,13 @@ git add -u
 
 ```bash
 # View formatted files in WebApi
-ls GGA Team.this project.WebApi/src/**/*.ts
+ls Yoizen.this project.WebApi/src/**/*.ts
 
 # Check if files are formatted
 npx biome format --check ./src
 
 # View formatter configuration
-cat GGA Team.this project.WebApi/biome.json | grep -A 20 "formatter"
+cat Yoizen.this project.WebApi/biome.json | grep -A 20 "formatter"
 
 # Format errors examples
 npx biome format --write ./src 2>&1 | grep "formatted"

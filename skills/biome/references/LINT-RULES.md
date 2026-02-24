@@ -292,16 +292,16 @@ To customize rules for a project, edit `biome.json`:
 
 ```bash
 # View WebApi biome config
-cat GGA Team.this project.WebApi/biome.json
+cat Yoizen.this project.WebApi/biome.json
 
 # View WebExecutor biome config
-cat GGA Team.this project.WebExecutor/biome.json
+cat Yoizen.this project.WebExecutor/biome.json
 
 # View all biome configs
 find . -name "biome.json" -type f
 
 # Compare configs across projects
-diff GGA Team.this project.WebApi/biome.json GGA Team.this project.WebExecutor/biome.json
+diff Yoizen.this project.WebApi/biome.json Yoizen.this project.WebExecutor/biome.json
 ```
 
 ## Related Skills

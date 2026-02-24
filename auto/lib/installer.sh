@@ -1,11 +1,11 @@
 #!/bin/bash
-# Installation Module for GGA Components
+# Installation Module for GA Components
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-GGA_REPO="https://github.com/Yoizen/gga-copilot.git"
-GGA_DIR="$HOME/.local/share/yoizen/gga-copilot"
+GA_REPO="https://github.com/Yoizen/dev-ai-workflow.git"
+GA_DIR="$HOME/.local/share/yoizen/dev-ai-workflow"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -37,19 +37,19 @@ get_version() {
     fi
 }
 
-# Check if GGA updates are available
-check_gga_updates() {
-    local gga_path="$1"
+# Check if GA updates are available
+check_ga_updates() {
+    local ga_path="$1"
     
-    if [ ! -d "$gga_path/.git" ]; then
+    if [ ! -d "$ga_path/.git" ]; then
         return 1
     fi
     
     # Fetch latest from origin quietly
-    (cd "$gga_path" && git fetch origin -q 2>/dev/null) || return 1
+    (cd "$ga_path" && git fetch origin -q 2>/dev/null) || return 1
     
     # Check if we're behind origin
-    local behind=$(cd "$gga_path" && git rev-list HEAD..origin/main --count 2>/dev/null || git rev-list HEAD..origin/master --count 2>/dev/null)
+    local behind=$(cd "$ga_path" && git rev-list HEAD..origin/main --count 2>/dev/null || git rev-list HEAD..origin/master --count 2>/dev/null)
     
     if [ -n "$behind" ] && [ "$behind" -gt 0 ]; then
         return 0  # Updates available
@@ -59,24 +59,24 @@ check_gga_updates() {
 }
 
 # Prompt user for update
-prompt_gga_update() {
-    local gga_path="$1"
-    local current_version=$(get_version "$gga_path/package.json")
+prompt_ga_update() {
+    local ga_path="$1"
+    local current_version=$(get_version "$ga_path/package.json")
     
     echo ""
-    print_info "GGA update available!"
+    print_info "GA update available!"
     [ -n "$current_version" ] && echo -e "  Current version: $current_version"
     echo ""
     
     # Use /dev/tty to read from terminal even when stdin is redirected
     if [ -t 0 ]; then
         # stdin is a terminal
-        read -p "$(echo -e "${YELLOW}  Update GGA now? [Y/n]: ${NC}")" response
+        read -p "$(echo -e "${YELLOW}  Update GA now? [Y/n]: ${NC}")" response
     else
         # stdin is not a terminal (e.g., piped from curl)
         # Try to read from /dev/tty if available
         if [ -e /dev/tty ]; then
-            read -p "$(echo -e "${YELLOW}  Update GGA now? [Y/n]: ${NC}")" response < /dev/tty
+            read -p "$(echo -e "${YELLOW}  Update GA now? [Y/n]: ${NC}")" response < /dev/tty
         else
             # No way to get user input, default to yes
             response="y"
@@ -85,7 +85,7 @@ prompt_gga_update() {
     
     case "$response" in
         [nN]|[nN][oO])
-            print_info "Skipping GGA update"
+            print_info "Skipping GA update"
             return 1
             ;;
         *)
@@ -94,19 +94,19 @@ prompt_gga_update() {
     esac
 }
 
-install_gga() {
+install_ga() {
     local action="${1:-install}"
     local force="${2:-false}"
     
     case "$action" in
         install)
-            print_info "Installing GGA..."
+            print_info "Installing GA..."
             
-            if [[ -d "$GGA_DIR" ]]; then
-                print_warning "GGA directory already exists"
+            if [[ -d "$GA_DIR" ]]; then
+                print_warning "GA directory already exists"
                 
                 # Check for updates
-                if check_gga_updates "$GGA_DIR"; then
+                if check_ga_updates "$GA_DIR"; then
                     local should_update=false
                     
                     if [[ "$force" == "true" ]]; then
@@ -114,7 +114,7 @@ install_gga() {
                         should_update=true
                     else
                         # Interactive mode: ask user
-                        if prompt_gga_update "$GGA_DIR"; then
+                        if prompt_ga_update "$GA_DIR"; then
                             should_update=true
                         fi
                     fi
@@ -122,102 +122,102 @@ install_gga() {
                     if [[ "$should_update" == "true" ]]; then
                         print_info "Pulling latest changes..."
                         # Safely handle local changes: stash if needed, ff-only update, then pop
-                        if (cd "$GGA_DIR" && \
+                        if (cd "$GA_DIR" && \
                             git fetch origin -q 2>/dev/null && \
                             stash_created=false && \
                             [[ -n "$(git status --porcelain)" ]] && stash_created=true && \
-                            ([[ "$stash_created" == "false" ]] || git stash push -m "Auto-stash before GGA update" --include-untracked -q) && \
+                            ([[ "$stash_created" == "false" ]] || git stash push -m "Auto-stash before GA update" --include-untracked -q) && \
                             (git merge --ff-only origin/main 2>/dev/null || git merge --ff-only origin/master 2>/dev/null) && \
                             ([[ "$stash_created" == "false" ]] || git stash pop -q)); then
                             # Update npm dependencies if package.json exists
-                            if [ -f "$GGA_DIR/package.json" ]; then
-                                (cd "$GGA_DIR" && npm install >/dev/null 2>&1)
+                            if [ -f "$GA_DIR/package.json" ]; then
+                                (cd "$GA_DIR" && npm install >/dev/null 2>&1)
                             fi
                             
-                            new_version=$(get_version "$GGA_DIR/package.json")
-                            print_success "GGA updated to version ${new_version:-latest}"
+                            new_version=$(get_version "$GA_DIR/package.json")
+                            print_success "GA updated to version ${new_version:-latest}"
                         else
                             # Attempt to restore stash if update failed
-                            (cd "$GGA_DIR" && git stash pop -q 2>/dev/null) || true
-                            print_warning "Could not update GGA automatically, you may need to update manually"
+                            (cd "$GA_DIR" && git stash pop -q 2>/dev/null) || true
+                            print_warning "Could not update GA automatically, you may need to update manually"
                         fi
                     else
                         print_info "Continuing with current version"
                     fi
                 else
-                    print_success "GGA is already up to date"
+                    print_success "GA is already up to date"
                 fi
             else
-                print_info "Cloning GGA repository..."
-                mkdir -p "$(dirname "$GGA_DIR")"
-                git clone "$GGA_REPO" "$GGA_DIR" 2>/dev/null || {
-                    print_error "Failed to clone GGA repository"
+                print_info "Cloning GA repository..."
+                mkdir -p "$(dirname "$GA_DIR")"
+                git clone "$GA_REPO" "$GA_DIR" 2>/dev/null || {
+                    print_error "Failed to clone GA repository"
                     return 1
                 }
                 
-                version=$(get_version "$GGA_DIR/package.json")
-                [ -n "$version" ] && print_success "GGA version $version cloned"
+                version=$(get_version "$GA_DIR/package.json")
+                [ -n "$version" ] && print_success "GA version $version cloned"
             fi
             
-            print_info "Installing GGA system-wide..."
-            if (cd "$GGA_DIR" && bash install.sh >/dev/null 2>&1); then
-                print_success "GGA installed successfully"
+            print_info "Installing GA system-wide..."
+            if (cd "$GA_DIR" && bash install.sh >/dev/null 2>&1); then
+                print_success "GA installed successfully"
                 return 0
             else
-                print_warning "GGA installation completed with warnings"
+                print_warning "GA installation completed with warnings"
                 return 0
             fi
             ;;
             
         update)
-            if [[ ! -d "$GGA_DIR" ]]; then
-                print_error "GGA not installed. Use 'install' action first."
+            if [[ ! -d "$GA_DIR" ]]; then
+                print_error "GA not installed. Use 'install' action first."
                 return 1
             fi
             
             print_info "Checking for updates..."
-            if check_gga_updates "$GGA_DIR"; then
-                current_version=$(get_version "$GGA_DIR/package.json")
+            if check_ga_updates "$GA_DIR"; then
+                current_version=$(get_version "$GA_DIR/package.json")
                 [ -n "$current_version" ] && print_info "Current version: $current_version"
                 
-                print_info "Updating GGA..."
+                print_info "Updating GA..."
                 # Safely handle local changes: stash if needed, ff-only update, then pop
-                if (cd "$GGA_DIR" && \
+                if (cd "$GA_DIR" && \
                     git fetch origin -q 2>/dev/null && \
                     stash_created=false && \
                     [[ -n "$(git status --porcelain)" ]] && stash_created=true && \
-                    ([[ "$stash_created" == "false" ]] || git stash push -m "Auto-stash before GGA update" --include-untracked -q) && \
+                    ([[ "$stash_created" == "false" ]] || git stash push -m "Auto-stash before GA update" --include-untracked -q) && \
                     (git merge --ff-only origin/main 2>/dev/null || git merge --ff-only origin/master 2>/dev/null) && \
                     ([[ "$stash_created" == "false" ]] || git stash pop -q)); then
                     # Update npm dependencies
-                    if [ -f "$GGA_DIR/package.json" ]; then
-                        (cd "$GGA_DIR" && npm install >/dev/null 2>&1)
+                    if [ -f "$GA_DIR/package.json" ]; then
+                        (cd "$GA_DIR" && npm install >/dev/null 2>&1)
                     fi
                     
-                    new_version=$(get_version "$GGA_DIR/package.json")
+                    new_version=$(get_version "$GA_DIR/package.json")
                     
-                    print_info "Reinstalling GGA..."
-                    if (cd "$GGA_DIR" && bash install.sh >/dev/null 2>&1); then
-                        print_success "GGA updated to version ${new_version:-latest}"
+                    print_info "Reinstalling GA..."
+                    if (cd "$GA_DIR" && bash install.sh >/dev/null 2>&1); then
+                        print_success "GA updated to version ${new_version:-latest}"
                         return 0
                     else
-                        print_error "Failed to update GGA"
+                        print_error "Failed to update GA"
                         return 1
                     fi
                 else
                     # Attempt to restore stash if update failed
-                    (cd "$GGA_DIR" && git stash pop -q 2>/dev/null) || true
-                    print_warning "Could not update GGA automatically, you may need to update manually"
+                    (cd "$GA_DIR" && git stash pop -q 2>/dev/null) || true
+                    print_warning "Could not update GA automatically, you may need to update manually"
                     return 1
                 fi
             else
-                print_success "GGA is already up to date"
+                print_success "GA is already up to date"
                 return 0
             fi
             ;;
             
         skip)
-            print_info "Skipping GGA installation"
+            print_info "Skipping GA installation"
             return 0
             ;;
             
@@ -228,77 +228,69 @@ install_gga() {
     esac
 }
 
-install_openspec() {
+install_sdd() {
     local action="${1:-install}"
     local target_dir="${2:-.}"
     
+    # Resolve source directory (local repo or GA install)
+    local auto_lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local repo_root="$(cd "$auto_lib_dir/../.." && pwd)"
+    local source_dir="$repo_root/skills"
+    
+    # Fallback to GA install dir if local source not available
+    if [[ ! -d "$source_dir" ]]; then
+        source_dir="$GA_DIR/skills"
+    fi
+    
     case "$action" in
         install)
-            print_info "Installing OpenSpec..."
-
-            if command -v npm >/dev/null 2>&1; then
-                print_info "Installing OpenSpec globally..."
-                if npm install -g @fission-ai/openspec@latest >/dev/null 2>&1; then
-                    print_success "OpenSpec global install completed"
-                else
-                    print_warning "Global OpenSpec install failed (continuing with local install)"
+            print_info "Installing SDD Orchestrator..."
+            
+            # Copy sdd-* skills to the project's skills/ directory
+            local skills_target="$target_dir/skills"
+            mkdir -p "$skills_target"
+            
+            local copied=0
+            for skill_dir in "$source_dir"/sdd-*; do
+                if [[ -d "$skill_dir" ]]; then
+                    local skill_name
+                    skill_name=$(basename "$skill_dir")
+                    # Skip if source and target are the same
+                    if [[ "$skill_dir" -ef "$skills_target/$skill_name" ]]; then
+                        ((copied++)) || true
+                        continue
+                    fi
+                    cp -r "$skill_dir" "$skills_target/$skill_name"
+                    ((copied++)) || true
                 fi
+            done
+            
+            if [[ $copied -gt 0 ]]; then
+                print_success "Copied $copied SDD skills to skills/"
             else
-                print_warning "npm not found; skipping global OpenSpec install"
+                print_warning "No SDD skills found in $source_dir"
             fi
             
-            if [[ ! -f "$target_dir/package.json" ]]; then
-                print_info "Initializing package.json..."
-                (cd "$target_dir" && npm init -y >/dev/null 2>&1)
+            # Copy setup.sh if present
+            if [[ -f "$source_dir/setup.sh" ]] && [[ ! "$source_dir/setup.sh" -ef "$skills_target/setup.sh" ]]; then
+                cp "$source_dir/setup.sh" "$skills_target/setup.sh"
+                chmod +x "$skills_target/setup.sh"
+                print_success "Copied skills/setup.sh"
             fi
             
-            print_info "Installing @fission-ai/openspec..."
-            if (cd "$target_dir" && npm install @fission-ai/openspec --save-dev >/dev/null 2>&1); then
-                print_success "OpenSpec installed successfully"
-                
-                mkdir -p "$target_dir/bin"
-                local openspec_wrapper="$target_dir/bin/openspec"
-                
-                if [[ ! -f "$openspec_wrapper" ]]; then
-                    cat > "$openspec_wrapper" << 'EOF'
-#!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-cd "$PROJECT_ROOT"
-exec npm exec openspec -- "$@"
-EOF
-                    chmod +x "$openspec_wrapper"
-                    print_success "Created openspec wrapper"
-                fi
-                
-                print_info "Initializing OpenSpec structure..."
-                if (cd "$target_dir" && npm exec openspec init -- --tools opencode,github-copilot >/dev/null 2>&1); then
-                    print_success "OpenSpec initialized"
-                else
-                    print_warning "OpenSpec init had issues (may need manual configuration)"
-                fi
-                
-                return 0
-            else
-                print_error "Failed to install OpenSpec"
-                return 1
-            fi
+            print_success "SDD Orchestrator installed successfully"
+            return 0
             ;;
             
         update)
-            print_info "Updating OpenSpec..."
-            if (cd "$target_dir" && npm update @fission-ai/openspec >/dev/null 2>&1); then
-                print_success "OpenSpec updated successfully"
-                return 0
-            else
-                print_error "Failed to update OpenSpec"
-                return 1
-            fi
+            print_info "Updating SDD Orchestrator..."
+            # Re-install to get latest skills
+            install_sdd "install" "$target_dir"
+            return $?
             ;;
             
         skip)
-            print_info "Skipping OpenSpec installation"
+            print_info "Skipping SDD Orchestrator installation"
             return 0
             ;;
             
@@ -347,47 +339,147 @@ install_vscode_extensions() {
     esac
 }
 
+# ============================================================================
+# Project Type Configuration
+# ============================================================================
+
+apply_project_type() {
+    local project_type="${1:-generic}"
+    local target_dir="${2:-.}"
+
+    local auto_lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local types_dir="$auto_lib_dir/../types"
+
+    # Fallback to GA install dir
+    if [[ ! -d "$types_dir" ]]; then
+        types_dir="$GA_DIR/auto/types"
+    fi
+
+    local type_dir="$types_dir/$project_type"
+
+    # Validate type exists
+    if [[ ! -d "$type_dir" ]]; then
+        print_warning "Unknown project type '$project_type'. Available types:"
+        for d in "$types_dir"/*/; do
+            [[ -d "$d" ]] && echo "    - $(basename "$d")"
+        done
+        print_warning "Falling back to 'generic' type."
+        type_dir="$types_dir/generic"
+        [[ ! -d "$type_dir" ]] && return 1
+    fi
+
+    print_info "Applying project type: $project_type"
+
+    # Copy AGENTS.md
+    if [[ -f "$type_dir/AGENTS.md" ]]; then
+        local agents_target="$target_dir/AGENTS.md"
+        if [[ ! -f "$agents_target" ]] || [[ "$1" == "--force" ]]; then
+            cp "$type_dir/AGENTS.md" "$agents_target"
+            print_success "Copied AGENTS.md ($project_type)"
+        else
+            print_warning "AGENTS.md already exists, skipping (use --force to overwrite)"
+        fi
+    fi
+
+    # Copy REVIEW.md
+    if [[ -f "$type_dir/REVIEW.md" ]]; then
+        local review_target="$target_dir/REVIEW.md"
+        if [[ ! -f "$review_target" ]] || [[ "$1" == "--force" ]]; then
+            cp "$type_dir/REVIEW.md" "$review_target"
+            print_success "Copied REVIEW.md ($project_type)"
+        else
+            print_warning "REVIEW.md already exists, skipping (use --force to overwrite)"
+        fi
+    fi
+
+    # Copy skills listed in types.json from the main skills/ directory
+    local types_json="$types_dir/types.json"
+    local main_skills_dir="$auto_lib_dir/../../skills"
+    # Fallback to GA install dir
+    if [[ ! -d "$main_skills_dir" ]]; then
+        main_skills_dir="$GA_DIR/skills"
+    fi
+
+    if [[ -f "$types_json" ]] && command -v python3 &>/dev/null; then
+        local type_skills
+        type_skills=$(python3 -c "
+import json
+try:
+    data = json.load(open('$types_json'))
+    skills = data.get('types', {}).get('$project_type', {}).get('skills', [])
+    print(' '.join(skills))
+except: pass
+" 2>/dev/null)
+        local skills_target="$target_dir/skills"
+        mkdir -p "$skills_target"
+        local copied_skills=0
+        for skill in $type_skills; do
+            local skill_source="$main_skills_dir/$skill"
+            if [[ -d "$skill_source" ]]; then
+                if [[ ! -d "$skills_target/$skill" ]]; then
+                    cp -r "$skill_source" "$skills_target/$skill"
+                    ((copied_skills++)) || true
+                fi
+            fi
+        done
+        [[ $copied_skills -gt 0 ]] && print_success "Copied $copied_skills type skills (${type_skills// /, })"
+    fi
+
+    print_success "Project type '$project_type' applied"
+}
+
+list_project_types() {
+    local auto_lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local types_dir="$auto_lib_dir/../types"
+    local types_json="$types_dir/types.json"
+
+    echo "Available project types:"
+    if [[ -f "$types_json" ]] && command -v python3 &>/dev/null; then
+        python3 -c "
+import json
+data = json.load(open('$types_json'))
+for name, cfg in data.get('types', {}).items():
+    print(f'  {name:<12} - {cfg.get(\"description\", \"\")}')
+print(f'\n  default: {data.get(\"default\", \"generic\")}')
+"
+    else
+        for d in "$types_dir"/*/; do
+            [[ -d "$d" ]] && echo "  - $(basename "$d")"
+        done
+    fi
+}
+
 configure_project() {
     local provider="$1"
     local target_dir="$2"
-    local skip_gga="${3:-false}"
+    local skip_ga="${3:-false}"
     local install_biome="${4:-false}"
-    
+    local project_type="${5:-}"
+
     print_info "Configuring project at $target_dir..."
     
-    # Source files from GGA installation, preferring local source if running from repo
+    # Source files from GA installation, preferring local source if running from repo
     local auto_lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    local gga_repo_root="$(cd "$auto_lib_dir/../.." && pwd)"
-    local gga_install_dir="$GGA_DIR"
+    local ga_repo_root="$(cd "$auto_lib_dir/../.." && pwd)"
+    local ga_install_dir="$GA_DIR"
     
     # Use local repo source if available and contains the files
-    if [[ -f "$gga_repo_root/auto/AGENTS.MD" ]]; then
-        gga_install_dir="$gga_repo_root"
+    if [[ -f "$ga_repo_root/auto/AGENTS.MD" ]]; then
+        ga_install_dir="$ga_repo_root"
     fi
 
-    local auto_dir="$gga_install_dir/auto"
+    local auto_dir="$ga_install_dir/auto"
     
-    # Only copy configuration files, NOT GGA code itself
-    for file in "AGENTS.MD" "REVIEW.md"; do
-        local source="$auto_dir/$file"
-        local target="$target_dir/$file"
-        
-        # Skip if source and target are the same (we're in gga-copilot repo itself)
-        if [[ "$source" -ef "$target" ]]; then
-            print_info "$file already in place"
-            continue
-        fi
-        
-        if [[ -f "$source" ]]; then
-            cp "$source" "$target"
-            print_success "Copied $file"
-        else
-            print_warning "Source file $file not found"
-        fi
-    done
+    # Apply project-type specific AGENTS.md and REVIEW.md
+    if [[ -n "$project_type" ]]; then
+        apply_project_type "$project_type" "$target_dir"
+    else
+        # Fall back to generic type
+        apply_project_type "generic" "$target_dir"
+    fi
     
     # Copy skills directory
-    local skills_source="$gga_install_dir/skills"
+    local skills_source="$ga_install_dir/skills"
     local skills_target="$target_dir/skills"
     
     # Skip if source and target are the same
@@ -401,11 +493,11 @@ configure_project() {
             print_success "Copied skills/ directory"
         fi
     else
-        print_warning "skills/ directory not found in GGA installation"
+        print_warning "skills/ directory not found in GA installation"
     fi
 
     # Copy .github/prompts directory
-    local prompts_source="$gga_install_dir/.github/prompts"
+    local prompts_source="$ga_install_dir/.github/prompts"
     local prompts_target="$target_dir/.github/prompts"
     
     # Skip if source and target are the same
@@ -420,7 +512,7 @@ configure_project() {
             print_success "Copied .github/prompts directory"
         fi
     else
-        print_warning ".github/prompts directory not found in GGA installation"
+        print_warning ".github/prompts directory not found in GA installation"
     fi
 
     # Configure AI skills for Copilot and OpenCode
@@ -512,51 +604,44 @@ configure_project() {
         print_info ".gitignore already up to date"
     fi
     
-    # Update openspec/project.md if it exists
-    if [[ -d "$target_dir/openspec" && -f "$auto_dir/AGENTS.MD" ]]; then
-        local project_md="$target_dir/openspec/project.md"
-        if [[ -f "$project_md" ]]; then
-            cp "$auto_dir/AGENTS.MD" "$project_md"
-            print_success "Updated openspec/project.md with AGENTS.MD"
-        fi
-    fi
+
     
-    # Initialize GGA in the target repository (creates .gga config only)
-    if [[ "$skip_gga" != "true" ]]; then
-        if command -v gga &> /dev/null; then
-            print_info "Initializing GGA in repository..."
-            if (cd "$target_dir" && gga init >/dev/null 2>&1); then
-                print_success "GGA initialized"
+    # Initialize GA in the target repository (creates .ga config only)
+    if [[ "$skip_ga" != "true" ]]; then
+        if command -v ga &> /dev/null; then
+            print_info "Initializing GA in repository..."
+            if (cd "$target_dir" && ga init >/dev/null 2>&1); then
+                print_success "GA initialized"
                 
                 # Apply template if available
-                local gga_config="$target_dir/.gga"
-                local gga_template="$gga_install_dir/.gga.opencode-template"
+                local ga_config="$target_dir/.ga"
+                local ga_template="$ga_install_dir/.ga.opencode-template"
                 
-                if [[ -f "$gga_template" && -f "$gga_config" ]]; then
-                    cp "$gga_template" "$gga_config"
-                    print_success "Applied OpenCode template to .gga"
+                if [[ -f "$ga_template" && -f "$ga_config" ]]; then
+                    cp "$ga_template" "$ga_config"
+                    print_success "Applied OpenCode template to .ga"
                 fi
                 
                 # Set provider if specified
                 if [[ -n "$provider" && "$provider" != "opencode" ]]; then
-                    if [[ -f "$gga_config" ]]; then
-                        sed -i.bak "s|PROVIDER=\"opencode:github-copilot/claude-haiku-4.5\"|PROVIDER=\"$provider\"|" "$gga_config"
-                        rm -f "$gga_config.bak"
+                    if [[ -f "$ga_config" ]]; then
+                        sed -i.bak "s|PROVIDER=\"opencode:github-copilot/claude-haiku-4.5\"|PROVIDER=\"$provider\"|" "$ga_config"
+                        rm -f "$ga_config.bak"
                         print_success "Provider set to: $provider"
                     fi
                 fi
                 
-                print_info "Installing GGA hooks..."
-                if (cd "$target_dir" && gga install >/dev/null 2>&1); then
-                    print_success "GGA hooks installed"
+                print_info "Installing GA hooks..."
+                if (cd "$target_dir" && ga install >/dev/null 2>&1); then
+                    print_success "GA hooks installed"
                 else
-                    print_warning "GGA hook installation had issues"
+                    print_warning "GA hook installation had issues"
                 fi
             else
-                print_warning "Failed to initialize GGA"
+                print_warning "Failed to initialize GA"
             fi
         else
-            print_warning "GGA command not available, skipping initialization"
+            print_warning "GA command not available, skipping initialization"
         fi
     fi
     
@@ -564,10 +649,15 @@ configure_project() {
     if command -v lefthook &> /dev/null; then
         local lefthook_config="$target_dir/lefthook.yml"
         if [[ ! -f "$lefthook_config" ]]; then
+            local effective_type="${project_type:-generic}"
+            local type_lefthook_template="$auto_dir/types/$effective_type/lefthook.yml"
             local lefthook_template="$auto_dir/lefthook.yml.template"
+            if [[ -f "$type_lefthook_template" ]]; then
+                lefthook_template="$type_lefthook_template"
+            fi
             if [[ -f "$lefthook_template" ]]; then
                 cp "$lefthook_template" "$lefthook_config"
-                print_success "Created lefthook.yml"
+                print_success "Created lefthook.yml ($effective_type)"
                 
                 print_info "Installing Lefthook hooks..."
                 if (cd "$target_dir" && lefthook install >/dev/null 2>&1); then
@@ -585,7 +675,15 @@ configure_project() {
         print_info "Lefthook not installed, skipping hook configuration"
     fi
 
-    if [[ "$install_biome" == "true" ]]; then
+    local auto_biome_for_type="false"
+    if [[ "$project_type" == "nest" ]]; then
+        auto_biome_for_type="true"
+        if [[ "$install_biome" != "true" ]]; then
+            print_info "Auto-enabling Biome baseline for project type: nest"
+        fi
+    fi
+
+    if [[ "$install_biome" == "true" ]] || [[ "$auto_biome_for_type" == "true" ]]; then
         configure_biome_baseline "$target_dir"
     fi
     
@@ -831,7 +929,7 @@ install_hooks() {
             # Determine source directory (prefer local source if running from repo/temp)
             local repo_root="$(cd "$BOOTSTRAP_DIR/.." && pwd)"
             local local_source="$repo_root/hooks/opencodehooks"
-            local installed_source="$GGA_DIR/hooks/opencodehooks"
+            local installed_source="$GA_DIR/hooks/opencodehooks"
             local hooks_source=""
 
             if [[ -d "$local_source" ]]; then
@@ -1064,30 +1162,30 @@ update_all_components() {
     
     source "$SCRIPT_DIR/detector.sh"
     
-    local gga_info=$(detect_gga)
-    IFS='|' read -r gga_status gga_current gga_latest <<< "$gga_info"
+    local ga_info=$(detect_ga)
+    IFS='|' read -r ga_status ga_current ga_latest <<< "$ga_info"
     
-    if [[ "$gga_status" == "OUTDATED" ]]; then
-        if install_gga "update"; then
+    if [[ "$ga_status" == "OUTDATED" ]]; then
+        if install_ga "update"; then
             ((updated++))
         else
             ((failed++))
         fi
-    elif [[ "$gga_status" == "UP_TO_DATE" ]]; then
-        print_info "GGA is up to date ($gga_current)"
+    elif [[ "$ga_status" == "UP_TO_DATE" ]]; then
+        print_info "GA is up to date ($ga_current)"
     fi
     
-    local openspec_info=$(detect_openspec)
-    IFS='|' read -r openspec_status openspec_current openspec_latest <<< "$openspec_info"
+    local sdd_info=$(detect_sdd "$target_dir")
+    IFS='|' read -r sdd_status sdd_current sdd_total <<< "$sdd_info"
     
-    if [[ "$openspec_status" == "OUTDATED" ]]; then
-        if install_openspec "update" "$target_dir"; then
+    if [[ "$sdd_status" == "NOT_INSTALLED" ]] || [[ "$sdd_status" == "PARTIAL" ]]; then
+        if install_sdd "update" "$target_dir"; then
             ((updated++))
         else
             ((failed++))
         fi
-    elif [[ "$openspec_status" == "UP_TO_DATE" ]]; then
-        print_info "OpenSpec is up to date ($openspec_current)"
+    elif [[ "$sdd_status" == "INSTALLED" ]]; then
+        print_info "SDD Orchestrator is up to date ($sdd_current skills)"
     fi
     
     if [[ $updated -gt 0 ]]; then
@@ -1104,11 +1202,11 @@ update_all_components() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     case "${1:-help}" in
-        install-gga)
-            install_gga "install"
+        install-ga)
+            install_ga "install"
             ;;
-        install-openspec)
-            install_openspec "install" "${2:-.}"
+        install-sdd)
+            install_sdd "install" "${2:-.}"
             ;;
         install-vscode)
             install_vscode_extensions "install"
@@ -1123,7 +1221,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             update_all_components "${2:-.}"
             ;;
         *)
-            echo "Usage: $0 {install-gga|install-openspec|install-vscode|install-biome|configure|update-all}"
+            echo "Usage: $0 {install-ga|install-sdd|install-vscode|install-biome|configure|update-all}"
             exit 1
             ;;
     esac

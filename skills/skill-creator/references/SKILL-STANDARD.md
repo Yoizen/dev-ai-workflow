@@ -18,9 +18,9 @@ Every skill lives under `skills/` and must include:
 ---
 name: skill-name
 description: Short description of what it does and when to invoke it.
-license: MIT
+
 metadata:
-  author: GGA Team
+  author: Yoizen
   version: "1.0"
   scope: [root, api, backend, frontend]
   auto_invoke:

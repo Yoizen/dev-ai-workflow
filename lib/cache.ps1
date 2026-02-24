@@ -7,7 +7,7 @@
 # ============================================================================
 
 function Get-CacheDir {
-    $cache_base = "$env:USERPROFILE\.cache\gga"
+    $cache_base = "$env:USERPROFILE\.cache\ga"
     
     if (-not (Test-Path $cache_base)) {
         New-Item -ItemType Directory -Path $cache_base -Force | Out-Null

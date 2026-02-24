@@ -1,14 +1,14 @@
 # Quick Setup - One command installation
-# Usage: irm https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.ps1 | iex
-#    or: & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.ps1))) -All
+# Usage: irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1 | iex
+#    or: & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -All
 #    or: powershell -ExecutionPolicy Bypass -File quick-setup.ps1 [OPTIONS]
 
 $ErrorActionPreference = "Stop"
 
-$REPO_URL = "https://github.com/Yoizen/gga-copilot.git"
-$INSTALL_DIR = Join-Path $env:TEMP "gga-bootstrap-$(Get-Random)"
+$REPO_URL = "https://github.com/Yoizen/dev-ai-workflow.git"
+$INSTALL_DIR = Join-Path $env:TEMP "ga-bootstrap-$(Get-Random)"
 
-Write-Host "[>] GGA + OpenSpec Quick Setup" -ForegroundColor Cyan
+Write-Host "[>] GA + SDD Orchestrator Quick Setup" -ForegroundColor Cyan
 Write-Host ""
 
 function Cleanup {

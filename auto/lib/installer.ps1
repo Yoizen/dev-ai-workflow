@@ -1,84 +1,84 @@
-# Installation Module for GGA Components - PowerShell
+# Installation Module for GA Components - PowerShell
 
 $ErrorActionPreference = "SilentlyContinue"
 
-$GGA_REPO = "https://github.com/Yoizen/gga-copilot.git"
-$GGA_DIR = "$env:USERPROFILE\.local\share\yoizen\gga-copilot"
+$GA_REPO = "https://github.com/Yoizen/dev-ai-workflow.git"
+$GA_DIR = "$env:USERPROFILE\.local\share\yoizen\dev-ai-workflow"
 
 function Write-Success { param($msg) Write-Host "[OK] $msg" -ForegroundColor Green }
 function Write-ErrorMsg { param($msg) Write-Host "[X] $msg" -ForegroundColor Red }
 function Write-WarningMsg { param($msg) Write-Host "[!] $msg" -ForegroundColor Yellow }
 function Write-InfoMsg { param($msg) Write-Host "[i] $msg" -ForegroundColor Cyan }
 
-function Install-Gga {
+function Install-Ga {
     param(
         [string]$Action = "install"
     )
     
     switch ($Action) {
         "install" {
-            Write-InfoMsg "Installing GGA..."
+            Write-InfoMsg "Installing GA..."
             
-            if (Test-Path $GGA_DIR) {
-                Write-WarningMsg "GGA directory already exists, pulling latest changes..."
-                Push-Location $GGA_DIR
+            if (Test-Path $GA_DIR) {
+                Write-WarningMsg "GA directory already exists, pulling latest changes..."
+                Push-Location $GA_DIR
                 git fetch origin --quiet 2>&1 | Out-Null
                 git pull origin main --quiet 2>&1 | Out-Null
                 Pop-Location
             } else {
-                Write-InfoMsg "Cloning GGA repository..."
-                $parentDir = Split-Path -Parent $GGA_DIR
+                Write-InfoMsg "Cloning GA repository..."
+                $parentDir = Split-Path -Parent $GA_DIR
                 New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
-                git clone $GGA_REPO $GGA_DIR --quiet 2>&1 | Out-Null
+                git clone $GA_REPO $GA_DIR --quiet 2>&1 | Out-Null
                 
-                if (-not (Test-Path $GGA_DIR)) {
-                    Write-ErrorMsg "Failed to clone GGA repository"
+                if (-not (Test-Path $GA_DIR)) {
+                    Write-ErrorMsg "Failed to clone GA repository"
                     return $false
                 }
             }
             
-            Write-InfoMsg "Installing GGA system-wide..."
-            Push-Location $GGA_DIR
+            Write-InfoMsg "Installing GA system-wide..."
+            Push-Location $GA_DIR
             & .\install.ps1 2>&1 | Out-Null
             Pop-Location
             
-            if ($LASTEXITCODE -eq 0 -or (Test-Path $GGA_DIR)) {
-                Write-Success "GGA installed successfully"
+            if ($LASTEXITCODE -eq 0 -or (Test-Path $GA_DIR)) {
+                Write-Success "GA installed successfully"
                 return $true
             } else {
-                Write-WarningMsg "GGA installation completed with warnings"
+                Write-WarningMsg "GA installation completed with warnings"
                 return $true
             }
         }
         
         "update" {
-            if (-not (Test-Path $GGA_DIR)) {
-                Write-ErrorMsg "GGA not installed. Use 'install' action first."
+            if (-not (Test-Path $GA_DIR)) {
+                Write-ErrorMsg "GA not installed. Use 'install' action first."
                 return $false
             }
             
-            Write-InfoMsg "Updating GGA..."
-            Push-Location $GGA_DIR
+            Write-InfoMsg "Updating GA..."
+            Push-Location $GA_DIR
             git fetch origin --quiet 2>&1 | Out-Null
             git pull origin main --quiet 2>&1 | Out-Null
             Pop-Location
             
-            Write-InfoMsg "Reinstalling GGA..."
-            Push-Location $GGA_DIR
+            Write-InfoMsg "Reinstalling GA..."
+            Push-Location $GA_DIR
             & .\install.ps1 2>&1 | Out-Null
             Pop-Location
             
             if ($LASTEXITCODE -eq 0) {
-                Write-Success "GGA updated successfully"
+                Write-Success "GA updated successfully"
                 return $true
             } else {
-                Write-ErrorMsg "Failed to update GGA"
+                Write-ErrorMsg "Failed to update GA"
                 return $false
             }
         }
         
         "skip" {
-            Write-InfoMsg "Skipping GGA installation"
+            Write-InfoMsg "Skipping GA installation"
             return $true
         }
         
@@ -89,98 +89,78 @@ function Install-Gga {
     }
 }
 
-function Install-Openspec {
+function Install-SDD {
     param(
         [string]$Action = "install",
         [string]$TargetDir = "."
     )
     
+    # Resolve source directory (local repo or GA install)
+    $scriptParent = Split-Path -Parent $PSScriptRoot  # lib -> auto
+    $repoRoot = Split-Path -Parent $scriptParent       # auto -> repo root
+    $sourceDir = Join-Path $repoRoot "skills"
+    
+    # Fallback to GA install dir if local source not available
+    if (-not (Test-Path $sourceDir)) {
+        $sourceDir = Join-Path $GA_DIR "skills"
+    }
+    
     switch ($Action) {
         "install" {
-            Write-InfoMsg "Installing OpenSpec..."
-
-            if (Get-Command npm -ErrorAction SilentlyContinue) {
-                Write-InfoMsg "Installing OpenSpec globally..."
-                npm install -g "@fission-ai/openspec@latest" 2>&1 | Out-Null
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Success "OpenSpec global install completed"
-                } else {
-                    Write-WarningMsg "Global OpenSpec install failed (continuing with local install)"
+            Write-InfoMsg "Installing SDD Orchestrator..."
+            
+            # Copy sdd-* skills to the project's skills/ directory
+            $skillsTarget = Join-Path $TargetDir "skills"
+            New-Item -ItemType Directory -Path $skillsTarget -Force | Out-Null
+            
+            $copied = 0
+            $sddSkills = Get-ChildItem -Path $sourceDir -Directory -Filter "sdd-*" -ErrorAction SilentlyContinue
+            
+            foreach ($skillDir in $sddSkills) {
+                $destPath = Join-Path $skillsTarget $skillDir.Name
+                # Skip if source and target are the same
+                $srcNorm = [System.IO.Path]::GetFullPath($skillDir.FullName)
+                $dstNorm = [System.IO.Path]::GetFullPath($destPath)
+                if ($srcNorm -eq $dstNorm) {
+                    $copied++
+                    continue
                 }
+                Copy-Item $skillDir.FullName $destPath -Recurse -Force
+                $copied++
+            }
+            
+            if ($copied -gt 0) {
+                Write-Success "Copied $copied SDD skills to skills/"
             } else {
-                Write-WarningMsg "npm not found; skipping global OpenSpec install"
+                Write-WarningMsg "No SDD skills found in $sourceDir"
             }
-            
-            if (-not (Test-Path "$TargetDir\package.json")) {
-                Write-InfoMsg "Initializing package.json..."
-                Push-Location $TargetDir
-                npm init -y 2>&1 | Out-Null
-                Pop-Location
-            }
-            
-            Write-InfoMsg "Installing @fission-ai/openspec..."
-            Push-Location $TargetDir
-            npm install "@fission-ai/openspec" --save-dev 2>&1 | Out-Null
-            Pop-Location
-            
-            if ($LASTEXITCODE -eq 0) {
-                Write-Success "OpenSpec installed successfully"
-                
-                $binDir = Join-Path $TargetDir "bin"
-                New-Item -ItemType Directory -Path $binDir -Force | Out-Null
-                
-                $wrapperPath = Join-Path $binDir "openspec.ps1"
-                
-                if (-not (Test-Path $wrapperPath)) {
-                    $wrapperContent = @'
-$ProjectRoot = Split-Path -Parent $PSScriptRoot
 
-Push-Location $ProjectRoot
-try {
-    & npm exec openspec -- @args
-} finally {
-    Pop-Location
-}
-'@
-                    Set-Content -Path $wrapperPath -Value $wrapperContent
-                    Write-Success "Created openspec wrapper"
-                }
-                
-                Write-InfoMsg "Initializing OpenSpec structure..."
-                Push-Location $TargetDir
-                npm exec openspec init -- --tools opencode,github-copilot 2>&1 | Out-Null
-                Pop-Location
-                
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Success "OpenSpec initialized"
-                } else {
-                    Write-WarningMsg "OpenSpec init had issues (may need manual configuration)"
-                }
-                
-                return $true
-            } else {
-                Write-ErrorMsg "Failed to install OpenSpec"
-                return $false
+            # Copy setup scripts for AI skills bootstrap parity with bash installer
+            $setupSource = Join-Path $sourceDir "setup.sh"
+            $setupTarget = Join-Path $skillsTarget "setup.sh"
+            if ((Test-Path $setupSource) -and -not ([System.IO.Path]::GetFullPath($setupSource) -eq [System.IO.Path]::GetFullPath($setupTarget))) {
+                Copy-Item -Path $setupSource -Destination $setupTarget -Force
+                Write-Success "Copied skills/setup.sh"
             }
+            $setupPsSource = Join-Path $sourceDir "setup.ps1"
+            $setupPsTarget = Join-Path $skillsTarget "setup.ps1"
+            if ((Test-Path $setupPsSource) -and -not ([System.IO.Path]::GetFullPath($setupPsSource) -eq [System.IO.Path]::GetFullPath($setupPsTarget))) {
+                Copy-Item -Path $setupPsSource -Destination $setupPsTarget -Force
+                Write-Success "Copied skills/setup.ps1"
+            }
+            
+            Write-Success "SDD Orchestrator installed successfully"
+            return $true
         }
         
         "update" {
-            Write-InfoMsg "Updating OpenSpec..."
-            Push-Location $TargetDir
-            npm update "@fission-ai/openspec" 2>&1 | Out-Null
-            Pop-Location
-            
-            if ($LASTEXITCODE -eq 0) {
-                Write-Success "OpenSpec updated successfully"
-                return $true
-            } else {
-                Write-ErrorMsg "Failed to update OpenSpec"
-                return $false
-            }
+            Write-InfoMsg "Updating SDD Orchestrator..."
+            # Re-install to get latest skills
+            return (Install-SDD -Action "install" -TargetDir $TargetDir)
         }
         
         "skip" {
-            Write-InfoMsg "Skipping OpenSpec installation"
+            Write-InfoMsg "Skipping SDD Orchestrator installation"
             return $true
         }
         
@@ -238,8 +218,9 @@ function Set-ProjectConfiguration {
     param(
         [string]$Provider = "opencode",
         [string]$TargetDir = ".",
-        [bool]$SkipGga = $false,
-        [bool]$InstallBiome = $false
+        [bool]$SkipGa = $false,
+        [bool]$InstallBiome = $false,
+        [string]$ProjectType = ""
     )
     
     Write-InfoMsg "Configuring project at $TargetDir..."
@@ -247,47 +228,9 @@ function Set-ProjectConfiguration {
     $autoDir = Split-Path -Parent $PSScriptRoot
     $projectRoot = Split-Path -Parent $autoDir
     
-    $files = @("AGENTS.MD", "REVIEW.md")
-    
-    foreach ($file in $files) {
-        $source = Join-Path $autoDir $file
-        $target = Join-Path $TargetDir $file
-        
-        $sourceNorm = [System.IO.Path]::GetFullPath($source)
-        $targetNorm = [System.IO.Path]::GetFullPath($target)
-        
-        if ($sourceNorm -eq $targetNorm) {
-            Write-InfoMsg "$file already in place"
-            continue
-        }
-        
-        if (Test-Path $source) {
-            Copy-Item $source $target -Force
-            Write-Success "Copied $file"
-        } else {
-            Write-WarningMsg "Source file $file not found"
-        }
-    }
-    
-    $skillsSource = Join-Path $projectRoot "skills"
-    $skillsTarget = Join-Path $TargetDir "skills"
-    
-    $skillsSourceNorm = [System.IO.Path]::GetFullPath($skillsSource)
-    $skillsTargetNorm = [System.IO.Path]::GetFullPath($skillsTarget)
-    
-    if ($skillsSourceNorm -eq $skillsTargetNorm) {
-        Write-InfoMsg "skills/ directory already in place"
-    } elseif (Test-Path $skillsSource) {
-        if (Test-Path $skillsTarget) {
-            Write-WarningMsg "skills/ directory already exists in target, skipping copy"
-        } else {
-            Copy-Item $skillsSource $skillsTarget -Recurse -Force
-            Write-Success "Copied skills/ directory"
-        }
-    } else {
-        Write-WarningMsg "skills/ directory not found in source"
-    }
-    
+    # Apply type-specific AGENTS.md, REVIEW.md and skills (falls back to generic)
+    Apply-ProjectType -ProjectType $ProjectType -TargetDir $TargetDir
+
     $promptsSource = Join-Path $projectRoot ".github\prompts"
     $promptsTarget = Join-Path $TargetDir ".github\prompts"
     
@@ -309,59 +252,51 @@ function Set-ProjectConfiguration {
         Write-WarningMsg ".github/prompts directory not found in source"
     }
     
-    $openspecDir = Join-Path $TargetDir "openspec"
-    $agentsMdSource = Join-Path $autoDir "AGENTS.MD"
-    if ((Test-Path $openspecDir) -and (Test-Path $agentsMdSource)) {
-        $projectMd = Join-Path $openspecDir "project.md"
-        if (Test-Path $projectMd) {
-            Copy-Item $agentsMdSource $projectMd -Force
-            Write-Success "Updated openspec/project.md with AGENTS.MD"
-        }
-    }
+
     
-    if (-not $SkipGga) {
-        $ggaCmd = Get-Command gga -ErrorAction SilentlyContinue
-        if ($ggaCmd) {
-            Write-InfoMsg "Initializing GGA in repository..."
+    if (-not $SkipGa) {
+        $gaCmd = Get-Command ga -ErrorAction SilentlyContinue
+        if ($gaCmd) {
+            Write-InfoMsg "Initializing GA in repository..."
             Push-Location $TargetDir
-            & gga init 2>&1 | Out-Null
+            & ga init 2>&1 | Out-Null
             Pop-Location
             
             if ($LASTEXITCODE -eq 0) {
-                Write-Success "GGA initialized"
+                Write-Success "GA initialized"
                 
-                $ggaConfig = Join-Path $TargetDir ".gga"
-                $ggaTemplate = Join-Path $projectRoot ".gga.opencode-template"
+                $gaConfig = Join-Path $TargetDir ".ga"
+                $gaTemplate = Join-Path $projectRoot ".ga.opencode-template"
                 
-                if ((Test-Path $ggaTemplate) -and (Test-Path $ggaConfig)) {
-                    Copy-Item $ggaTemplate $ggaConfig -Force
-                    Write-Success "Applied OpenCode template to .gga"
+                if ((Test-Path $gaTemplate) -and (Test-Path $gaConfig)) {
+                    Copy-Item $gaTemplate $gaConfig -Force
+                    Write-Success "Applied OpenCode template to .ga"
                 }
                 
                 if ($Provider -and $Provider -ne "opencode") {
-                    if (Test-Path $ggaConfig) {
-                        $content = Get-Content $ggaConfig -Raw
+                    if (Test-Path $gaConfig) {
+                        $content = Get-Content $gaConfig -Raw
                         $content = $content -replace 'PROVIDER="opencode:github-copilot/claude-haiku-4.5"', "PROVIDER=`"$Provider`""
-                        Set-Content -Path $ggaConfig -Value $content
+                        Set-Content -Path $gaConfig -Value $content
                         Write-Success "Provider set to: $Provider"
                     }
                 }
                 
-                Write-InfoMsg "Installing GGA hooks..."
+                Write-InfoMsg "Installing GA hooks..."
                 Push-Location $TargetDir
-                & gga install 2>&1 | Out-Null
+                & ga install 2>&1 | Out-Null
                 Pop-Location
                 
                 if ($LASTEXITCODE -eq 0) {
-                    Write-Success "GGA hooks installed"
+                    Write-Success "GA hooks installed"
                 } else {
-                    Write-WarningMsg "GGA hook installation had issues"
+                    Write-WarningMsg "GA hook installation had issues"
                 }
             } else {
-                Write-WarningMsg "Failed to initialize GGA"
+                Write-WarningMsg "Failed to initialize GA"
             }
         } else {
-            Write-WarningMsg "GGA command not available, skipping initialization"
+            Write-WarningMsg "GA command not available, skipping initialization"
         }
     }
     
@@ -369,10 +304,16 @@ function Set-ProjectConfiguration {
     if ($lefthookCmd) {
         $lefthookConfig = Join-Path $TargetDir "lefthook.yml"
         if (-not (Test-Path $lefthookConfig)) {
-            $lefthookTemplate = Join-Path $autoDir "lefthook.yml.template"
+            $effectiveType = if ($ProjectType) { $ProjectType } else { "generic" }
+            $typeLefthookTemplate = Join-Path $autoDir "types\$effectiveType\lefthook.yml"
+            $lefthookTemplate = if (Test-Path $typeLefthookTemplate) {
+                $typeLefthookTemplate
+            } else {
+                Join-Path $autoDir "lefthook.yml.template"
+            }
             if (Test-Path $lefthookTemplate) {
                 Copy-Item $lefthookTemplate $lefthookConfig -Force
-                Write-Success "Created lefthook.yml"
+                Write-Success "Created lefthook.yml ($effectiveType)"
                 
                 Write-InfoMsg "Installing Lefthook hooks..."
                 Push-Location $TargetDir
@@ -466,8 +407,58 @@ function Set-ProjectConfiguration {
         Write-InfoMsg ".gitignore already up to date"
     }
 
-    if ($InstallBiome) {
+    $autoBiomeForType = ($ProjectType -eq "nest")
+    if ($autoBiomeForType -and -not $InstallBiome) {
+        Write-InfoMsg "Auto-enabling Biome baseline for project type: nest"
+    }
+
+    if ($InstallBiome -or $autoBiomeForType) {
         Set-BiomeBaseline -TargetDir $TargetDir | Out-Null
+    }
+
+    # Configure AI skills for Copilot + OpenCode
+    $skillsSetupPs = Join-Path $TargetDir "skills\setup.ps1"
+    $skillsSetup = Join-Path $TargetDir "skills\setup.sh"
+    if (-not (Test-Path $skillsSetupPs) -and -not (Test-Path $skillsSetup)) {
+        $fallbackSetup = Join-Path $projectRoot "skills\setup.sh"
+        $fallbackSetupPs = Join-Path $projectRoot "skills\setup.ps1"
+        if ((Test-Path $fallbackSetupPs) -and (Test-Path (Join-Path $TargetDir "skills"))) {
+            Copy-Item -Path $fallbackSetupPs -Destination $skillsSetupPs -Force
+            Write-Success "Copied skills/setup.ps1"
+        }
+        if ((Test-Path $fallbackSetup) -and (Test-Path (Join-Path $TargetDir "skills"))) {
+            Copy-Item -Path $fallbackSetup -Destination $skillsSetup -Force
+            Write-Success "Copied skills/setup.sh"
+        }
+    }
+
+    if (Test-Path $skillsSetupPs) {
+        Write-InfoMsg "Configuring AI skills (Copilot + OpenCode) via setup.ps1..."
+        Push-Location $TargetDir
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $skillsSetupPs -Copilot -Opencode 2>&1 | Out-Null
+        Pop-Location
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "AI skills configured for Copilot and OpenCode"
+        } else {
+            Write-WarningMsg "AI skills setup had issues"
+        }
+    } elseif (Test-Path $skillsSetup) {
+        $bashCmd = Get-Command bash -ErrorAction SilentlyContinue
+        if ($bashCmd) {
+            Write-InfoMsg "Configuring AI skills (Copilot + OpenCode) via setup.sh..."
+            Push-Location $TargetDir
+            & bash $skillsSetup --copilot --opencode 2>&1 | Out-Null
+            Pop-Location
+            if ($LASTEXITCODE -eq 0) {
+                Write-Success "AI skills configured for Copilot and OpenCode"
+            } else {
+                Write-WarningMsg "AI skills setup had issues"
+            }
+        } else {
+            Write-InfoMsg "bash not found, skipping skills/setup.sh auto-configuration"
+        }
+    } else {
+        Write-WarningMsg "skills/setup.ps1/setup.sh not found, skipping AI skills setup"
     }
 
     $vscodeDir = Join-Path $TargetDir ".vscode"
@@ -627,14 +618,19 @@ function Set-BiomeBaseline {
         if ($pkgRaw -match '"@biomejs/biome"') {
                 Write-InfoMsg "@biomejs/biome already present in package.json"
         } else {
-                Write-InfoMsg "Installing @biomejs/biome..."
-                Push-Location $TargetDir
-                npm install --save-dev "@biomejs/biome" 2>&1 | Out-Null
-                Pop-Location
-                if ($LASTEXITCODE -eq 0) {
-                        Write-Success "Installed @biomejs/biome"
+                $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+                if (-not $npmCmd) {
+                        Write-WarningMsg "npm not found, skipping @biomejs/biome automatic install"
                 } else {
-                        Write-WarningMsg "Failed to install @biomejs/biome automatically"
+                        Write-InfoMsg "Installing @biomejs/biome..."
+                        Push-Location $TargetDir
+                        & npm install --save-dev "@biomejs/biome" 2>&1 | Out-Null
+                        Pop-Location
+                        if ($LASTEXITCODE -eq 0) {
+                                Write-Success "Installed @biomejs/biome"
+                        } else {
+                                Write-WarningMsg "Failed to install @biomejs/biome automatically"
+                        }
                 }
         }
 
@@ -720,7 +716,7 @@ function Install-Hooks {
             $scriptParent = Split-Path -Parent $PSScriptRoot # lib
             $repoRoot = Split-Path -Parent $scriptParent     # auto/.. = root
             $localSource = Join-Path $repoRoot "hooks\opencodehooks"
-            $installedSource = Join-Path $GGA_DIR "hooks\opencodehooks"
+            $installedSource = Join-Path $GA_DIR "hooks\opencodehooks"
             $hooksSource = ""
 
             if (Test-Path $localSource) {
@@ -971,34 +967,39 @@ function Update-AllComponents {
     $detectorScript = Join-Path $PSScriptRoot "detector.ps1"
     . $detectorScript
     
-    $ggaInfo = Detect-Gga
-    $ggaParts = $ggaInfo -split '\|'
-    $ggaStatus = $ggaParts[0]
-    $ggaCurrent = $ggaParts[1]
+    $gaInfo = Detect-Ga
+    $gaParts = $gaInfo -split '\|'
+    $gaStatus = $gaParts[0]
+    $gaCurrent = $gaParts[1]
     
-    if ($ggaStatus -eq "OUTDATED") {
-        if (Install-Gga -Action "update") {
+    if ($gaStatus -eq "OUTDATED") {
+        if (Install-Ga -Action "update") {
             $updated++
         } else {
             $failed++
         }
-    } elseif ($ggaStatus -eq "UP_TO_DATE") {
-        Write-InfoMsg "GGA is up to date ($ggaCurrent)"
+    } elseif ($gaStatus -eq "UP_TO_DATE") {
+        Write-InfoMsg "GA is up to date ($gaCurrent)"
     }
     
-    $openspecInfo = Detect-Openspec
-    $openspecParts = $openspecInfo -split '\|'
-    $openspecStatus = $openspecParts[0]
-    $openspecCurrent = $openspecParts[1]
+    $sddInfo = Detect-SDD -TargetDir $TargetDir
+    $sddParts = $sddInfo -split '\|'
+    $sddStatus = $sddParts[0]
+    $sddCurrent = $sddParts[1]
     
-    if ($openspecStatus -eq "OUTDATED") {
-        if (Install-Openspec -Action "update" -TargetDir $TargetDir) {
+    if ($sddStatus -eq "NOT_INSTALLED" -or $sddStatus -eq "PARTIAL") {
+        if (Install-SDD -Action "update" -TargetDir $TargetDir) {
             $updated++
         } else {
             $failed++
         }
-    } elseif ($openspecStatus -eq "UP_TO_DATE") {
-        Write-InfoMsg "OpenSpec is up to date ($openspecCurrent)"
+    } elseif ($sddStatus -eq "INSTALLED") {
+        Write-InfoMsg "Refreshing SDD Orchestrator skills ($sddCurrent detected)..."
+        if (Install-SDD -Action "update" -TargetDir $TargetDir) {
+            $updated++
+        } else {
+            $failed++
+        }
     }
     
     if ($updated -gt 0) {
@@ -1013,16 +1014,145 @@ function Update-AllComponents {
     return $true
 }
 
+# ---------------------------------------------------------------------------
+# Project Type System
+# ---------------------------------------------------------------------------
+
+function Apply-ProjectType {
+    param(
+        [string]$ProjectType = "",
+        [string]$TargetDir = ".",
+        [switch]$Force
+    )
+
+    $autoDir = Split-Path -Parent $PSScriptRoot
+    $typesDir = Join-Path $autoDir "types"
+    $projectRoot = Split-Path -Parent $autoDir
+
+    # Resolve type (fall back to generic)
+    if (-not $ProjectType) { $ProjectType = "generic" }
+
+    $typeDir = Join-Path $typesDir $ProjectType
+    if (-not (Test-Path $typeDir)) {
+        Write-WarningMsg "Unknown project type '$ProjectType'. Falling back to 'generic'."
+        $ProjectType = "generic"
+        $typeDir = Join-Path $typesDir "generic"
+        if (-not (Test-Path $typeDir)) {
+            Write-WarningMsg "generic type directory not found, skipping type application"
+            return
+        }
+    }
+
+    Write-InfoMsg "Applying project type: $ProjectType"
+
+    # Copy AGENTS.md
+    $agentsSource = Join-Path $typeDir "AGENTS.md"
+    $agentsTarget = Join-Path $TargetDir "AGENTS.md"
+    if (Test-Path $agentsSource) {
+        if (-not (Test-Path $agentsTarget) -or $Force) {
+            Copy-Item $agentsSource $agentsTarget -Force
+            Write-Success "Copied AGENTS.md ($ProjectType)"
+        } else {
+            Write-WarningMsg "AGENTS.md already exists, skipping (use -Force to overwrite)"
+        }
+    }
+
+    # Copy REVIEW.md
+    $reviewSource = Join-Path $typeDir "REVIEW.md"
+    $reviewTarget = Join-Path $TargetDir "REVIEW.md"
+    if (Test-Path $reviewSource) {
+        if (-not (Test-Path $reviewTarget) -or $Force) {
+            Copy-Item $reviewSource $reviewTarget -Force
+            Write-Success "Copied REVIEW.md ($ProjectType)"
+        } else {
+            Write-WarningMsg "REVIEW.md already exists, skipping (use -Force to overwrite)"
+        }
+    }
+
+    # Copy skills listed in types.json
+    $typesJson = Join-Path $typesDir "types.json"
+    $mainSkillsDir = Join-Path $projectRoot "skills"
+
+    if ((Test-Path $typesJson) -and (Test-Path $mainSkillsDir)) {
+        try {
+            $typesData = Get-Content $typesJson -Raw | ConvertFrom-Json
+            $typeSkills = $typesData.types.$ProjectType.skills
+            if ($typeSkills) {
+                $skillsTarget = Join-Path $TargetDir "skills"
+                New-Item -ItemType Directory -Path $skillsTarget -Force | Out-Null
+                $copiedCount = 0
+                foreach ($skill in $typeSkills) {
+                    $skillSource = Join-Path $mainSkillsDir $skill
+                    $skillDest   = Join-Path $skillsTarget $skill
+                    if ((Test-Path $skillSource) -and -not (Test-Path $skillDest)) {
+                        Copy-Item $skillSource $skillDest -Recurse -Force
+                        $copiedCount++
+                    }
+                }
+                if ($copiedCount -gt 0) {
+                    Write-Success "Copied $copiedCount type skills ($($typeSkills -join ', '))"
+                }
+            }
+        } catch {
+            Write-WarningMsg "Could not parse types.json: $_"
+        }
+    } elseif (Test-Path $mainSkillsDir) {
+        # No types.json – copy entire skills dir as fallback
+        $skillsTarget = Join-Path $TargetDir "skills"
+        $skillsSourceNorm = [System.IO.Path]::GetFullPath($mainSkillsDir)
+        $skillsTargetNorm = [System.IO.Path]::GetFullPath($skillsTarget)
+        if ($skillsSourceNorm -ne $skillsTargetNorm) {
+            if (-not (Test-Path $skillsTarget)) {
+                Copy-Item $mainSkillsDir $skillsTarget -Recurse -Force
+                Write-Success "Copied skills/ directory"
+            } else {
+                Write-WarningMsg "skills/ directory already exists in target, skipping copy"
+            }
+        }
+    } else {
+        Write-WarningMsg "skills/ directory not found"
+    }
+
+    Write-Success "Project type '$ProjectType' applied"
+}
+
+function List-ProjectTypes {
+    $autoDir = Split-Path -Parent $PSScriptRoot
+    $typesDir = Join-Path $autoDir "types"
+    $typesJson = Join-Path $typesDir "types.json"
+
+    Write-Host "Available project types:" -ForegroundColor Cyan
+    if (Test-Path $typesJson) {
+        try {
+            $data = Get-Content $typesJson -Raw | ConvertFrom-Json
+            foreach ($name in $data.types.PSObject.Properties.Name) {
+                $desc = $data.types.$name.description
+                if ($desc) {
+                    Write-Host ("  {0,-14} - {1}" -f $name, $desc)
+                } else {
+                    Write-Host "  $name"
+                }
+            }
+            Write-Host ""
+            Write-Host "  default: $($data.default)" -ForegroundColor Gray
+        } catch {
+            Get-ChildItem $typesDir -Directory | ForEach-Object { Write-Host "  - $($_.Name)" }
+        }
+    } else {
+        Get-ChildItem $typesDir -Directory | ForEach-Object { Write-Host "  - $($_.Name)" }
+    }
+}
+
 if ($MyInvocation.InvocationName -ne '.') {
     $command = $args[0]
     
     switch ($command) {
-        "install-gga" {
-            Install-Gga -Action "install"
+        "install-ga" {
+            Install-Ga -Action "install"
         }
-        "install-openspec" {
+        "install-sdd" {
             $targetDir = if ($args.Count -gt 1) { $args[1] } else { "." }
-            Install-Openspec -Action "install" -TargetDir $targetDir
+            Install-SDD -Action "install" -TargetDir $targetDir
         }
         "install-vscode" {
             Install-VscodeExtensions -Action "install"
@@ -1041,7 +1171,7 @@ if ($MyInvocation.InvocationName -ne '.') {
             Update-AllComponents -TargetDir $targetDir
         }
         default {
-            Write-Host "Usage: .\installer.ps1 {install-gga|install-openspec|install-vscode|install-biome|configure|update-all}"
+            Write-Host "Usage: .\installer.ps1 {install-ga|install-sdd|install-vscode|install-biome|configure|update-all}"
             exit 1
         }
     }

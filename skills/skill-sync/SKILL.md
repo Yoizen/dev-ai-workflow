@@ -2,9 +2,9 @@ name: skill-sync
 description: >
   Sync skill metadata with the Auto-invoke sections in AGENTS.md.
   Trigger: When you change a skill's metadata (metadata.scope/metadata.auto_invoke), regenerate the Auto-invoke tables, or run ./skills/skill-sync/assets/sync.sh.
-license: MIT
+
 metadata:
-  author: GGA Team
+  author: Yoizen
   version: "1.0"
   scope: [root]
   auto_invoke:

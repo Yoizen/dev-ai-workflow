@@ -1,14 +1,14 @@
-# Code Review Checklist (OpenSpec)
+# Code Review Checklist
 
 The reviewer must verify **each** of these points before approving the PR.
 Any violation of points marked as 🛑 **BLOCKING** requires immediate changes.
 
 ## 0. 📋 Process & Documentation (🛑 BLOCKING)
-*Before reviewing code, verify the "Spec-First" compliance using OpenSpec.*
+*Before reviewing code, verify the "Spec-First" compliance using SDD Orchestrator (SDD).*
 - [ ] **Spec Exists**:
-    - **Features**: `openspec/changes/<change-id>/proposal.md` AND `tasks.md` exist in the PR or repo.
+    - **Features**: A proposal and tasks artifact exist (via `/sdd:new` + `/sdd:ff` or equivalent).
     - **Bugfixes**: PR description includes "Bugfix Rationale".
-- [ ] **Alignment**: The implemented code matches the plan defined in `openspec/changes/<change-id>/tasks.md`.
+- [ ] **Alignment**: The implemented code matches the plan defined in the tasks artifact.
 - [ ] **PR Link**: The PR description includes a link to the relevant Spec/Ticket.
 
 ## 1. 🏗 Architecture & Structure (🛑 BLOCKING)

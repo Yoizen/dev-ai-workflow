@@ -12,6 +12,7 @@ param(
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BIN_DIR = Join-Path $SCRIPT_DIR "bin"
 $LIB_DIR = Join-Path $SCRIPT_DIR "lib"
+$PACKAGE_JSON = Join-Path $SCRIPT_DIR "package.json"
 
 function Print-Banner {
     Write-Host ""
@@ -29,7 +30,7 @@ function Install-Windows {
     if ($policy -eq "Restricted") {
         Write-Host "[!] PowerShell execution policy is Restricted" -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "To run GGA, you need to allow PowerShell scripts."
+        Write-Host "To run GA, you need to allow PowerShell scripts."
         Write-Host "Run this command as Administrator:"
         Write-Host ""
         Write-Host "  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser" -ForegroundColor Yellow
@@ -38,7 +39,7 @@ function Install-Windows {
     }
     
     # Create installation directory
-    $INSTALL_DIR = Join-Path $env:USERPROFILE "AppData\Local\gga"
+    $INSTALL_DIR = Join-Path $env:USERPROFILE "AppData\Local\ga"
     
     Write-Host "Installing to: $INSTALL_DIR" -ForegroundColor Cyan
     Write-Host ""
@@ -48,7 +49,10 @@ function Install-Windows {
     }
     
     # Copy files
-    Copy-Item -Path (Join-Path $BIN_DIR "gga.ps1") -Destination $INSTALL_DIR -Force
+    Copy-Item -Path (Join-Path $BIN_DIR "ga.ps1") -Destination $INSTALL_DIR -Force
+    if (Test-Path $PACKAGE_JSON) {
+        Copy-Item -Path $PACKAGE_JSON -Destination $INSTALL_DIR -Force
+    }
     
     $lib_dest = Join-Path $INSTALL_DIR "lib"
     if (-not (Test-Path $lib_dest)) {
@@ -61,7 +65,7 @@ function Install-Windows {
     Write-Host ""
     
     # Create wrapper script for PATH
-    $wrapper_dir = Join-Path $env:USERPROFILE "AppData\Local\Programs\gga"
+    $wrapper_dir = Join-Path $env:USERPROFILE "AppData\Local\Programs\ga"
     
     if (-not (Test-Path $wrapper_dir)) {
         New-Item -ItemType Directory -Path $wrapper_dir -Force | Out-Null
@@ -69,10 +73,10 @@ function Install-Windows {
     
     $wrapper_content = @"
 @echo off
-PowerShell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '$INSTALL_DIR\gga.ps1' %*"
+PowerShell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '$INSTALL_DIR\ga.ps1' %*"
 "@
     
-    $wrapper_cmd = Join-Path $wrapper_dir "gga.cmd"
+    $wrapper_cmd = Join-Path $wrapper_dir "ga.cmd"
     Set-Content -Path $wrapper_cmd -Value $wrapper_content -Encoding ASCII
     
     Write-Host "[OK] Created wrapper script: $wrapper_cmd" -ForegroundColor Green
@@ -87,7 +91,7 @@ PowerShell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '$INSTALL_DIR\gga.
         
         Write-Host "[OK] Added to PATH" -ForegroundColor Green
         Write-Host ""
-        Write-Host "[!] Restart your terminal to use the 'gga' command" -ForegroundColor Yellow
+        Write-Host "[!] Restart your terminal to use the 'ga' command" -ForegroundColor Yellow
     } else {
         Write-Host "[i] Already in PATH" -ForegroundColor Blue
     }
@@ -97,25 +101,25 @@ PowerShell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '$INSTALL_DIR\gga.
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Cyan
     Write-Host "  1. Close and reopen your terminal (or restart PowerShell)"
-    Write-Host "  2. Run: gga init"
-    Write-Host "  3. Edit .gga with your preferred provider"
+    Write-Host "  2. Run: ga init"
+    Write-Host "  3. Edit .ga with your preferred provider"
     Write-Host "  4. Create REVIEW.md with your coding standards"
-    Write-Host "  5. Run: gga install"
+    Write-Host "  5. Run: ga install"
     Write-Host ""
 }
 
 function Uninstall-Windows {
     Print-Banner
     
-    $INSTALL_DIR = Join-Path $env:USERPROFILE "AppData\Local\gga"
-    $wrapper_dir = Join-Path $env:USERPROFILE "AppData\Local\Programs\gga"
+    $INSTALL_DIR = Join-Path $env:USERPROFILE "AppData\Local\ga"
+    $wrapper_dir = Join-Path $env:USERPROFILE "AppData\Local\Programs\ga"
     
     if (Test-Path $INSTALL_DIR) {
         Remove-Item -Path $INSTALL_DIR -Recurse -Force
         Write-Host "[OK] Removed: $INSTALL_DIR" -ForegroundColor Green
     }
     
-    $wrapper_cmd = Join-Path $wrapper_dir "gga.cmd"
+    $wrapper_cmd = Join-Path $wrapper_dir "ga.cmd"
     if (Test-Path $wrapper_cmd) {
         Remove-Item -Path $wrapper_cmd -Force
         Write-Host "[OK] Removed wrapper script" -ForegroundColor Green

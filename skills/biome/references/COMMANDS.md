@@ -180,11 +180,11 @@ npx biome check ./src --config=biome.prod.json
 
 ```bash
 # Run from project root
-cd GGA Team.this project.WebApi
+cd Yoizen.this project.WebApi
 npx biome check ./src
 
 # Run with explicit working directory
-npx biome check ./src --working-directory=GGA Team.this project.WebApi
+npx biome check ./src --working-directory=Yoizen.this project.WebApi
 ```
 
 ## Common Workflows

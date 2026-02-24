@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# GGA Component Detector - Linux/macOS
+# GA Component Detector - Linux/macOS
 # ============================================================================
 # Detects installed components, versions, and available updates
 # ============================================================================
@@ -11,24 +11,24 @@ set -e
 # GitHub API Configuration
 # ============================================================================
 
-GGA_REPO="Yoizen/gga-copilot"
-GGA_API_URL="https://api.github.com/repos/${GGA_REPO}"
+GA_REPO="Yoizen/dev-ai-workflow"
+GA_API_URL="https://api.github.com/repos/${GA_REPO}"
 
 # ============================================================================
 # Component Detection Functions
 # ============================================================================
 
 # Get latest version from GitHub releases
-get_latest_gga_version() {
+get_latest_ga_version() {
     local version
-    version=$(curl -fsSL "${GGA_API_URL}/releases/latest" 2>/dev/null | \
+    version=$(curl -fsSL "${GA_API_URL}/releases/latest" 2>/dev/null | \
         grep '"tag_name"' | \
         sed -E 's/.*"tag_name": *"v?([^"]+)".*/\1/' | \
         head -1)
     
     if [[ -z "$version" ]]; then
         # Fallback: get latest tag
-        version=$(curl -fsSL "${GGA_API_URL}/tags" 2>/dev/null | \
+        version=$(curl -fsSL "${GA_API_URL}/tags" 2>/dev/null | \
             grep '"name"' | \
             sed -E 's/.*"name": *"v?([^"]+)".*/\1/' | \
             head -1)
@@ -37,11 +37,11 @@ get_latest_gga_version() {
     echo "${version:-unknown}"
 }
 
-# Get installed GGA version
-get_installed_gga_version() {
-    if command -v gga &> /dev/null; then
+# Get installed GA version
+get_installed_ga_version() {
+    if command -v ga &> /dev/null; then
         local version_output
-        version_output=$(gga version 2>/dev/null || echo "")
+        version_output=$(ga version 2>/dev/null || echo "")
         
         # Extract version number (handles "v2.2.0" or "2.2.0" or "Guardian Agent v2.2.0")
         echo "$version_output" | grep -oE '[0-9]+\.[0-9]+\.[0-9x]+' | head -1
@@ -50,20 +50,20 @@ get_installed_gga_version() {
     fi
 }
 
-# Detect GGA installation status
-detect_gga() {
+# Detect GA installation status
+detect_ga() {
     local installed_version
     local latest_version
     local status
     
-    installed_version=$(get_installed_gga_version)
+    installed_version=$(get_installed_ga_version)
     
     if [[ -z "$installed_version" ]]; then
         status="NOT_INSTALLED"
         installed_version="-"
-        latest_version=$(get_latest_gga_version)
+        latest_version=$(get_latest_ga_version)
     else
-        latest_version=$(get_latest_gga_version)
+        latest_version=$(get_latest_ga_version)
         
         if [[ "$installed_version" == "$latest_version" ]] || [[ "$latest_version" == "unknown" ]]; then
             status="UP_TO_DATE"
@@ -81,55 +81,33 @@ detect_gga() {
     echo "${status}|${installed_version}|${latest_version}"
 }
 
-# Get latest OpenSpec version from npm
-get_latest_openspec_version() {
-    local version
-    version=$(npm view @fission-ai/openspec version 2>/dev/null || echo "")
-    echo "${version:-unknown}"
-}
-
-# Get installed OpenSpec version
-get_installed_openspec_version() {
-    if [[ -f "package.json" ]] && command -v npm &> /dev/null; then
-        local version
-        version=$(npm list @fission-ai/openspec --depth=0 2>/dev/null | \
-            grep -oE '@[0-9]+\.[0-9]+\.[0-9]+' | \
-            tr -d '@' | \
-            head -1)
-        echo "${version:-}"
-    else
-        echo ""
-    fi
-}
-
-# Detect OpenSpec installation status
-detect_openspec() {
-    local installed_version
-    local latest_version
-    local status
+# Check if SDD Orchestrator skills are installed
+detect_sdd_installed() {
+    local skills_dir="${1:-.}/skills"
+    local count=0
     
-    installed_version=$(get_installed_openspec_version)
-    
-    if [[ -z "$installed_version" ]]; then
-        status="NOT_INSTALLED"
-        installed_version="-"
-        latest_version=$(get_latest_openspec_version)
-    else
-        latest_version=$(get_latest_openspec_version)
-        
-        if [[ "$installed_version" == "$latest_version" ]] || [[ "$latest_version" == "unknown" ]]; then
-            status="UP_TO_DATE"
-        else
-            if [[ "$installed_version" < "$latest_version" ]]; then
-                status="OUTDATED"
-            else
-                status="UP_TO_DATE"
-            fi
-        fi
+    if [[ -d "$skills_dir" ]]; then
+        for d in "$skills_dir"/sdd-*; do
+            [[ -d "$d" ]] && ((count++)) || true
+        done
     fi
     
-    # Output format: STATUS|CURRENT|LATEST
-    echo "${status}|${installed_version}|${latest_version}"
+    echo "$count"
+}
+
+# Detect SDD Orchestrator installation status
+detect_sdd() {
+    local target_dir="${1:-.}"
+    local installed_count
+    installed_count=$(detect_sdd_installed "$target_dir")
+    
+    if [[ "$installed_count" -eq 0 ]]; then
+        echo "NOT_INSTALLED|0|9"
+    elif [[ "$installed_count" -ge 9 ]]; then
+        echo "INSTALLED|$installed_count|9"
+    else
+        echo "PARTIAL|$installed_count|9"
+    fi
 }
 
 # Detect VS Code extensions
@@ -203,20 +181,20 @@ detect_prerequisites() {
 
 # Detect all components at once
 detect_all_components() {
-    local gga_info
-    local openspec_info
+    local ga_info
+    local sdd_info
     local vscode_info
     local prereq_info
     
-    gga_info=$(detect_gga)
-    openspec_info=$(detect_openspec)
+    ga_info=$(detect_ga)
+    sdd_info=$(detect_sdd)
     vscode_info=$(detect_vscode_extensions)
     prereq_info=$(detect_prerequisites)
     
     # Output multi-line format for easy parsing
     cat << EOF
-GGA:${gga_info}
-OPENSPEC:${openspec_info}
+GA:${ga_info}
+SDD:${sdd_info}
 VSCODE:${vscode_info}
 PREREQ:${prereq_info}
 EOF
@@ -282,11 +260,11 @@ format_component_status() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     case "${1:-all}" in
-        gga)
-            detect_gga
+        ga)
+            detect_ga
             ;;
-        openspec)
-            detect_openspec
+        sdd)
+            detect_sdd
             ;;
         vscode)
             detect_vscode_extensions
@@ -298,7 +276,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             detect_all_components
             ;;
         *)
-            echo "Usage: $0 {gga|openspec|vscode|prereq|all}"
+            echo "Usage: $0 {ga|sdd|vscode|prereq|all}"
             exit 1
             ;;
     esac

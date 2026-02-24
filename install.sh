@@ -3,7 +3,7 @@
 # ============================================================================
 # Guardian Agent - Installer
 # ============================================================================
-# Installs the gga CLI tool to your system
+# Installs the ga CLI tool to your system
 # ============================================================================
 
 set -e
@@ -46,8 +46,8 @@ if [[ ! -w "$INSTALL_DIR" ]]; then
 fi
 
 # Check if already installed
-if [[ -f "$INSTALL_DIR/gga" ]]; then
-    echo -e "${YELLOW}⚠️  gga is already installed${NC}"
+if [[ -f "$INSTALL_DIR/ga" ]]; then
+    echo -e "${YELLOW}⚠️  ga is already installed${NC}"
     read -p "Reinstall? (y/N): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo "Aborted."
@@ -56,29 +56,31 @@ if [[ -f "$INSTALL_DIR/gga" ]]; then
 fi
 
 # Create lib directory
-SHARE_INSTALL_DIR="$HOME/.local/share/gga"
+SHARE_INSTALL_DIR="$HOME/.local/share/ga"
 LIB_INSTALL_DIR="$SHARE_INSTALL_DIR/lib"
 mkdir -p "$LIB_INSTALL_DIR"
 
 # Copy files
-cp "$SCRIPT_DIR/bin/gga" "$INSTALL_DIR/gga"
+cp "$SCRIPT_DIR/bin/ga" "$INSTALL_DIR/ga"
 cp "$SCRIPT_DIR/package.json" "$SHARE_INSTALL_DIR/package.json"
 cp "$SCRIPT_DIR/lib/providers.sh" "$LIB_INSTALL_DIR/providers.sh"
 cp "$SCRIPT_DIR/lib/cache.sh" "$LIB_INSTALL_DIR/cache.sh"
+cp "$SCRIPT_DIR/lib/pr_mode.sh" "$LIB_INSTALL_DIR/pr_mode.sh"
 
 # Update LIB_DIR path in installed script
 if [[ "$(uname)" == "Darwin" ]]; then
-  sed -i '' "s|LIB_DIR=.*|LIB_DIR=\"$LIB_INSTALL_DIR\"|" "$INSTALL_DIR/gga"
+  sed -i '' "s|LIB_DIR=.*|LIB_DIR=\"$LIB_INSTALL_DIR\"|" "$INSTALL_DIR/ga"
 else
-  sed -i "s|LIB_DIR=.*|LIB_DIR=\"$LIB_INSTALL_DIR\"|" "$INSTALL_DIR/gga"
+  sed -i "s|LIB_DIR=.*|LIB_DIR=\"$LIB_INSTALL_DIR\"|" "$INSTALL_DIR/ga"
 fi
 
 # Make executable
-chmod +x "$INSTALL_DIR/gga"
+chmod +x "$INSTALL_DIR/ga"
 chmod +x "$LIB_INSTALL_DIR/providers.sh"
 chmod +x "$LIB_INSTALL_DIR/cache.sh"
+chmod +x "$LIB_INSTALL_DIR/pr_mode.sh"
 
-echo -e "${GREEN}✅ Installed gga to $INSTALL_DIR${NC}"
+echo -e "${GREEN}✅ Installed ga to $INSTALL_DIR${NC}"
 echo ""
 
 # Check if install dir is in PATH
@@ -97,12 +99,12 @@ echo "  1. Navigate to your project:"
 echo "     cd /path/to/your/project"
 echo ""
 echo "  2. Initialize config:"
-echo "     gga init"
+echo "     ga init"
 echo ""
 echo "  3. Create your REVIEW.md with coding standards"
 echo ""
 echo "  4. Install the git hook:"
-echo "     gga install"
+echo "     ga install"
 echo ""
 echo "  5. You're ready! The hook will run on each commit."
 echo ""

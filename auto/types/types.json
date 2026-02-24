@@ -1,0 +1,33 @@
+{
+  "types": {
+    "nest": {
+      "description": "NestJS backend (TypeScript, Clean Architecture)",
+      "agents_md": "auto/types/nest/AGENTS.md",
+      "review_md": "auto/types/nest/REVIEW.md",
+      "lefthook_yml": "auto/types/nest/lefthook.yml",
+      "skills": ["git-commit", "biome", "skill-creator", "skill-sync"]
+    },
+    "python": {
+      "description": "Python backend / scripts (FastAPI, Django, scripts)",
+      "agents_md": "auto/types/python/AGENTS.md",
+      "review_md": "auto/types/python/REVIEW.md",
+      "lefthook_yml": "auto/types/python/lefthook.yml",
+      "skills": ["git-commit", "skill-creator", "skill-sync"]
+    },
+    "dotnet": {
+      "description": ".NET / C# backend (ASP.NET Core, Clean Architecture)",
+      "agents_md": "auto/types/dotnet/AGENTS.md",
+      "review_md": "auto/types/dotnet/REVIEW.md",
+      "lefthook_yml": "auto/types/dotnet/lefthook.yml",
+      "skills": ["git-commit", "skill-creator", "skill-sync"]
+    },
+    "generic": {
+      "description": "Generic project (language-agnostic defaults)",
+      "agents_md": "auto/types/generic/AGENTS.md",
+      "review_md": "auto/types/generic/REVIEW.md",
+      "lefthook_yml": "auto/types/generic/lefthook.yml",
+      "skills": ["git-commit", "skill-creator", "skill-sync"]
+    }
+  },
+  "default": "nest"
+}

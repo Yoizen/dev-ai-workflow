@@ -1,53 +1,53 @@
 # shellcheck shell=bash
 
-Describe 'gga commands'
-  # Path to the gga script
-  gga() {
-    "$PROJECT_ROOT/bin/gga" "$@"
+Describe 'ga commands'
+  # Path to the ga script
+  ga() {
+    "$PROJECT_ROOT/bin/ga" "$@"
   }
 
-  Describe 'gga version'
+  Describe 'ga version'
     It 'returns version number'
-      When call gga version
+      When call ga version
       The status should be success
-      The output should include "gga v"
+      The output should include "ga v"
     End
 
     It 'accepts --version flag'
-      When call gga --version
+      When call ga --version
       The status should be success
-      The output should include "gga v"
+      The output should include "ga v"
     End
 
     It 'accepts -v flag'
-      When call gga -v
+      When call ga -v
       The status should be success
-      The output should include "gga v"
+      The output should include "ga v"
     End
   End
 
-  Describe 'gga help'
+  Describe 'ga help'
     It 'shows help message'
-      When call gga help
+      When call ga help
       The status should be success
       The output should include "USAGE"
       The output should include "COMMANDS"
     End
 
     It 'accepts --help flag'
-      When call gga --help
+      When call ga --help
       The status should be success
       The output should include "USAGE"
     End
 
     It 'shows help when no command given'
-      When call gga
+      When call ga
       The status should be success
       The output should include "USAGE"
     End
 
     It 'lists all commands'
-      When call gga help
+      When call ga help
       The output should include "run"
       The output should include "install"
       The output should include "uninstall"
@@ -57,7 +57,7 @@ Describe 'gga commands'
     End
   End
 
-  Describe 'gga init'
+  Describe 'ga init'
     setup() {
       TEMP_DIR=$(mktemp -d)
       cd "$TEMP_DIR"
@@ -71,40 +71,40 @@ Describe 'gga commands'
     BeforeEach 'setup'
     AfterEach 'cleanup'
 
-    It 'creates .gga config file'
-      When call gga init
+    It 'creates .ga config file'
+      When call ga init
       The status should be success
       The output should be present
-      The path ".gga" should be file
+      The path ".ga" should be file
     End
 
     It 'config file contains PROVIDER'
-      gga init > /dev/null
-      The contents of file ".gga" should include "PROVIDER"
+      ga init > /dev/null
+      The contents of file ".ga" should include "PROVIDER"
     End
 
     It 'config file contains FILE_PATTERNS'
-      gga init > /dev/null
-      The contents of file ".gga" should include "FILE_PATTERNS"
+      ga init > /dev/null
+      The contents of file ".ga" should include "FILE_PATTERNS"
     End
 
     It 'config file contains EXCLUDE_PATTERNS'
-      gga init > /dev/null
-      The contents of file ".gga" should include "EXCLUDE_PATTERNS"
+      ga init > /dev/null
+      The contents of file ".ga" should include "EXCLUDE_PATTERNS"
     End
 
     It 'config file contains RULES_FILE'
-      gga init > /dev/null
-      The contents of file ".gga" should include "RULES_FILE"
+      ga init > /dev/null
+      The contents of file ".ga" should include "RULES_FILE"
     End
 
     It 'config file contains STRICT_MODE'
-      gga init > /dev/null
-      The contents of file ".gga" should include "STRICT_MODE"
+      ga init > /dev/null
+      The contents of file ".ga" should include "STRICT_MODE"
     End
   End
 
-  Describe 'gga config'
+  Describe 'ga config'
     setup() {
       TEMP_DIR=$(mktemp -d)
       cd "$TEMP_DIR"
@@ -119,29 +119,29 @@ Describe 'gga commands'
     AfterEach 'cleanup'
 
     It 'shows configuration'
-      When call gga config
+      When call ga config
       The status should be success
       The output should include "Configuration"
     End
 
     It 'shows provider not configured when no config'
-      When call gga config
+      When call ga config
       The output should include "Not configured"
     End
 
     It 'shows provider when configured'
-      echo 'PROVIDER="claude"' > .gga
-      When call gga config
+      echo 'PROVIDER="claude"' > .ga
+      When call ga config
       The output should include "claude"
     End
 
     It 'shows rules file status'
-      When call gga config
+      When call ga config
       The output should include "Rules File"
     End
   End
 
-  Describe 'gga install'
+  Describe 'ga install'
     setup() {
       TEMP_DIR=$(mktemp -d)
       cd "$TEMP_DIR"
@@ -157,36 +157,36 @@ Describe 'gga commands'
     AfterEach 'cleanup'
 
     It 'creates pre-commit hook'
-      When call gga install
+      When call ga install
       The status should be success
       The output should be present
       The path ".git/hooks/pre-commit" should be file
     End
 
-    It 'hook contains gga run command'
-      gga install > /dev/null
-      The contents of file ".git/hooks/pre-commit" should include "gga run"
+    It 'hook contains ga run command'
+      ga install > /dev/null
+      The contents of file ".git/hooks/pre-commit" should include "ga run"
     End
 
     It 'hook is executable'
-      gga install > /dev/null
+      ga install > /dev/null
       The path ".git/hooks/pre-commit" should be executable
     End
 
     It 'fails if not in git repo'
       rm -rf .git
-      When call gga install
+      When call ga install
       The status should be failure
       The output should include "Not a git repository"
     End
   End
 
-  Describe 'gga uninstall'
+  Describe 'ga uninstall'
     setup() {
       TEMP_DIR=$(mktemp -d)
       cd "$TEMP_DIR"
       git init --quiet
-      gga install > /dev/null
+      ga install > /dev/null
     }
 
     cleanup() {
@@ -198,7 +198,7 @@ Describe 'gga commands'
     AfterEach 'cleanup'
 
     It 'removes pre-commit hook'
-      When call gga uninstall
+      When call ga uninstall
       The status should be success
       The output should be present
       The path ".git/hooks/pre-commit" should not be exist
@@ -206,19 +206,19 @@ Describe 'gga commands'
 
     It 'succeeds if hook does not exist'
       rm .git/hooks/pre-commit
-      When call gga uninstall
+      When call ga uninstall
       The status should be success
       The output should be present
     End
   End
 
-  Describe 'gga cache'
+  Describe 'ga cache'
     setup() {
       TEMP_DIR=$(mktemp -d)
       cd "$TEMP_DIR"
       git init --quiet
       echo "rules" > REVIEW.md
-      echo 'PROVIDER="claude"' > .gga
+      echo 'PROVIDER="claude"' > .ga
     }
 
     cleanup() {
@@ -229,25 +229,25 @@ Describe 'gga commands'
     BeforeEach 'setup'
     AfterEach 'cleanup'
 
-    Describe 'gga cache status'
+    Describe 'ga cache status'
       It 'shows cache status'
-        When call gga cache status
+        When call ga cache status
         The status should be success
         The output should include "Cache Status"
       End
     End
 
-    Describe 'gga cache clear'
+    Describe 'ga cache clear'
       It 'clears project cache'
-        When call gga cache clear
+        When call ga cache clear
         The status should be success
         The output should include "Cleared cache"
       End
     End
 
-    Describe 'gga cache clear-all'
+    Describe 'ga cache clear-all'
       It 'clears all cache'
-        When call gga cache clear-all
+        When call ga cache clear-all
         The status should be success
         The output should include "Cleared all cache"
       End
@@ -255,7 +255,7 @@ Describe 'gga commands'
 
     Describe 'invalid subcommand'
       It 'fails for unknown cache subcommand'
-        When call gga cache invalid
+        When call ga cache invalid
         The status should be failure
         The output should include "Unknown cache command"
       End
@@ -264,7 +264,7 @@ Describe 'gga commands'
 
   Describe 'unknown command'
     It 'fails with error message'
-      When call gga unknown-command
+      When call ga unknown-command
       The status should be failure
       The output should include "Unknown command"
     End

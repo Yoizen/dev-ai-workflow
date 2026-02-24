@@ -1,6 +1,6 @@
-# GGA + OpenSpec Bootstrap - Automated Setup
+# GA + SDD Orchestrator Bootstrap - Automated Setup
 
-This directory contains automation scripts to configure **GGA (Guardian Agent)** and **OpenSpec** in any repository with simple interactive prompts or automated mode.
+This directory contains automation scripts to configure **GA (Guardian Agent)** and **SDD Orchestrator** (SDD sub-agents) in any repository with simple interactive prompts or automated mode.
 
 ## ⚡ Quick Install (One Command)
 
@@ -8,26 +8,26 @@ This directory contains automation scripts to configure **GGA (Guardian Agent)**
 
 ```powershell
 # Download and run (interactive prompts)
-irm https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.ps1 | iex
+irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1 | iex
 
 # Install everything automatically (non-interactive)
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.ps1))) -All
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -All
 
 # Custom installation
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.ps1))) -InstallGGA -Provider claude
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -InstallGA -Provider claude
 ```
 
 ### Linux/macOS (Bash)
 
 ```bash
 # Download and run (interactive prompts)
-curl -sSL https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.sh | bash
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash
 
 # Install everything automatically (non-interactive)
-curl -sSL https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.sh | bash -s -- --all
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --all
 
 # Custom installation
-curl -sSL https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/quick-setup.sh | bash -s -- --install-gga --provider=claude
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --install-ga --provider=claude
 ```
 
 ---
@@ -60,7 +60,7 @@ Use flags for **unattended installation** in scripts, CI/CD, or one-liners:
 ./bootstrap.sh --all
 
 # Selective installation
-./bootstrap.sh --install-gga --install-openspec --skip-vscode
+./bootstrap.sh --install-ga --install-sdd --skip-vscode
 
 # With specific provider
 ./bootstrap.sh --all --provider=opencode
@@ -80,18 +80,17 @@ The `bootstrap` script automatically:
 
 1. **Verifies Prerequisites**: Git, Node.js, npm, VS Code (optional)
 2. **Installs Components**:
-   - **GGA** (Guardian Agent) - Globally in `~/.local/share/yoizen/gga-copilot`
-   - **OpenSpec** - Locally via npm in the project
+   - **GA** (Guardian Agent) - Globally in `~/.local/share/yoizen/dev-ai-workflow`
+   - **SDD Orchestrator** - SDD skills cloned into the project
    - **VS Code Extensions** - GitHub Copilot & Copilot Chat
   - **OpenCode Command Hooks (optional)** - Post-edit automation hooks
   - **Biome Baseline (optional)** - Minimal lint/format rules for new projects
 3. **Configures the Target Repository**:
    - Copies `AGENTS.MD`, `REVIEW.md`
-   - Copies `skills/` directory (OpenCode skills)
-   - Initializes OpenSpec (`openspec/`)
-   - Initializes GGA (`.gga`)
+   - Copies `skills/` directory (OpenCode skills + SDD sub-agents)
+   - Initializes GA (`.ga`)
    - Sets up `.vscode/settings.json`
-    - Installs GGA git hooks (or Lefthook if available)
+    - Installs GA git hooks (or Lefthook if available)
     - Creates `lefthook.yml` from template (includes optional `biome-check` example when `biome.json` is present)
 
 ---
@@ -104,8 +103,8 @@ The `bootstrap` script automatically:
 | Flag | Description |
 |------|-------------|
 | `--all` | Install everything (non-interactive mode) |
-| `--install-gga` | Install only GGA |
-| `--install-openspec` | Install only OpenSpec |
+| `--install-ga` | Install only GA |
+| `--install-sdd` | Install only SDD Orchestrator |
 | `--install-vscode` | Install only VS Code extensions |
 | `--hooks` | Install OpenCode command hooks plugin |
 | `--biome` | Install optional Biome baseline (minimal rules) |
@@ -113,8 +112,8 @@ The `bootstrap` script automatically:
 #### Skip Options
 | Flag | Description |
 |------|-------------|
-| `--skip-gga` | Skip GGA installation |
-| `--skip-openspec` | Skip OpenSpec installation |
+| `--skip-ga` | Skip GA installation |
+| `--skip-sdd` | Skip SDD Orchestrator installation |
 | `--skip-vscode` | Skip VS Code extensions |
 
 #### Configuration
@@ -138,8 +137,8 @@ The `bootstrap` script automatically:
 | Parameter | Description |
 |-----------|-------------|
 | `-All` | Install everything (non-interactive mode) |
-| `-InstallGGA` | Install only GGA |
-| `-InstallOpenSpec` | Install only OpenSpec |
+| `-InstallGA` | Install only GA |
+| `-InstallSDD` | Install only SDD Orchestrator |
 | `-InstallVSCode` | Install only VS Code extensions |
 | `-Hooks` | Install OpenCode command hooks plugin |
 | `-Biome` | Install optional Biome baseline (minimal rules) |
@@ -147,8 +146,8 @@ The `bootstrap` script automatically:
 #### Skip Options
 | Parameter | Description |
 |-----------|-------------|
-| `-SkipGGA` | Skip GGA installation |
-| `-SkipOpenSpec` | Skip OpenSpec installation |
+| `-SkipGA` | Skip GA installation |
+| `-SkipSDD` | Skip SDD Orchestrator installation |
 | `-SkipVSCode` | Skip VS Code extensions |
 
 #### Configuration
@@ -197,17 +196,17 @@ The `bootstrap` script automatically:
 # Install everything with default provider
 ./bootstrap.sh --all
 
-# Install only GGA with Claude
-./bootstrap.sh --install-gga --provider=claude
+# Install only GA with Claude
+./bootstrap.sh --install-ga --provider=claude
 
-# Install GGA and OpenSpec, skip VS Code
-./bootstrap.sh --install-gga --install-openspec --skip-vscode
+# Install GA and SDD Orchestrator, skip VS Code
+./bootstrap.sh --install-ga --install-sdd --skip-vscode
 
 # Install optional Biome baseline for a new project
-./bootstrap.sh --install-gga --install-openspec --biome
+./bootstrap.sh --install-ga --install-sdd --biome
 
 # Install OpenCode hooks + Biome baseline together
-./bootstrap.sh --install-gga --hooks --biome
+./bootstrap.sh --install-ga --hooks --biome
 
 # Update all components in a specific project
 ./bootstrap.sh --update-all --target=/home/user/my-project
@@ -224,13 +223,13 @@ The `bootstrap` script automatically:
 .\bootstrap.ps1 -All
 
 # PowerShell - Custom installation
-.\bootstrap.ps1 -InstallGGA -InstallOpenSpec -Provider gemini
+.\bootstrap.ps1 -InstallGA -InstallSDD -Provider gemini
 
 # PowerShell - Optional Biome baseline
-.\bootstrap.ps1 -InstallGGA -InstallOpenSpec -Biome
+.\bootstrap.ps1 -InstallGA -InstallSDD -Biome
 
 # PowerShell - Hooks + Biome baseline together
-.\bootstrap.ps1 -InstallGGA -Hooks -Biome
+.\bootstrap.ps1 -InstallGA -Hooks -Biome
 
 # PowerShell - Update all
 .\bootstrap.ps1 -UpdateAll -Target C:\Users\dev\project
@@ -240,7 +239,7 @@ The `bootstrap` script automatically:
 
 ```yaml
 # .github/workflows/setup.yml
-name: Setup GGA + OpenSpec
+name: Setup GA + SDD Orchestrator
 
 on:
   push:
@@ -252,12 +251,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       
-      - name: Setup GGA + OpenSpec
+      - name: Setup GA + SDD Orchestrator
         run: |
-          curl -sSL https://raw.githubusercontent.com/Yoizen/gga-copilot/main/auto/bootstrap.sh | bash -s -- --all --skip-vscode --silent
+          curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/bootstrap.sh | bash -s -- --all --skip-vscode --silent
       
-      - name: Run GGA review
-        run: gga review
+      - name: Run GA review
+        run: ga review
 ```
 
 ### Multi-Project Setup
@@ -284,25 +283,29 @@ done
 
 ```
 your-project/
-├── .gga                              # GGA configuration
+├── .ga                              # GA configuration
 ├── .git/
 │   └── hooks/
-│       └── pre-commit                # GGA review hook
+│       └── pre-commit                # GA review hook
 ├── AGENTS.MD                         # AI agent directives
 ├── REVIEW.md                         # Code review checklist
-├── skills/                           # OpenCode skills directory
+├── skills/                           # Skills directory
 │   ├── README.md                     # Skills documentation
 │   ├── git-commit/                   # Git commit skill
 │   ├── skill-creator/                # Skill creation tool
-│   └── skill-sync/                   # Skill sync tool
-├── openspec/
-│   ├── project.md                    # Project rules (from CONSTITUTION.md)
-│   └── changes/                      # Specs and changes
-├── bin/
-│   └── openspec                      # OpenSpec wrapper script
+│   ├── skill-sync/                   # Skill sync tool
+│   ├── sdd-init/                     # SDD: Initialize project context
+│   ├── sdd-explore/                  # SDD: Explore & research
+│   ├── sdd-propose/                  # SDD: Write proposal
+│   ├── sdd-spec/                     # SDD: Technical spec
+│   ├── sdd-design/                   # SDD: Architecture design
+│   ├── sdd-tasks/                    # SDD: Task breakdown
+│   ├── sdd-apply/                    # SDD: Implement tasks
+│   ├── sdd-verify/                   # SDD: Verify implementation
+│   └── sdd-archive/                  # SDD: Archive completed work
 ├── .vscode/
 │   └── settings.json                 # VS Code configuration
-└── package.json                      # With @fission-ai/openspec
+└── package.json
 ```
 
 ---
@@ -311,30 +314,30 @@ your-project/
 
 ### Automatic Update Detection
 
-GGA automatically detects when updates are available and prompts you to update:
+GA automatically detects when updates are available and prompts you to update:
 
 ```bash
 # During bootstrap - detects and prompts for updates
-./bootstrap.sh --install-gga
+./bootstrap.sh --install-ga
 
 # Example output:
-# ℹ GGA directory already exists
-# ℹ GGA update available!
+# ℹ GA directory already exists
+# ℹ GA update available!
 #   Current version: 1.0.0
 # 
-#   Update GGA now? [Y/n]: 
+#   Update GA now? [Y/n]: 
 ```
 
 ### Update Commands
 
 ```bash
-# Update GGA globally and all configured repositories
+# Update GA globally and all configured repositories
 ./update-all.sh /path/to/repo1 /path/to/repo2
 
-# Update GGA only (skip repository configs)
+# Update GA only (skip repository configs)
 ./update-all.sh --update-tools-only
 
-# Update repository configs only (skip GGA)
+# Update repository configs only (skip GA)
 ./update-all.sh --update-configs-only /path/to/repo
 
 # Force update (non-interactive)
@@ -344,13 +347,13 @@ GGA automatically detects when updates are available and prompts you to update:
 ./update-all.sh --dry-run /path/to/repo
 
 # Update specific component with force
-./bootstrap.sh --install-gga --force
+./bootstrap.sh --install-ga --force
 ```
 
 ### Version Checking
 
 The update system:
-- ✅ Checks for new commits in the GGA repository
+- ✅ Checks for new commits in the GA repository
 - ✅ Displays current version from `package.json`
 - ✅ Prompts before updating (unless `--force` is used)
 - ✅ Displays new version after successful update
@@ -393,29 +396,13 @@ The update system:
 
 ### Custom Provider Configuration
 
-After installation, edit `.gga` to customize your provider:
+After installation, edit `.ga` to customize your provider:
 
 ```bash
-# Example .gga file
+# Example .ga file
 PROVIDER="claude"
 API_KEY="your-api-key"
 MODEL="claude-3-opus"
-```
-
-### OpenSpec Customization
-
-Edit `openspec/project.md` to add project-specific rules:
-
-```markdown
-# My Project Rules
-
-## Architecture
-- Use hexagonal architecture
-- Keep domain layer pure
-
-## Testing
-- Minimum 80% code coverage
-- All public APIs must have integration tests
 ```
 
 ### Custom Installation Script
@@ -425,18 +412,18 @@ Edit `openspec/project.md` to add project-specific rules:
 # my-custom-install.sh
 
 # Clone bootstrap scripts
-git clone https://github.com/Yoizen/gga-copilot.git /tmp/gga
+git clone https://github.com/Yoizen/dev-ai-workflow.git /tmp/ga
 
 # Run custom installation
-/tmp/gga/auto/bootstrap.sh \
-    --install-gga \
-    --install-openspec \
+/tmp/ga/auto/bootstrap.sh \
+    --install-ga \
+    --install-sdd \
     --provider=opencode \
     --target="$PWD" \
     --silent
 
 # Cleanup
-rm -rf /tmp/gga
+rm -rf /tmp/ga
 ```
 
 ---
@@ -445,11 +432,11 @@ rm -rf /tmp/gga
 
 This setup implements the **Spec-First** approach:
 
-1. **Specify** before coding (use OpenSpec)
+1. **Specify** before coding (use `/sdd:new` + `/sdd:ff`)
 2. **Plan** the implementation
-3. **Implement** following the spec
-4. **Review** with automated checklist (GGA)
-5. **Validate** against the spec
+3. **Implement** following the spec (`/sdd:apply`)
+4. **Review** with automated checklist (GA)
+5. **Validate** against the spec (`/sdd:verify`)
 
 See `REVIEW.md` for the complete checklist.
 
@@ -468,9 +455,8 @@ To improve these scripts:
 
 ## 📞 Support
 
-- **Documentation**: [GGA README](../README.md)
-- **Issues**: https://github.com/Yoizen/gga-copilot/issues
-- **OpenSpec**: https://github.com/Fission-AI/OpenSpec
+- **Documentation**: [GA README](../README.md)
+- **Issues**: https://github.com/Yoizen/dev-ai-workflow/issues
 
 ---
 

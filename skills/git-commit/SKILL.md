@@ -1,9 +1,9 @@
 ---
 name: git-commit
 description: Git commit standards, conventions, and commit message formatting
-license: MIT
+
 metadata:
-  author: GGA Team
+  author: Yoizen
   version: "1.0"
   scope: [root]
   auto_invoke:

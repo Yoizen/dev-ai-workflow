@@ -1,9 +1,9 @@
 ---
 name: biome
 description: Linting, formatting, and code quality using Biome
-license: MIT
+
 metadata:
-  author: GGA Team
+  author: Yoizen
   version: "1.0"
   scope: [root, webapi, web-executor]
   auto_invoke:

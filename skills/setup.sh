@@ -242,7 +242,7 @@ create_claude_md() {
         cat > "$claude_md" << 'EOF'
 # Claude Code Instructions
 
-You are Claude, an AI coding assistant working with the Guardian Agent (GGA) system.
+You are Claude, an AI coding assistant working with the Guardian Agent (GA) system.
 
 ## Core Principles
 - Follow the AGENTS.MD guidelines in this repository
@@ -278,7 +278,7 @@ create_gemini_md() {
         cat > "$gemini_md" << 'EOF'
 # Gemini CLI Instructions
 
-You are Gemini, an AI coding assistant working with the Guardian Agent (GGA) system.
+You are Gemini, an AI coding assistant working with the Guardian Agent (GA) system.
 
 ## Core Principles
 - Follow the AGENTS.MD guidelines in this repository

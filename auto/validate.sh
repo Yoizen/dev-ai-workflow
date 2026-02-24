@@ -15,7 +15,7 @@ NC='\033[0m'
 
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}  GGA Setup Validation${NC}"
+echo -e "${CYAN}  GA Setup Validation${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
@@ -30,7 +30,7 @@ success=()
 # Check commands
 echo -e "${YELLOW}Checking installed tools...${NC}"
 
-commands=("git" "node" "npm" "gga" "code")
+commands=("git" "node" "npm" "ga" "code")
 for cmd in "${commands[@]}"; do
     if command -v "$cmd" &> /dev/null; then
         if [ "$cmd" = "code" ]; then
@@ -70,15 +70,15 @@ required_files=(
     "AGENTS.MD"
     "REVIEW.md"
     ".specify/memory/constitution.md"
-    ".gga"
+    ".ga"
 )
 
 for file in "${required_files[@]}"; do
     if [ -f "$REPO_PATH/$file" ]; then
         success+=("✓ $file exists")
     else
-        if [ "$file" = ".gga" ]; then
-            warnings+=("⚠ $file is missing (run 'gga init')")
+        if [ "$file" = ".ga" ]; then
+            warnings+=("⚠ $file is missing (run 'ga init')")
         else
             issues+=("✗ $file is missing")
         fi
@@ -86,21 +86,21 @@ for file in "${required_files[@]}"; do
 done
 
 echo ""
-echo -e "${YELLOW}Checking GGA configuration...${NC}"
+echo -e "${YELLOW}Checking GA configuration...${NC}"
 
-if [ -f "$REPO_PATH/.gga" ]; then
-    content=$(cat "$REPO_PATH/.gga")
+if [ -f "$REPO_PATH/.ga" ]; then
+    content=$(cat "$REPO_PATH/.ga")
     
     if echo "$content" | grep -q "PROVIDER="; then
-        success+=("✓ .gga has PROVIDER configured")
+        success+=("✓ .ga has PROVIDER configured")
     else
-        warnings+=("⚠ .gga is missing PROVIDER")
+        warnings+=("⚠ .ga is missing PROVIDER")
     fi
     
     if echo "$content" | grep -q "API_KEY="; then
-        success+=("✓ .gga has API_KEY configured")
+        success+=("✓ .ga has API_KEY configured")
     else
-        warnings+=("⚠ .gga is missing API_KEY")
+        warnings+=("⚠ .ga is missing API_KEY")
     fi
 fi
 

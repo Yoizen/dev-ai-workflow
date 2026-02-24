@@ -2,7 +2,7 @@
 
 ## 📖 Qué hay aquí
 
-Scripts para automatizar el setup de GGA y SpecKit/OpenSpec en cualquier repo.
+Scripts para automatizar el setup de GA y SDD Orchestrator en cualquier repo.
 
 ## 🗂 Archivos
 
@@ -51,7 +51,7 @@ Scripts para automatizar el setup de GGA y SpecKit/OpenSpec en cualquier repo.
 ./bootstrap.sh
 ```
 
-Instala GGA, SpecKit/OpenSpec, VS Code extensions, y configura el repo.
+Instala GA, SDD Orchestrator, VS Code extensions, y configura el repo.
 
 ### Otro repo
 
@@ -83,9 +83,8 @@ Instala GGA, SpecKit/OpenSpec, VS Code extensions, y configura el repo.
 
 ```powershell
 # Opciones principales
--SkipCopilotApi / --skip-copilot-api    # No instalar Copilot API
--SkipSpecKit / --skip-speckit           # No instalar SpecKit
--SkipGGA / --skip-gga                   # No instalar GGA
+-SkipSDD / --skip-sdd    # No instalar SDD Orchestrator
+-SkipGA / --skip-ga                   # No instalar GA
 -SkipVSCode / --skip-vscode             # No instalar extensiones
 -Force / --force                         # Sobrescribir configs existentes
 ```
@@ -102,8 +101,8 @@ Instala GGA, SpecKit/OpenSpec, VS Code extensions, y configura el repo.
 
 
 **bootstrap:**
-- `-SkipSpecKit` / `--skip-speckit` - No instalar SpecKit
-- `-SkipGGA` / `--skip-gga` - No instalar GGA
+- `-SkipSDD` / `--skip-sdd` - No instalar SDD Orchestrator
+- `-SkipGA` / `--skip-ga` - No instalar GA
 - `-SkipVSCode` / `--skip-vscode` - No instalar extensiones
 - `-Biome` / `--biome` - Instalar baseline opcional de Biome (reglas mínimas)
 - `-Hooks` / `--hooks` - Instalar OpenCode command hooks (opcional)
@@ -148,13 +147,9 @@ Para team leads:
 
 ## 🔗 Links Útiles
 
-- [README Principal del GGA](../README.md)
-- [SpecKit en GitHub](https://github.com/github/spec-kit)
-- [Copilot API](https://github.com/Yoizen/copilot-api)
-
+- [README Principal del GA](../README.md)
 ## 📞 Soporte
 
-- **Issues**: [GitHub Issues](https://github.com/tu-org/gga-copilot/issues)
 - **Docs**: Este directorio
 - **Ejemplos**: Ver [WORKFLOW.md](WORKFLOW.md)
 

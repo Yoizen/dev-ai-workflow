@@ -1,19 +1,19 @@
-# GGA Component Detector - Windows PowerShell
+# GA Component Detector - Windows PowerShell
 # Detects installed components, versions, and available updates
 
 $ErrorActionPreference = "SilentlyContinue"
 
-$GGA_REPO = "Yoizen/gga-copilot"
-$GGA_API_URL = "https://api.github.com/repos/$GGA_REPO"
+$GA_REPO = "Yoizen/dev-ai-workflow"
+$GA_API_URL = "https://api.github.com/repos/$GA_REPO"
 
-function Get-LatestGgaVersion {
+function Get-LatestGaVersion {
     try {
-        $release = Invoke-RestMethod -Uri "$GGA_API_URL/releases/latest" -ErrorAction Stop
+        $release = Invoke-RestMethod -Uri "$GA_API_URL/releases/latest" -ErrorAction Stop
         $version = $release.tag_name -replace '^v', ''
         return $version
     } catch {
         try {
-            $tags = Invoke-RestMethod -Uri "$GGA_API_URL/tags" -ErrorAction Stop
+            $tags = Invoke-RestMethod -Uri "$GA_API_URL/tags" -ErrorAction Stop
             if ($tags.Count -gt 0) {
                 $version = $tags[0].name -replace '^v', ''
                 return $version
@@ -23,9 +23,9 @@ function Get-LatestGgaVersion {
     }
 }
 
-function Get-InstalledGgaVersion {
+function Get-InstalledGaVersion {
     try {
-        $version = & gga version 2>$null
+        $version = & ga version 2>$null
         if ($version -match '(\d+\.\d+\.\d+)') {
             return $Matches[1]
         }
@@ -33,15 +33,15 @@ function Get-InstalledGgaVersion {
     return $null
 }
 
-function Detect-Gga {
-    $installed = Get-InstalledGgaVersion
+function Detect-Ga {
+    $installed = Get-InstalledGaVersion
     
     if (-not $installed) {
-        $latest = Get-LatestGgaVersion
+        $latest = Get-LatestGaVersion
         return "NOT_INSTALLED|-|$latest"
     }
     
-    $latest = Get-LatestGgaVersion
+    $latest = Get-LatestGaVersion
     
     if ($installed -eq $latest -or $latest -eq "unknown") {
         $status = "UP_TO_DATE"
@@ -59,56 +59,24 @@ function Detect-Gga {
     return "$status|$installed|$latest"
 }
 
-function Get-LatestOpenspecVersion {
-    try {
-        $result = npm view "@fission-ai/openspec" version 2>$null
-        if ($result) {
-            return $result.Trim()
-        }
-    } catch {}
-    return "unknown"
-}
-
-function Get-InstalledOpenspecVersion {
-    if (Test-Path "package.json") {
-        try {
-            $result = npm list "@fission-ai/openspec" --depth=0 2>$null
-            if ($result -match '@(\d+\.\d+\.\d+)') {
-                return $Matches[1]
-            }
-        } catch {}
-    }
-    return $null
-}
-
-function Detect-Openspec {
-    $installed = Get-InstalledOpenspecVersion
+function Detect-SDD {
+    param([string]$TargetDir = ".")
     
-    if (-not $installed) {
-        $latest = Get-LatestOpenspecVersion
-        return "NOT_INSTALLED|-|$latest"
+    $skillsDir = Join-Path $TargetDir "skills"
+    $count = 0
+    
+    if (Test-Path $skillsDir) {
+        $sddSkills = Get-ChildItem -Path $skillsDir -Directory -Filter "sdd-*" -ErrorAction SilentlyContinue
+        $count = ($sddSkills | Measure-Object).Count
     }
     
-    $latest = Get-LatestOpenspecVersion
-    
-    if ($installed -eq $latest -or $latest -eq "unknown") {
-        $status = "UP_TO_DATE"
+    if ($count -eq 0) {
+        return "NOT_INSTALLED|0|9"
+    } elseif ($count -ge 9) {
+        return "INSTALLED|$count|9"
     } else {
-        try {
-            $installedVer = [Version]$installed
-            $latestVer = [Version]$latest
-            
-            if ($installedVer -lt $latestVer) {
-                $status = "OUTDATED"
-            } else {
-                $status = "UP_TO_DATE"
-            }
-        } catch {
-            $status = "UP_TO_DATE"
-        }
+        return "PARTIAL|$count|9"
     }
-    
-    return "$status|$installed|$latest"
 }
 
 function Detect-VscodeExtensions {
@@ -184,14 +152,14 @@ function Detect-Prerequisites {
 }
 
 function Detect-AllComponents {
-    $gga = Detect-Gga
-    $openspec = Detect-Openspec
+    $ga = Detect-Ga
+    $sdd = Detect-SDD
     $vscode = Detect-VscodeExtensions
     $prereq = Detect-Prerequisites
     
     return @"
-GGA:$gga
-OPENSPEC:$openspec
+GA:$ga
+SDD:$sdd
 VSCODE:$vscode
 PREREQ:$prereq
 "@
@@ -229,14 +197,14 @@ if ($MyInvocation.InvocationName -ne '.') {
     if (-not $command) { $command = "all" }
     
     switch ($command) {
-        "gga" { Detect-Gga }
-        "openspec" { Detect-Openspec }
+        "ga" { Detect-Ga }
+        "sdd" { Detect-SDD }
         "vscode" { Detect-VscodeExtensions }
         "prereq" { Detect-Prerequisites }
         "prerequisites" { Detect-Prerequisites }
         "all" { Detect-AllComponents }
         default {
-            Write-Host "Usage: .\detector.ps1 {gga|openspec|vscode|prereq|all}"
+            Write-Host "Usage: .\detector.ps1 {ga|sdd|vscode|prereq|all}"
             exit 1
         }
     }
