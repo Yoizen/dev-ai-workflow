@@ -84,7 +84,10 @@ GEMINI.md
 
 # GGA
 .osgrep
+.ga/
+.ga
 .gga/
+.gga
 
 # OpenCode
 .opencode/plugins/**/node_modules/

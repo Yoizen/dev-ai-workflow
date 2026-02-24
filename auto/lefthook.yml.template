@@ -1,11 +1,11 @@
-# Lefthook configuration for GGA (Guardian Agent)
+# Lefthook configuration for GA (Guardian Agent)
 # https://github.com/evilmartians/lefthook
 
 # pre-commit:
   # parallel: true
   # commands:
-    # gga-review:
-      # run: gga run
+    # ga-review:
+      # run: ga run
       # stage_fixed: false
     # biome-check:
       # run: |

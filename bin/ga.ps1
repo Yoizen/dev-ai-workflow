@@ -190,7 +190,7 @@ function Cmd-Init {
 
     $config_content = @"
 # Guardian Agent Configuration
-# https://github.com/Yoizen/gga-copilot
+# https://github.com/Yoizen/dev-ai-workflow
 
 # AI Provider (required)
 # Options: claude, gemini, codex, opencode, ollama:<model>, lmstudio[:model], github:<model>
@@ -206,7 +206,7 @@ function Cmd-Init {
 #   PROVIDER="lmstudio:qwen2.5-coder-7b-instruct"
 #   PROVIDER="github:gpt-4o"
 #   PROVIDER="github:deepseek-r1"
-PROVIDER="claude"
+PROVIDER="opencode"
 
 # File patterns to include in review (comma-separated)
 # Default: * (all files)

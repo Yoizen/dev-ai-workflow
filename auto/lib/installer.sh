@@ -344,7 +344,7 @@ install_vscode_extensions() {
 # ============================================================================
 
 apply_project_type() {
-    local project_type="${1:-generic}"
+    local project_type="${1:-nest}"
     local target_dir="${2:-.}"
 
     local auto_lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -440,7 +440,7 @@ import json
 data = json.load(open('$types_json'))
 for name, cfg in data.get('types', {}).items():
     print(f'  {name:<12} - {cfg.get(\"description\", \"\")}')
-print(f'\n  default: {data.get(\"default\", \"generic\")}')
+print(f'\n  default: {data.get(\"default\", \"nest\")}')
 "
     else
         for d in "$types_dir"/*/; do
@@ -474,8 +474,8 @@ configure_project() {
     if [[ -n "$project_type" ]]; then
         apply_project_type "$project_type" "$target_dir"
     else
-        # Fall back to generic type
-        apply_project_type "generic" "$target_dir"
+        # Fall back to nest type
+        apply_project_type "nest" "$target_dir"
     fi
     
     # Copy skills directory
@@ -546,6 +546,8 @@ configure_project() {
         "CURSOR.md"
         "GEMINI.md"
         ".cursorrules"
+        ".ga"
+        ".gga"
         ""
         "# OpenCode"
         ".opencode/plugins/**/node_modules/"
@@ -649,7 +651,7 @@ configure_project() {
     if command -v lefthook &> /dev/null; then
         local lefthook_config="$target_dir/lefthook.yml"
         if [[ ! -f "$lefthook_config" ]]; then
-            local effective_type="${project_type:-generic}"
+            local effective_type="${project_type:-nest}"
             local type_lefthook_template="$auto_dir/types/$effective_type/lefthook.yml"
             local lefthook_template="$auto_dir/lefthook.yml.template"
             if [[ -f "$type_lefthook_template" ]]; then

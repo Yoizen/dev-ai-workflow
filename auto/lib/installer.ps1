@@ -220,7 +220,7 @@ function Set-ProjectConfiguration {
         [string]$TargetDir = ".",
         [bool]$SkipGa = $false,
         [bool]$InstallBiome = $false,
-        [string]$ProjectType = ""
+[string]$ProjectType = "nest"
     )
     
     Write-InfoMsg "Configuring project at $TargetDir..."
@@ -353,6 +353,8 @@ function Set-ProjectConfiguration {
         "CURSOR.md",
         "GEMINI.md",
         ".cursorrules",
+        ".ga",
+        ".gga",
         "",
         "# OpenCode",
         ".opencode/plugins/**/node_modules/",
@@ -1029,16 +1031,16 @@ function Apply-ProjectType {
     $typesDir = Join-Path $autoDir "types"
     $projectRoot = Split-Path -Parent $autoDir
 
-    # Resolve type (fall back to generic)
-    if (-not $ProjectType) { $ProjectType = "generic" }
+    # Resolve type (fall back to nest)
+    if (-not $ProjectType) { $ProjectType = "nest" }
 
     $typeDir = Join-Path $typesDir $ProjectType
     if (-not (Test-Path $typeDir)) {
-        Write-WarningMsg "Unknown project type '$ProjectType'. Falling back to 'generic'."
-        $ProjectType = "generic"
-        $typeDir = Join-Path $typesDir "generic"
+        Write-WarningMsg "Unknown project type '$ProjectType'. Falling back to 'nest'."
+        $ProjectType = "nest"
+        $typeDir = Join-Path $typesDir "nest"
         if (-not (Test-Path $typeDir)) {
-            Write-WarningMsg "generic type directory not found, skipping type application"
+            Write-WarningMsg "nest type directory not found, skipping type application"
             return
         }
     }

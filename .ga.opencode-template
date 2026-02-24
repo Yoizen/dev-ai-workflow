@@ -2,10 +2,10 @@
 # Template for: Opencode AI Coding Agent
 # 
 # Setup:
-# 1. Copy this file as .gga in your project root
+# 1. Copy this file as .ga in your project root
 # 2. Install Opencode: curl -fsSL https://opencode.ai/install | bash
 # 3. Configure Opencode: Run 'opencode' and use '/connect' command
-# 4. Run: gga install
+# 4. Run: ga install
 
 # AI Provider: Opencode AI Coding Agent
 # When connected to GitHub Copilot, you can specify models using:

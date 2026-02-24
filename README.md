@@ -105,11 +105,11 @@ GA Review: PASS
 ### Quick Install
 
 ```bash
-# macOS / Linux
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash
+# macOS / Linux (NestJS default)
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --all --type=nest
 
-# Windows (PowerShell)
-irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1 | iex
+# Windows (PowerShell - NestJS default)
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -All -Type nest
 ```
 
 ### Con tipo de proyecto
@@ -165,10 +165,10 @@ Ver [instalación avanzada](auto/README.md) para más opciones.
 Al instalar podés especificar el tipo de proyecto para obtener un `AGENTS.md` y `REVIEW.md` adaptados, más las skills correspondientes:
 
 ```bash
-bash auto/bootstrap.sh --install-sdd --type=nest      # NestJS / TypeScript
+bash auto/bootstrap.sh --install-sdd --type=nest      # NestJS / TypeScript (default)
 bash auto/bootstrap.sh --install-sdd --type=python    # Python / FastAPI / Django
 bash auto/bootstrap.sh --install-sdd --type=dotnet    # .NET / C# / ASP.NET Core
-bash auto/bootstrap.sh --install-sdd --type=generic   # Genérico (default)
+bash auto/bootstrap.sh --install-sdd --type=generic   # Genérico
 ```
 
 ```powershell
@@ -186,10 +186,10 @@ bash auto/bootstrap.sh --list-types
 
 | Tipo | Descripción | Skills incluidas |
 |------|-------------|-----------------|
-| `nest` | NestJS backend (TypeScript, Clean Architecture) | git-commit, biome, skill-creator, skill-sync |
+| `nest` | NestJS backend (TypeScript, Clean Architecture) (default) | git-commit, biome, skill-creator, skill-sync |
 | `python` | Python backend / scripts (FastAPI, Django) | git-commit, skill-creator, skill-sync |
 | `dotnet` | .NET / C# (ASP.NET Core, Clean Architecture) | git-commit, skill-creator, skill-sync |
-| `generic` | Genérico — language-agnostic (default) | git-commit, skill-creator, skill-sync |
+| `generic` | Genérico — language-agnostic | git-commit, skill-creator, skill-sync |
 
 Cada tipo instala un `AGENTS.md` con reglas específicas del stack y un `REVIEW.md` con checklist de code review adaptado. Si no especificás `--type`, se usa `generic`.
 

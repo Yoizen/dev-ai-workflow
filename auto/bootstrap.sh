@@ -56,7 +56,7 @@ SKIP_SDD=false
 SKIP_VSCODE=false
 PROVIDER=""
 TARGET_DIR=""
-PROJECT_TYPE=""
+PROJECT_TYPE="nest"
 UPDATE_ALL=false
 FORCE=false
 SILENT=false
@@ -321,22 +321,22 @@ run_automated_installation() {
     local git_version node_version npm_version vscode_status
     IFS='|' read -r git_version node_version npm_version vscode_status <<< "$prereq_status"
     
-    if [[ "${git_version,,}" == "not_found" ]]; then
+    if [[ "$git_version" == "not_found" ]]; then
         print_error "Missing prerequisite: Git is required."
         exit 1
     fi
     
     # node/npm only required when installing hooks (TypeScript build)
     if [[ "$INSTALL_HOOKS" == true ]]; then
-        if [[ "${node_version,,}" == "not_found" ]] || [[ "${npm_version,,}" == "not_found" ]]; then
+        if [[ "$node_version" == "not_found" ]] || [[ "$npm_version" == "not_found" ]]; then
             print_error "Node.js and npm are required to install OpenCode hooks."
             exit 1
         fi
     fi
     
     print_success "Git $git_version"
-    [[ "${node_version,,}" != "not_found" ]] && print_success "Node.js $node_version" || print_warning "Node.js not found (only needed for --hooks)"
-    [[ "${npm_version,,}" != "not_found" ]] && print_success "npm $npm_version" || print_warning "npm not found (only needed for --hooks)"
+    [[ "$node_version" != "not_found" ]] && print_success "Node.js $node_version" || print_warning "Node.js not found (only needed for --hooks)"
+    [[ "$npm_version" != "not_found" ]] && print_success "npm $npm_version" || print_warning "npm not found (only needed for --hooks)"
 
     if [[ "$vscode_status" == "available" ]]; then
         print_success "VS Code CLI available"
@@ -412,7 +412,7 @@ run_automated_installation() {
         else
             print_info "[DRY RUN] Would configure project in $TARGET_DIR"
             [[ -n "$PROVIDER" ]] && print_info "[DRY RUN] Would set provider to: $PROVIDER"
-            [[ -n "$PROJECT_TYPE" ]] && print_info "[DRY RUN] Would apply project type: $PROJECT_TYPE" || print_info "[DRY RUN] Would apply project type: generic"
+            [[ -n "$PROJECT_TYPE" ]] && print_info "[DRY RUN] Would apply project type: $PROJECT_TYPE" || print_info "[DRY RUN] Would apply project type: nest"
             [[ "$INSTALL_BIOME" == true ]] && print_info "[DRY RUN] Would apply optional Biome baseline"
         fi
     fi
@@ -459,14 +459,14 @@ run_interactive_installation() {
     local git_version node_version npm_version vscode_status
     IFS='|' read -r git_version node_version npm_version vscode_status <<< "$prereq_status"
     
-    if [[ "${git_version,,}" == "not_found" ]]; then
+    if [[ "$git_version" == "not_found" ]]; then
         print_error "Missing prerequisite: Git is required."
         exit 1
     fi
     
     print_success "Git $git_version"
-    [[ "${node_version,,}" != "not_found" ]] && print_success "Node.js $node_version" || print_warning "Node.js not found (only needed for --hooks)"
-    [[ "${npm_version,,}" != "not_found" ]] && print_success "npm $npm_version" || print_warning "npm not found (only needed for --hooks)"
+    [[ "$node_version" != "not_found" ]] && print_success "Node.js $node_version" || print_warning "Node.js not found (only needed for --hooks)"
+    [[ "$npm_version" != "not_found" ]] && print_success "npm $npm_version" || print_warning "npm not found (only needed for --hooks)"
     [[ "$vscode_status" == "available" ]] && print_success "VS Code CLI available" || print_warning "VS Code CLI not found"
     echo ""
     

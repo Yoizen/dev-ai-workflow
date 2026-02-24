@@ -17,7 +17,7 @@ get_version() {
   local pkg_paths=(
     "$PROJECT_DIR/package.json"
     "$HOME/.local/share/ga/package.json"
-    "$HOME/.local/share/yoizen/gga-copilot/package.json"
+    "$HOME/.local/share/yoizen/dev-ai-workflow/package.json"
   )
   
   for pkg in "${pkg_paths[@]}"; do
@@ -286,7 +286,7 @@ cmd_init() {
 
   cat > "$PROJECT_CONFIG" << 'EOF'
 # Guardian Agent Configuration
-# https://github.com/Yoizen/gga-copilot
+# https://github.com/Yoizen/dev-ai-workflow
 
 # AI Provider (required)
 # Options: claude, gemini, codex, opencode, ollama:<model>, lmstudio[:model], github:<model>
@@ -302,7 +302,7 @@ cmd_init() {
 #   PROVIDER="lmstudio:qwen2.5-coder-7b-instruct"
 #   PROVIDER="github:gpt-4o"
 #   PROVIDER="github:deepseek-r1"
-PROVIDER="claude"
+PROVIDER="opencode"
 
 # File patterns to include in review (comma-separated)
 # Default: * (all files)

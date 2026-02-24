@@ -28,7 +28,7 @@ param(
     [switch]$Hooks,
     [switch]$Biome,
 
-    [string]$Type = "",
+    [string]$Type = "nest",
     [switch]$ListTypes
 )
 
