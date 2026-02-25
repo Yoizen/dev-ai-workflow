@@ -1,6 +1,6 @@
 {
   "name": "workflow-dev-ai",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "**Provider-agnostic AI code review** — Enforce coding standards on every commit using Claude, Gemini, Codex, Ollama, or any LLM. **Pure Bash** (Linux/Mac) or **PowerShell** (Windows).",
   "main": "index.js",
   "directories": {
