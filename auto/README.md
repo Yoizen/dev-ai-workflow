@@ -255,8 +255,8 @@ jobs:
         run: |
           curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/bootstrap.sh | bash -s -- --all --skip-vscode --silent
       
-      - name: Run GA review
-        run: ga review
+      - name: Run Guardian Agent
+        run: ga run
 ```
 
 ### Multi-Project Setup
@@ -286,7 +286,7 @@ your-project/
 ├── .ga                              # GA configuration
 ├── .git/
 │   └── hooks/
-│       └── pre-commit                # GA review hook
+│       └── pre-commit                # GA hook
 ├── AGENTS.MD                         # AI agent directives
 ├── REVIEW.md                         # Code review checklist
 ├── skills/                           # Skills directory

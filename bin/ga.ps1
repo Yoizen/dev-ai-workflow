@@ -90,7 +90,7 @@ function Print-Help {
     Write-Host "  ga <command> [options]"
     Write-Host ""
     Write-Host "COMMANDS:" -ForegroundColor White
-    Write-Host "  run [--no-cache]  Run code review on staged files"
+    Write-Host "  run [--no-cache]  Run code review on staged files (alias: review)"
     Write-Host "  install           Install git pre-commit hook (default)"
     Write-Host "  install --commit-msg"
     Write-Host "                    Install git commit-msg hook (for commit message validation)"
@@ -125,6 +125,7 @@ function Print-Help {
     Write-Host "  ga install       # Install pre-commit hook"
     Write-Host "  ga install --commit-msg  # Install commit-msg hook"
     Write-Host "  ga run           # Run review (with cache)"
+    Write-Host "  ga review        # Alias for 'ga run'"
     Write-Host "  ga run --no-cache # Run review (ignore cache)"
     Write-Host "  ga run --ci      # Run review in CI (last commit)"
     Write-Host ""

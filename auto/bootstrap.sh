@@ -585,7 +585,7 @@ show_next_steps() {
     [[ "$INSTALL_GA" == true ]] && [[ -n "$PROVIDER" ]] && echo -e "${WHITE}  1. Review .ga config (provider: $PROVIDER)${NC}"
     echo -e "${WHITE}  2. Customize AGENTS.MD for your project${NC}"
     [[ "$INSTALL_SDD" == true ]] && echo -e "${WHITE}  3. Use SDD Orchestrator for spec-driven development${NC}"
-    [[ "$INSTALL_GA" == true ]] && echo -e "${WHITE}  4. Run 'ga review' before committing code${NC}"
+    [[ "$INSTALL_GA" == true ]] && echo -e "${WHITE}  4. Run 'ga run' before committing code${NC}"
     echo ""
     echo -e "${CYAN}Repository path: $repo_path${NC}"
     echo ""

@@ -504,7 +504,7 @@ function Show-NextSteps {
     if ($script:InstallGA -and $script:Provider) { Write-Host "  1. Review .ga config (provider: $($script:Provider))" -ForegroundColor $WHITE }
     Write-Host "  2. Customize AGENTS.MD for your project" -ForegroundColor $WHITE
     if ($script:InstallSDD) { Write-Host "  3. Use SDD Orchestrator for spec-driven development" -ForegroundColor $WHITE }
-    if ($script:InstallGA) { Write-Host "  4. Run 'ga review' before committing code" -ForegroundColor $WHITE }
+    if ($script:InstallGA) { Write-Host "  4. Run 'ga run' before committing code" -ForegroundColor $WHITE }
     Write-Host ""
     Write-Host "Repository path: $RepoPath" -ForegroundColor $CYAN
     Write-Host ""

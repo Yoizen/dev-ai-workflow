@@ -47,12 +47,9 @@ fi
 
 # Check if already installed
 if [[ -f "$INSTALL_DIR/ga" ]]; then
-    echo -e "${YELLOW}⚠️  ga is already installed${NC}"
-    read -p "Reinstall? (y/N): " confirm
-    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        echo "Aborted."
-        exit 0
-    fi
+    echo -e "${YELLOW}⚠️  Existing ga found at $INSTALL_DIR/ga${NC}"
+    echo -e "${BLUE}ℹ️  Removing old version for update...${NC}"
+    rm -f "$INSTALL_DIR/ga"
 fi
 
 # Create lib directory
@@ -93,6 +90,16 @@ if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
   echo ""
 fi
 
+# Check for ga alias conflict (common in oh-my-zsh)
+echo -e "${BOLD}Checking for command conflicts...${NC}"
+if type ga 2>/dev/null | grep -q 'alias'; then
+  GA_ALIAS_VALUE=$(alias ga 2>/dev/null)
+  echo -e "${YELLOW}⚠️  Warning: 'ga' is currently aliased to: $GA_ALIAS_VALUE${NC}"
+  echo -e "   This will prevent you from running Guardian Agent using 'ga'."
+  echo -e "   You must use ${CYAN}unalias ga${NC} or call it as ${CYAN}\\ga${NC} to bypass the alias."
+  echo ""
+fi
+
 echo -e "${BOLD}Getting started:${NC}"
 echo ""
 echo "  1. Navigate to your project:"
@@ -101,10 +108,11 @@ echo ""
 echo "  2. Initialize config:"
 echo "     ga init"
 echo ""
-echo "  3. Create your REVIEW.md with coding standards"
+echo "  3. Create your AGENTS.md with coding standards"
 echo ""
 echo "  4. Install the git hook:"
 echo "     ga install"
 echo ""
 echo "  5. You're ready! The hook will run on each commit."
+echo "     (Tip: if ga is aliased, run \\ga run)"
 echo ""

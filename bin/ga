@@ -99,7 +99,7 @@ print_help() {
   echo "  ga <command> [options]"
   echo ""
   echo -e "${BOLD}COMMANDS:${NC}"
-  echo "  run [--no-cache]  Run code review on staged files"
+  echo "  run [--no-cache]  Run code review on staged files (alias: review)"
   echo "  install           Install git pre-commit hook (default)"
   echo "  install --commit-msg"
   echo "                    Install git commit-msg hook (for commit message validation)"
@@ -141,6 +141,7 @@ print_help() {
   echo "  ga install            # Install pre-commit hook (default)"
   echo "  ga install --commit-msg  # Install commit-msg hook"
   echo "  ga run                # Run review (with cache)"
+  echo "  ga review             # Alias for 'ga run'"
   echo "  ga run --no-cache     # Run review (ignore cache)"
   echo "  ga run --ci           # Run review in CI (last commit)"
   echo "  ga run --pr-mode      # Review full PR changes"
@@ -1143,7 +1144,7 @@ EOF
 
 main() {
   case "${1:-}" in
-    run)
+    run|review)
       shift
       cmd_run "$@"
       ;;
