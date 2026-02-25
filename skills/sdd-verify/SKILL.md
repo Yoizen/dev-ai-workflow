@@ -24,15 +24,9 @@ From the orchestrator:
 - The `tasks.md` content (with completion status)
 - Project config from `.sdd/config.yaml`
 
-## Execution and Persistence Contract
+## Execution Contract
 
-From the orchestrator:
-- `artifact_store.mode`: `auto | file | none`
-- `detail_level`: `concise | standard | deep`
-
-Rules:
-- If mode resolves to `none`, do not create report files; return verification result only.
-- If mode resolves to `file`, save `verify-report.md` as defined in this skill.
+**This skill ALWAYS creates files on disk.** When invoked, you MUST create the `verify-report.md` file in the change directory. Do NOT skip file creation or resolve to a "none" mode.
 
 ## What to Do
 
@@ -233,6 +227,6 @@ Return to the orchestrator the same content you wrote to `verify-report.md`:
 - If tests exist, run them if possible and report results
 - Always run security and regression audit — do not skip even for small changes
 - DO NOT fix any issues — only report them. The orchestrator decides what to do.
-- In `file` mode, ALWAYS save the report to `.sdd/changes/{change-name}/verify-report.md`
+- ALWAYS save the report to `.sdd/changes/{change-name}/verify-report.md`
 - Apply any `rules.verify` from `.sdd/config.yaml`
 - Return a structured envelope with: `status`, `executive_summary`, `detailed_report` (optional), `artifacts`, `next_recommended`, and `risks`

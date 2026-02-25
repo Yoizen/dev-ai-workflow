@@ -1,15 +1,11 @@
 ﻿## Workflow
 Selecciona **Agent mode** y usa SDD Orchestrator (SDD):
 ~~~
-/sdd:init                  # Inicializa SDD en el repo (una sola vez)
-/sdd:new dark-mode         # Crea feature/change
-/sdd:ff dark-mode          # Genera plan completo
-/sdd:apply                 # Implementa tareas pendientes
+/sdd-init                  # Inicializa SDD en el repo (una sola vez)
+sdd:new dark-mode          # Crea propuesta del change
+sdd:ff dark-mode           # Fast-forward: genera spec + diseño + tareas
+/sdd-apply                 # Implementa tareas pendientes
 git commit                 # GA hace review automatico
-~~~
-Para retomar trabajo de un change ya creado:
-~~~
-/sdd:continue dark-mode
 ~~~
 ---
 ## Cuando usar cada modo
@@ -37,11 +33,11 @@ Copilot escribe el plan. Vos lo revisas. Después:
 ### Feature grande -> SDD Orchestrator (SDD)
 Para features que cruzan multiples archivos/sistemas:
 ~~~
-/sdd:new sistema-de-pagos
-/sdd:ff sistema-de-pagos
-/sdd:apply
+sdd:new sistema-de-pagos
+sdd:ff sistema-de-pagos
+/sdd-apply
 ~~~
-SDD Orchestrator genera specs formales, tareas, y trackea el progreso con sub-agents especializados.
+SDD Orchestrator genera specs formales, diseño técnico, tareas, y trackea el progreso con sub-agents especializados.
 ### Resumen
 | Complejidad | Modo | Ejemplo |
 |-------------|------|---------|
@@ -63,37 +59,50 @@ SDD Orchestrator genera specs formales, tareas, y trackea el progreso con sub-ag
 - Modelo barato -> ejecutar, commits, reviews rutinarias
 ---
 ## Comandos SDD Orchestrator (SDD)
+
+### Atajos (recomendado)
 | Comando | Que hace |
 |---------|----------|
-| /sdd:init | Inicializa el flujo SDD en el proyecto |
-| /sdd:explore idea | Explora una idea antes de crear el change |
-| /sdd:new nombre | Crea un nuevo change/feature |
-| /sdd:continue nombre | Retoma un change existente |
-| /sdd:ff nombre | Fast-forward: genera propuesta, spec y tareas |
-| /sdd:apply | Implementa tareas del change activo |
-| /sdd:verify | Verifica implementación contra la spec |
-| /sdd:archive | Archiva un change terminado |
+| `sdd:new` nombre | Crea propuesta para un nuevo change (→ `/sdd-propose`) |
+| `sdd:ff` nombre | Fast-forward: genera propuesta + spec + diseño + tareas |
+
+### Slash commands individuales
+| Comando | Que hace |
+|---------|----------|
+| `/sdd-init` | Inicializa el flujo SDD en el proyecto |
+| `/sdd-explore` | Explora una idea antes de crear el change |
+| `/sdd-propose` | Crea propuesta del change |
+| `/sdd-spec` | Genera specs y requerimientos |
+| `/sdd-design` | Genera diseño técnico y decisiones de arquitectura |
+| `/sdd-tasks` | Breakdown en tareas de implementación |
+| `/sdd-apply` | Implementa tareas del change activo |
+| `/sdd-verify` | Verifica implementación contra la spec |
+| `/sdd-archive` | Archiva un change terminado |
 ---
 ## Ejemplo Completo
 ~~~
-> /sdd:init
+> /sdd-init
 Copilot: SDD inicializado para este repositorio.
-> /sdd:new login-con-google
-Copilot: Creando change 'login-con-google'...
-         Inicializando sub-agents SDD...
-> /sdd:ff login-con-google
-Copilot: Fast-forward completado. Artefactos generados:
-         - proposal.md
-         - tasks.md
-         - spec.md
-> /sdd:apply
-Copilot: Implementando tarea 1/3: Agregar boton de login...
+
+> sdd:new login-con-google
+Copilot: Creando propuesta 'login-con-google'...
+         → .sdd/changes/login-con-google/proposal.md
+
+> sdd:ff login-con-google
+Copilot: Fast-forward: generando spec, diseño y tareas...
+         → .sdd/changes/login-con-google/specs/auth/spec.md
+         → .sdd/changes/login-con-google/design.md
+         → .sdd/changes/login-con-google/tasks.md
+
+> /sdd-apply
+Copilot: Implementando tarea 1.1: Agregar boton de login...
          [edita archivos]
-         Implementando tarea 2/3: Configurar OAuth...
+         Implementando tarea 2.1: Configurar OAuth...
          [edita archivos]
-         Implementando tarea 3/3: Manejar callback...
+         Implementando tarea 2.2: Manejar callback...
          [edita archivos]
          Todas las tareas completadas.
+
 > git commit -m "feat: login con google"
 GA Review: PASS
 [main abc1234] feat: login con google

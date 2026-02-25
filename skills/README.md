@@ -44,11 +44,33 @@ Read skills/{skill-name}/SKILL.md
 
 ### Development Skills
 
-| Skill | Description | Use |
-|-------|-------------|-----|
-| `biome` | Biome linter and formatter | Lint/format code |
-| `git-commit` | Commit standards and best practices | Create commits |
+| Skill | Slash Command | Description |
+|-------|--------------|-------------|
+| `biome` | — | Biome linter and formatter |
+| `git-commit` | — | Commit standards and best practices |
+| `skill-creator` | — | Create new skills |
+| `skill-sync` | — | Sync skills with AGENTS.md |
 
+### Atajos SDD (recomendado)
+
+| Atajo | Que hace | Skills que ejecuta |
+|-------|----------|-------------------|
+| `sdd:new` nombre | Crea propuesta del change | `sdd-propose` |
+| `sdd:ff` nombre | Fast-forward completo | `sdd-propose` → `sdd-spec` → `sdd-design` → `sdd-tasks` |
+
+### SDD Orchestrator Skills
+
+| Skill | Slash Command | Description |
+|-------|--------------|-------------|
+| `sdd-init` | `/sdd-init` | Bootstrap `.sdd/` directory |
+| `sdd-explore` | `/sdd-explore` | Explore and investigate ideas |
+| `sdd-propose` | `/sdd-propose` | Create a change proposal |
+| `sdd-spec` | `/sdd-spec` | Write specifications and requirements |
+| `sdd-design` | `/sdd-design` | Technical design and architecture decisions |
+| `sdd-tasks` | `/sdd-tasks` | Break down into implementation tasks |
+| `sdd-apply` | `/sdd-apply` | Implement tasks, write actual code |
+| `sdd-verify` | `/sdd-verify` | Validate implementation against specs |
+| `sdd-archive` | `/sdd-archive` | Merge specs and archive completed changes |
 
 ## Skill Structure
 

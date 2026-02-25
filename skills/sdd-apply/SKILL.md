@@ -25,15 +25,9 @@ From the orchestrator:
 - The `tasks.md` content (for the full task list)
 - Project config from `.sdd/config.yaml`
 
-## Execution and Persistence Contract
+## Execution Contract
 
-From the orchestrator:
-- `artifact_store.mode`: `auto | file | none`
-- `detail_level`: `concise | standard | deep`
-
-Rules:
-- If mode resolves to `none`, do not update project artifacts (including `tasks.md`); return progress only.
-- If mode resolves to `file`, update `tasks.md` and file artifacts as defined in this skill.
+**This skill ALWAYS creates and modifies files on disk.** When invoked, you MUST implement code changes and update `tasks.md` progress. Do NOT skip file operations or resolve to a "none" mode.
 
 ## What to Do
 
@@ -154,7 +148,7 @@ When specs, design, and reality disagree:
 - ALWAYS follow the design decisions — don't freelance a different approach
 - ALWAYS match existing code patterns and conventions in the project
 - ALWAYS self-verify each task against its spec scenarios before marking complete
-- In `file` mode, mark tasks complete in `tasks.md` AS you go, not at the end
+- Mark tasks complete in `tasks.md` AS you go, not at the end
 - If you discover the design is wrong or incomplete, NOTE IT in your return summary — don't silently deviate
 - If a task is blocked by something unexpected, STOP and report back
 - NEVER implement tasks that weren't assigned to you

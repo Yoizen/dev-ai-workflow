@@ -23,15 +23,9 @@ From the orchestrator:
 - Relevant source code (the orchestrator may provide key file contents)
 - Project config from `.sdd/config.yaml`
 
-## Execution and Persistence Contract
+## Execution Contract
 
-From the orchestrator:
-- `artifact_store.mode`: `auto | file | none`
-- `detail_level`: `concise | standard | deep`
-
-Rules:
-- If mode resolves to `none`, do not create or modify project files; return result only.
-- If mode resolves to `file`, use the file paths defined in this skill.
+**This skill ALWAYS creates files on disk.** When invoked, you MUST create the `design.md` file in the change directory. Do NOT skip file creation or resolve to a "none" mode.
 
 ## What to Do
 

@@ -21,16 +21,9 @@ The orchestrator will give you:
 - The project's `.sdd/config.yaml` context (if it exists)
 - Optionally: existing specs from `.sdd/specs/` that might be relevant
 
-## Execution and Persistence Contract
+## Execution Contract
 
-From the orchestrator:
-- `artifact_store.mode`: `auto | file | none`
-- `detail_level`: `concise | standard | deep`
-
-Rules:
-- `detail_level` controls output depth; architecture-wide explorations may require deep reports.
-- If mode resolves to `none`, return result only.
-- If mode resolves to `file`, `exploration.md` may be created when a change name is provided.
+**This skill ALWAYS creates files on disk when a change name is provided.** When invoked, you MUST create the `exploration.md` file. Do NOT skip file creation or resolve to a "none" mode.
 
 ## What to Do
 

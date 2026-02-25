@@ -3,11 +3,16 @@ name: sdd-propose
 description: >
   Create a change proposal with intent, scope, and approach.
   Trigger: "propose", "propuesta", "proposal", "new change",
-  "nuevo cambio", "sdd new", "sdd propose", "/sdd:new".
+  "nuevo cambio", "sdd new", "sdd propose", "/sdd:new",
+  "sdd:ff", "fast-forward", "fast forward".
+
+  When triggered by "sdd:ff" or "fast-forward": after creating the proposal,
+  AUTOMATICALLY continue by executing sdd-spec, sdd-design, and sdd-tasks
+  in sequence (do NOT stop after the proposal).
 
 metadata:
   author: Yoizen
-  version: "2.0"
+  version: "2.1"
 ---
 
 ## Purpose
@@ -22,15 +27,9 @@ From the orchestrator:
 - Project config from `.sdd/config.yaml` (if exists)
 - Any existing specs from `.sdd/specs/` relevant to this change
 
-## Execution and Persistence Contract
+## Execution Contract
 
-From the orchestrator:
-- `artifact_store.mode`: `auto | file | none`
-- `detail_level`: `concise | standard | deep`
-
-Rules:
-- If mode resolves to `none`, do not create or modify project files; return result only.
-- If mode resolves to `file`, use the file paths defined in this skill.
+**This skill ALWAYS creates files on disk.** When invoked, you MUST create the `proposal.md` file in the change directory. Do NOT skip file creation or resolve to a "none" mode.
 - Never force `.sdd/` creation unless user requested file-based persistence or project already uses it.
 
 ## What to Do
@@ -156,7 +155,7 @@ Ready for specs (sdd-spec) or design (sdd-design).
 
 ## Rules
 
-- In `file` mode, ALWAYS create the `proposal.md` file
+- ALWAYS create the `proposal.md` file
 - If the change directory already exists with a proposal, READ it first and UPDATE it
 - Keep the proposal CONCISE — it's a thinking tool, not a novel
 - Every proposal MUST have a rollback plan

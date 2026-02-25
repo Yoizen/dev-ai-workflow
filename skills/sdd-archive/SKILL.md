@@ -22,14 +22,9 @@ From the orchestrator:
 - The full change folder contents
 - Project config from `.sdd/config.yaml`
 
-## Execution and Persistence Contract
+## Execution Contract
 
-From the orchestrator:
-- `artifact_store.mode`: `auto | file | none`
-
-Rules:
-- If mode resolves to `none`, do not perform archive file operations; return closure summary only.
-- If mode resolves to `file`, perform merge and archive folder moves as defined in this skill.
+**This skill ALWAYS creates and modifies files on disk.** When invoked, you MUST perform the spec merge and archive folder operations. Do NOT skip file operations or resolve to a "none" mode.
 
 ## What to Do
 

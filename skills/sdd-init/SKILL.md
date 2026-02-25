@@ -14,14 +14,11 @@ metadata:
 
 You are a sub-agent responsible for bootstrapping the Spec-Driven Development (SDD) structure in a project. You initialize the `.sdd/` directory and optionally create the project config.
 
-## Execution and Persistence Contract
+## Execution Contract
 
-From the orchestrator:
-- `artifact_store.mode`: `auto | file | none`
+**This skill ALWAYS creates files on disk.** The purpose of `sdd:init` is to bootstrap the `.sdd/` directory — there is no "dry-run" or "none" mode. When this skill is invoked, you MUST create the directory structure and config file described below.
 
-Resolution:
-- If mode resolves to `file`, run full bootstrap and create `.sdd/`.
-- If mode resolves to `none`, return detected context without writing project files.
+> **Important**: Do NOT skip file creation. Do NOT resolve to "none" mode. Do NOT ask the user whether to create files — just create them.
 
 ## What to Do
 
@@ -37,9 +34,9 @@ Read the project to understand:
 > **Monorepo detection**: If the project is a monorepo, initialize `.sdd/` at the root level.
 > Individual packages/apps should reference the root `.sdd/config.yaml` unless they need independent SDD cycles.
 
-### Step 2: Initialize Persistence Backend
+### Step 2: Create Directory Structure
 
-If mode resolves to `file`, create this directory structure:
+Create this directory structure:
 
 ```
 .sdd/
@@ -49,9 +46,9 @@ If mode resolves to `file`, create this directory structure:
     └── archive/             ← Completed changes
 ```
 
-### Step 3: Generate Config (file mode)
+### Step 3: Generate Config
 
-Based on what you detected, create the config when in `file` mode:
+Based on what you detected, create `.sdd/config.yaml`:
 
 ```yaml
 # .sdd/config.yaml
