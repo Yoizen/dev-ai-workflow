@@ -1,27 +1,48 @@
-# Code Review Rules — NestJS
+# Code Review Checklist
 
-## TypeScript
-- No usar `any`. Siempre tipar explícitamente.
-- Usar `const` en vez de `let` donde sea posible.
-- Strict mode habilitado (`tsconfig.json`).
+The reviewer must verify **each** of these points before approving the PR.
+Any violation of points marked as 🛑 **BLOCKING** requires immediate changes.
 
-## NestJS
-- Todo endpoint público debe tener DTO con `class-validator` y `whitelist: true`.
-- No lógica de negocio en Controllers — solo orquestación.
-- Usar `@Injectable()` correctamente, sin singletons manuales.
-- No `console.log` — usar `Logger` de NestJS o `Pino`.
+## 0. 📋 Process & Documentation (🛑 BLOCKING)
+*Before reviewing code, verify the "Spec-First" compliance using SDD Orchestrator (SDD).*
+- [ ] **Spec Exists**:
+    - **Features**: A proposal and tasks artifact exist (via `/sdd:new` + `/sdd:ff` or equivalent).
+    - **Bugfixes**: PR description includes "Bugfix Rationale".
+- [ ] **Alignment**: The implemented code matches the plan defined in the tasks artifact.
+- [ ] **PR Link**: The PR description includes a link to the relevant Spec/Ticket.
 
-## Arquitectura
-- Respetar capas: Domain → Application → Infrastructure.
-- ❌ No importar módulos de infraestructura desde el Domain Layer.
-- ❌ No decoradores ORM dentro de Domain Entities.
+## 1. 🏗 Architecture & Structure (🛑 BLOCKING)
+- [ ] **Clean Architecture**: Domain does not import Infrastructure (e.g., Entities do not import TypeORM or HTTP modules).
+- [ ] **Single Responsibility**: The service/class does one thing well.
+- [ ] **Size Limits**:
+    - [ ] No file exceeds **500 lines**.
+    - [ ] No function exceeds **80 lines**.
+    - [ ] Constructor injections ≤ 5.
+- [ ] **Location**: Code is in the correct folder (`dto`, `services`, `controllers`).
 
-## Seguridad
-- ❌ No hardcodear credenciales o tokens.
-- Todos los secretos deben venir de variables de entorno.
-- Sanitizar todas las entradas de usuario con DTOs.
+## 2. 🛡 Security & Performance (🛑 BLOCKING)
+- [ ] **NO Hardcoded Secrets**: No keys, tokens, or passwords in the code.
+- [ ] **Sanitization**: DTOs have validators (`@IsString()`, etc.) and `whitelist: true`.
+- [ ] **Async/Await**: No "Callback Hell" or detached promises.
+- [ ] **DB Queries**:
+    - [ ] Pagination is used for lists.
+    - [ ] DB Indices are respected.
+    - [ ] No obvious N+1 queries in loops.
 
-## Testing
-- Toda feature nueva necesita tests unitarios.
-- Mocks para dependencias externas en unit tests.
-- Coverage mínimo: 80% en servicios de negocio.
+## 3. 🧹 Clean Code & Standards
+- [ ] **Naming**: Variables/Functions in `camelCase`, Classes in `PascalCase`. Descriptive names (No `const data`, `var x`).
+- [ ] **Language**: Code and comments in **English**. Docs/Specs may be in Spanish (if team policy allows).
+- [ ] **Logs**: Structured Logger (Pino) is used, not `console.log`.
+- [ ] **Error Handling**: Proper `HttpException` (404, 400) thrown instead of generic 500 errors.
+
+## 4. 🧪 Testing
+- [ ] **Unit Tests**: New business logic is covered.
+- [ ] **Integration**: If an endpoint changed, E2E tests pass or were updated.
+- [ ] **Coverage**: Overall project coverage does not decrease significantly.
+
+## 5. 📝 Maintainability
+- [ ] **Dead Code**: No commented-out code or unused imports.
+- [ ] **TODOs**: If a `TODO` exists, it must have an associated Jira/GitHub ticket ID.
+
+---
+*If this PR is an urgent Hotfix that violates a rule, it must bear the `waiver-approved` label and a linked technical debt ticket.*
