@@ -20,11 +20,46 @@ function Install-Ga {
             Write-InfoMsg "Installing GA..."
             
             if (Test-Path $GA_DIR) {
-                Write-WarningMsg "GA directory already exists, pulling latest changes..."
+                Write-WarningMsg "GA directory already exists"
+                Write-InfoMsg "Pulling latest changes..."
                 Push-Location $GA_DIR
-                git fetch origin --quiet 2>&1 | Out-Null
-                git pull origin main --quiet 2>&1 | Out-Null
-                Pop-Location
+                try {
+                    git fetch origin --quiet 2>&1 | Out-Null
+
+                    # Stash local changes if any exist
+                    $stashCreated = $false
+                    $status = git status --porcelain 2>&1
+                    if ($status) {
+                        git stash push -m "Auto-stash before GA update" --include-untracked --quiet 2>&1 | Out-Null
+                        $stashCreated = $true
+                    }
+
+                    # Fast-forward merge
+                    $merged = $false
+                    git merge --ff-only origin/main 2>&1 | Out-Null
+                    if ($LASTEXITCODE -eq 0) { $merged = $true }
+                    else {
+                        git merge --ff-only origin/master 2>&1 | Out-Null
+                        if ($LASTEXITCODE -eq 0) { $merged = $true }
+                    }
+
+                    # Restore stash
+                    if ($stashCreated) {
+                        git stash pop --quiet 2>&1 | Out-Null
+                    }
+
+                    if ($merged) {
+                        # Update npm dependencies if package.json exists
+                        if (Test-Path (Join-Path $GA_DIR "package.json")) {
+                            & npm install 2>&1 | Out-Null
+                        }
+                        Write-Success "GA updated to latest"
+                    } else {
+                        Write-WarningMsg "Could not update GA automatically, you may need to update manually"
+                    }
+                } finally {
+                    Pop-Location
+                }
             } else {
                 Write-InfoMsg "Cloning GA repository..."
                 $parentDir = Split-Path -Parent $GA_DIR
@@ -59,9 +94,46 @@ function Install-Ga {
             
             Write-InfoMsg "Updating GA..."
             Push-Location $GA_DIR
-            git fetch origin --quiet 2>&1 | Out-Null
-            git pull origin main --quiet 2>&1 | Out-Null
-            Pop-Location
+            $updateOk = $false
+            try {
+                git fetch origin --quiet 2>&1 | Out-Null
+
+                # Stash local changes if any exist
+                $stashCreated = $false
+                $status = git status --porcelain 2>&1
+                if ($status) {
+                    git stash push -m "Auto-stash before GA update" --include-untracked --quiet 2>&1 | Out-Null
+                    $stashCreated = $true
+                }
+
+                # Fast-forward merge
+                git merge --ff-only origin/main 2>&1 | Out-Null
+                if ($LASTEXITCODE -eq 0) { $updateOk = $true }
+                else {
+                    git merge --ff-only origin/master 2>&1 | Out-Null
+                    if ($LASTEXITCODE -eq 0) { $updateOk = $true }
+                }
+
+                # Restore stash
+                if ($stashCreated) {
+                    git stash pop --quiet 2>&1 | Out-Null
+                }
+
+                if ($updateOk) {
+                    # Update npm dependencies
+                    if (Test-Path (Join-Path $GA_DIR "package.json")) {
+                        & npm install 2>&1 | Out-Null
+                    }
+                } else {
+                    Write-WarningMsg "Could not update GA automatically, you may need to update manually"
+                }
+            } finally {
+                Pop-Location
+            }
+
+            if (-not $updateOk) {
+                return $false
+            }
             
             Write-InfoMsg "Reinstalling GA..."
             Push-Location $GA_DIR

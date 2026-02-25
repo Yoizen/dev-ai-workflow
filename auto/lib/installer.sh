@@ -122,13 +122,34 @@ install_ga() {
                     if [[ "$should_update" == "true" ]]; then
                         print_info "Pulling latest changes..."
                         # Safely handle local changes: stash if needed, ff-only update, then pop
-                        if (cd "$GA_DIR" && \
-                            git fetch origin -q 2>/dev/null && \
-                            stash_created=false && \
-                            [[ -n "$(git status --porcelain)" ]] && stash_created=true && \
-                            ([[ "$stash_created" == "false" ]] || git stash push -m "Auto-stash before GA update" --include-untracked -q) && \
-                            (git merge --ff-only origin/main 2>/dev/null || git merge --ff-only origin/master 2>/dev/null) && \
-                            ([[ "$stash_created" == "false" ]] || git stash pop -q)); then
+                        local _ga_update_ok=false
+                        (
+                            cd "$GA_DIR"
+                            git fetch origin -q 2>/dev/null
+
+                            # Stash local changes if any exist
+                            local _stash_created=false
+                            if [[ -n "$(git status --porcelain)" ]]; then
+                                git stash push -m "Auto-stash before GA update" --include-untracked -q && _stash_created=true
+                            fi
+
+                            # Fast-forward merge
+                            if git merge --ff-only origin/main 2>/dev/null || git merge --ff-only origin/master 2>/dev/null; then
+                                # Restore stash if we created one
+                                if [[ "$_stash_created" == "true" ]]; then
+                                    git stash pop -q || true
+                                fi
+                                exit 0
+                            else
+                                # Merge failed, restore stash
+                                if [[ "$_stash_created" == "true" ]]; then
+                                    git stash pop -q 2>/dev/null || true
+                                fi
+                                exit 1
+                            fi
+                        ) && _ga_update_ok=true
+
+                        if [[ "$_ga_update_ok" == "true" ]]; then
                             # Update npm dependencies if package.json exists
                             if [ -f "$GA_DIR/package.json" ]; then
                                 (cd "$GA_DIR" && npm install >/dev/null 2>&1)
@@ -137,8 +158,6 @@ install_ga() {
                             new_version=$(get_version "$GA_DIR/package.json")
                             print_success "GA updated to version ${new_version:-latest}"
                         else
-                            # Attempt to restore stash if update failed
-                            (cd "$GA_DIR" && git stash pop -q 2>/dev/null) || true
                             print_warning "Could not update GA automatically, you may need to update manually"
                         fi
                     else
@@ -182,13 +201,34 @@ install_ga() {
                 
                 print_info "Updating GA..."
                 # Safely handle local changes: stash if needed, ff-only update, then pop
-                if (cd "$GA_DIR" && \
-                    git fetch origin -q 2>/dev/null && \
-                    stash_created=false && \
-                    [[ -n "$(git status --porcelain)" ]] && stash_created=true && \
-                    ([[ "$stash_created" == "false" ]] || git stash push -m "Auto-stash before GA update" --include-untracked -q) && \
-                    (git merge --ff-only origin/main 2>/dev/null || git merge --ff-only origin/master 2>/dev/null) && \
-                    ([[ "$stash_created" == "false" ]] || git stash pop -q)); then
+                local _ga_update_ok=false
+                (
+                    cd "$GA_DIR"
+                    git fetch origin -q 2>/dev/null
+
+                    # Stash local changes if any exist
+                    local _stash_created=false
+                    if [[ -n "$(git status --porcelain)" ]]; then
+                        git stash push -m "Auto-stash before GA update" --include-untracked -q && _stash_created=true
+                    fi
+
+                    # Fast-forward merge
+                    if git merge --ff-only origin/main 2>/dev/null || git merge --ff-only origin/master 2>/dev/null; then
+                        # Restore stash if we created one
+                        if [[ "$_stash_created" == "true" ]]; then
+                            git stash pop -q || true
+                        fi
+                        exit 0
+                    else
+                        # Merge failed, restore stash
+                        if [[ "$_stash_created" == "true" ]]; then
+                            git stash pop -q 2>/dev/null || true
+                        fi
+                        exit 1
+                    fi
+                ) && _ga_update_ok=true
+
+                if [[ "$_ga_update_ok" == "true" ]]; then
                     # Update npm dependencies
                     if [ -f "$GA_DIR/package.json" ]; then
                         (cd "$GA_DIR" && npm install >/dev/null 2>&1)
@@ -205,8 +245,6 @@ install_ga() {
                         return 1
                     fi
                 else
-                    # Attempt to restore stash if update failed
-                    (cd "$GA_DIR" && git stash pop -q 2>/dev/null) || true
                     print_warning "Could not update GA automatically, you may need to update manually"
                     return 1
                 fi
