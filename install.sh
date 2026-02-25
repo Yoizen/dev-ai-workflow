@@ -92,11 +92,44 @@ fi
 
 # Check for ga alias conflict (common in oh-my-zsh)
 echo -e "${BOLD}Checking for command conflicts...${NC}"
-if type ga 2>/dev/null | grep -q 'alias'; then
-  GA_ALIAS_VALUE=$(alias ga 2>/dev/null)
-  echo -e "${YELLOW}⚠️  Warning: 'ga' is currently aliased to: $GA_ALIAS_VALUE${NC}"
-  echo -e "   This will prevent you from running Guardian Agent using 'ga'."
-  echo -e "   You must use ${CYAN}unalias ga${NC} or call it as ${CYAN}\\ga${NC} to bypass the alias."
+
+# Determine the shell RC file
+RC_FILE=""
+if [[ -n "$ZSH_VERSION" ]] || [[ "$SHELL" == */zsh ]]; then
+  RC_FILE="$HOME/.zshrc"
+elif [[ -n "$BASH_VERSION" ]] || [[ "$SHELL" == */bash ]]; then
+  RC_FILE="$HOME/.bashrc"
+fi
+
+# Detect alias conflict: either live alias or oh-my-zsh git plugin loaded in RC
+HAS_ALIAS_CONFLICT=false
+
+# Check 1: live alias in current shell (only works in interactive shells)
+if type ga 2>/dev/null | grep -q 'alias' 2>/dev/null; then
+  HAS_ALIAS_CONFLICT=true
+fi
+
+# Check 2: oh-my-zsh git plugin in .zshrc (works even in non-interactive shells)
+if [[ -f "$HOME/.zshrc" ]]; then
+  if grep -qE 'plugins=.*\bgit\b' "$HOME/.zshrc" 2>/dev/null; then
+    HAS_ALIAS_CONFLICT=true
+    RC_FILE="$HOME/.zshrc"
+  fi
+fi
+
+if [[ "$HAS_ALIAS_CONFLICT" == "true" && -n "$RC_FILE" && -f "$RC_FILE" ]]; then
+  echo -e "${YELLOW}⚠️  Detected 'ga' alias conflict (oh-my-zsh git plugin aliases ga='git add')${NC}"
+
+  # Add unalias only if not already present
+  if ! grep -qF 'unalias ga' "$RC_FILE" 2>/dev/null; then
+    echo "" >> "$RC_FILE"
+    echo "# Guardian Agent: remove oh-my-zsh 'ga' alias (git add) so 'ga' CLI works" >> "$RC_FILE"
+    echo "unalias ga 2>/dev/null" >> "$RC_FILE"
+    echo -e "${GREEN}✅ Added 'unalias ga' to $RC_FILE${NC}"
+    echo -e "   ${CYAN}Run 'source $RC_FILE' or open a new terminal for changes to take effect.${NC}"
+  else
+    echo -e "${GREEN}✅ 'unalias ga' already present in $RC_FILE${NC}"
+  fi
   echo ""
 fi
 
@@ -114,5 +147,4 @@ echo "  4. Install the git hook:"
 echo "     ga install"
 echo ""
 echo "  5. You're ready! The hook will run on each commit."
-echo "     (Tip: if ga is aliased, run \\ga run)"
 echo ""
