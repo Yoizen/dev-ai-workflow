@@ -1,73 +1,186 @@
-﻿## Workflow
-Selecciona **Agent mode** y usa SDD Orchestrator (SDD):
-~~~
+# Workflow de desarrollo asistido por IA
+
+Features:
+- **Agent / Plan mode** para tareas chicas y medianas
+- **SDD Orchestrator (SDD, Spec Driven Development)** para features grandes (spec + diseño + tasks + apply)
+- **GA Review (GA, Guardian Agent)** para review automático en cada commit
+
+---
+
+## Pre-requisitos
+
+### Común
+- Un repo Git inicializado (o un proyecto donde vayas a instalarlo).
+- `git` instalado y disponible en PATH.
+- Acceso a GitHub (para descargar scripts desde `raw.githubusercontent.com`).
+
+### macOS / Linux
+- `bash`
+- `curl`
+
+### Windows
+- PowerShell (recomendado PowerShell 5.1+ o PowerShell 7+).
+- Permisos para ejecutar el comando de instalación (si tu política lo restringe, ajustá Execution Policy según tus prácticas internas).
+
+---
+
+## Instalación
+
+### Quick Install (recomendado)
+
+```bash
+# macOS / Linux (NestJS default)
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --all --type=nest
+```
+
+```powershell
+# Windows (PowerShell - NestJS default)
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -All -Type nest
+```
+
+### Instalacion seleccionando el tipo de proyecto
+
+```bash
+# macOS / Linux
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --type=nest
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --type=python
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --type=dotnet
+```
+
+```powershell
+# Windows (PowerShell)
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Type nest
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Type python
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Type dotnet
+```
+
+### Opcionales
+
+**OpenCode Hooks**
+```bash
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --hooks
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Hooks
+```
+
+**Baseline opcional de Biome**
+```bash
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --biome
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Biome
+```
+
+**OpenCode Hooks + Biome**
+```bash
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --hooks --biome
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Hooks -Biome
+```
+
+Ver **instalación avanzada** en `auto/README.md`.
+
+---
+
+## Primer uso (SDD) en un repo
+
+Seleccioná **Agent mode** y usá SDD Orchestrator:
+
+```text
 /sdd-init                  # Inicializa SDD en el repo (una sola vez)
 sdd:new dark-mode          # Crea propuesta del change
 sdd:ff dark-mode           # Fast-forward: genera spec + diseño + tareas
 /sdd-apply                 # Implementa tareas pendientes
-git commit                 # GA hace review automatico
-~~~
+git commit                 # GA hace review automático
+```
+
 ---
-## Cuando usar cada modo
-No siempre necesitas SDD Orchestrator. Usa el modo correcto segun la complejidad:
-### Tarea simple -> Agent directo
-Para fixes rapidos, refactors pequenos, o tareas claras:
-~~~
+
+## Elegir el modo correcto
+
+No siempre necesitás SDD. Usá el modo según complejidad:
+
+### Tarea simple → Agent directo
+Fixes rápidos, refactors chicos o tareas claras:
+
+```text
 [Agent mode]
-> Agrega validacion de email en el form de registro
-~~~
-Copilot lo implementa directo.
-### Tarea compleja -> Plan + Agent
-Para features que necesitan pensar primero:
-~~~
+> Agrega validación de email en el form de registro
+```
+
+### Tarea compleja → Plan → Agent
+Cuando conviene pensar primero:
+
+```text
 [Plan mode]
 > Necesito agregar autenticación con OAuth.
 > Soportar Google y GitHub. Guardar sesión en cookies httpOnly.
 > El usuario tiene que poder deslogearse desde cualquier página.
-~~~
-Copilot escribe el plan. Vos lo revisas. Después:
-~~~
+```
+
+Luego:
+
+```text
 [Agent mode]
 > Implementa el plan
-~~~
-### Feature grande -> SDD Orchestrator (SDD)
-Para features que cruzan multiples archivos/sistemas:
-~~~
+```
+
+### Feature grande → SDD Orchestrator
+Cuando cruza múltiples archivos/sistemas o es multi-día:
+
+```text
 sdd:new sistema-de-pagos
 sdd:ff sistema-de-pagos
 /sdd-apply
-~~~
-SDD Orchestrator genera specs formales, diseño técnico, tareas, y trackea el progreso con sub-agents especializados.
+```
+
+SDD genera specs formales, diseño técnico, tareas, y trackea el progreso.
+
 ### Resumen
+
 | Complejidad | Modo | Ejemplo |
 |-------------|------|---------|
-| Fix/tweak | Agent | "Arregla el typo en el header" |
-| Feature clara | Agent | "Agrega boton de logout" |
-| Feature que hay que pensar | Plan -> Agent | "Sistema de notificaciones" |
-| Feature grande/multi-dia | SDD Orchestrator | "Migrar auth a OAuth2" |
-### Que modelo usar
-| Tarea | Modelo recomendado | Por que |
-|-------|-------------------|---------|
-| Planning / diseño | **Opus 4.6** | Mejor razonamiento, piensa antes de actuar |
-| Implementación (Agent) | **Codex 5.3** / **Sonnet 4.6**(lento pero misma performance que codex) | Optimizado para codigo, rapido y preciso |
-| Commits, PRs, docs | **Gemini 3 Flash** | Barato, rapido, suficiente para texto |
-| Ajustes de UI/CSS | **Gemini 3.1 Pro** | Buen balance costo/calidad para visual |
-| Code review básica | **Gemini 3 Flash** / **Haiku 4.5** | Economico para checks rutinarios |
-| Code review crítica | **Codex 5.3** | Detecta bugs sutiles, entiende contexto |
-**Regla general:**
-- Modelo caro -> pensar, planificar, revisar codigo critico
-- Modelo barato -> ejecutar, commits, reviews rutinarias
+| Fix / tweak | Agent | "Arregla el typo en el header" |
+| Feature clara | Agent | "Agrega botón de logout" |
+| Feature que hay que pensar | Plan → Agent | "Sistema de notificaciones" |
+| Feature grande / multi-día | SDD Orchestrator | "Migrar auth a OAuth2" |
+
 ---
+
+## Qué modelo usar
+
+| Tarea | Modelo recomendado | Por qué |
+|------|-------------------|---------|
+| Planning / diseño | **Opus 4.6** | Mejor razonamiento; piensa antes de actuar |
+| Implementación (Agent) | **Codex 5.3** / **Sonnet 4.6** | Optimizado para código; rápido y preciso |
+| Commits, PRs, docs | **Gemini 3 Flash** | Barato; suficiente para texto |
+| Ajustes de UI/CSS | **Gemini 3.1 Pro** | Buen balance costo/calidad para visual |
+| Code review básica | **Gemini 3 Flash** / **Haiku 4.5** | Económico para checks rutinarios |
+| Code review crítica | **Codex 5.3** | Detecta bugs sutiles; entiende contexto |
+
+Regla general:
+- Modelo caro → pensar, planificar, revisar código crítico
+- Modelo barato → ejecutar, commits, reviews rutinarias
+
+---
+
 ## Comandos SDD Orchestrator (SDD)
 
 ### Atajos (recomendado)
-| Comando | Que hace |
+
+| Comando | Qué hace |
 |---------|----------|
-| `sdd:new` nombre | Crea propuesta para un nuevo change (→ `/sdd-propose`) |
-| `sdd:ff` nombre | Fast-forward: genera propuesta + spec + diseño + tareas |
+| `sdd:new <nombre>` | Crea propuesta para un nuevo change (equivale a `/sdd-propose`) |
+| `sdd:ff <nombre>` | Fast-forward: propuesta + spec + diseño + tasks |
 
 ### Slash commands individuales
-| Comando | Que hace |
+
+| Comando | Qué hace |
 |---------|----------|
 | `/sdd-init` | Inicializa el flujo SDD en el proyecto |
 | `/sdd-explore` | Explora una idea antes de crear el change |
@@ -78,9 +191,12 @@ SDD Orchestrator genera specs formales, diseño técnico, tareas, y trackea el p
 | `/sdd-apply` | Implementa tareas del change activo |
 | `/sdd-verify` | Verifica implementación contra la spec |
 | `/sdd-archive` | Archiva un change terminado |
+
 ---
-## Ejemplo Completo
-~~~
+
+## Ejemplo completo
+
+```text
 > /sdd-init
 Copilot: SDD inicializado para este repositorio.
 
@@ -95,7 +211,7 @@ Copilot: Fast-forward: generando spec, diseño y tareas...
          → .sdd/changes/login-con-google/tasks.md
 
 > /sdd-apply
-Copilot: Implementando tarea 1.1: Agregar boton de login...
+Copilot: Implementando tarea 1.1: Agregar botón de login...
          [edita archivos]
          Implementando tarea 2.1: Configurar OAuth...
          [edita archivos]
@@ -106,72 +222,13 @@ Copilot: Implementando tarea 1.1: Agregar boton de login...
 > git commit -m "feat: login con google"
 GA Review: PASS
 [main abc1234] feat: login con google
-~~~
----
-
-## Instalación
-
-### Quick Install
-
-```bash
-# macOS / Linux (NestJS default)
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --all --type=nest
-
-# Windows (PowerShell - NestJS default)
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -All -Type nest
 ```
-
-### Con tipo de proyecto
-
-```bash
-# macOS / Linux
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --type=nest
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --type=python
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --type=dotnet
-
-# Windows (PowerShell)
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Type nest
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Type python
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Type dotnet
-```
-
-### Con OpenCode Hooks
-
-```bash
-# macOS / Linux
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --hooks
-
-# Windows (PowerShell)
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Hooks
-```
-
-### Con baseline opcional de Biome
-
-```bash
-# macOS / Linux
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --biome
-
-# Windows (PowerShell)
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Biome
-```
-
-### Con OpenCode Hooks + Biome
-
-```bash
-# macOS / Linux
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --hooks --biome
-
-# Windows (PowerShell)
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Hooks -Biome
-```
-
-Ver [instalación avanzada](auto/README.md) para más opciones.
 
 ---
 
 ## Tipos de Proyecto (`--type`)
 
-Al instalar podés especificar el tipo de proyecto para obtener un `AGENTS.md` y `REVIEW.md` adaptados, más las skills correspondientes:
+Al instalar podés especificar el tipo para obtener `AGENTS.md` y `REVIEW.md` adaptados, más skills correspondientes:
 
 ```bash
 bash auto/bootstrap.sh --install-sdd --type=nest      # NestJS / TypeScript (default)
@@ -250,9 +307,9 @@ Editá `REVIEW.md` en la raíz de tu proyecto:
 
 Después de instalar:
 
-```
+```text
 mi-proyecto/
-├── .ga                    # Config de GA
+├── .ga                     # Config de GA
 ├── REVIEW.md               # Reglas de review
 ├── skills/                 # Skills de IA + SDD skills
 │   ├── git-commit/
@@ -296,21 +353,9 @@ which opencode  # Verificá que esté en PATH
 - Simplificá tu `REVIEW.md`
 - Probá con `PROVIDER="claude"`
 
-**"Quiero desactivar GA temporalmente"**
-```bash
-git commit --no-verify -m "mensaje"
-```
-
 ---
 
 ## Links
 
-- [Instalación avanzada](auto/README.md)
-- [Issues](https://github.com/Yoizen/dev-ai-workflow/issues)
-
----
-
-
-
-
-
+- Instalación avanzada: `auto/README.md`
+- Issues: https://github.com/Yoizen/dev-ai-workflow/issues
