@@ -9,6 +9,47 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BOOTSTRAP_REPO="${DEV_AI_WORKFLOW_BOOTSTRAP_REPO:-https://github.com/Yoizen/dev-ai-workflow.git}"
+BOOTSTRAP_REF="${DEV_AI_WORKFLOW_REF:-exp}"
+BOOTSTRAP_DIR="${DEV_AI_WORKFLOW_BOOTSTRAP_DIR:-}"
+
+_bootstrap_from_repo_if_needed() {
+  local expected_ui="$SCRIPT_DIR/lib/ui.sh"
+  local expected_detector="$SCRIPT_DIR/lib/detector.sh"
+  local expected_installer="$SCRIPT_DIR/lib/installer.sh"
+
+  if [[ -f "$expected_ui" && -f "$expected_detector" && -f "$expected_installer" ]]; then
+    return 0
+  fi
+
+  local repo_dir="$BOOTSTRAP_DIR"
+
+  if [[ -n "$repo_dir" ]]; then
+    if [[ ! -f "$repo_dir/ywai/setup/setup.sh" ]]; then
+      echo "Bootstrap directory is invalid: $repo_dir" >&2
+      echo "Expected: $repo_dir/ywai/setup/setup.sh" >&2
+      exit 1
+    fi
+  else
+    command -v git >/dev/null 2>&1 || {
+      echo "Git is required to bootstrap the installer when running via curl | bash." >&2
+      exit 1
+    }
+
+    repo_dir="$(mktemp -d "${TMPDIR:-/tmp}/dev-ai-workflow-setup-XXXXXX")"
+    echo "Bootstrapping full installer from ${BOOTSTRAP_REPO} (${BOOTSTRAP_REF})..." >&2
+
+    if ! git clone --depth 1 --branch "$BOOTSTRAP_REF" "$BOOTSTRAP_REPO" "$repo_dir" >/dev/null 2>&1; then
+      echo "Failed to download the full installer for branch '$BOOTSTRAP_REF'." >&2
+      echo "You can override the branch with DEV_AI_WORKFLOW_REF=<branch>." >&2
+      exit 1
+    fi
+  fi
+
+  exec bash "$repo_dir/ywai/setup/setup.sh" "$@"
+}
+
+_bootstrap_from_repo_if_needed "$@"
 
 # Source library modules
 # shellcheck source=lib/ui.sh
