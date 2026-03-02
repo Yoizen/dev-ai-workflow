@@ -1,0 +1,143 @@
+{
+  "types": {
+    "nest": {
+      "description": "NestJS backend (TypeScript, Clean Architecture)",
+      "agents_md": "setup/types/nest/AGENTS.md",
+      "review_md": "setup/types/nest/REVIEW.md",
+      "lefthook_yml": "setup/types/nest/lefthook.yml",
+      "skills": [
+        "git-commit",
+        "biome",
+        "typescript",
+        "skill-creator",
+        "skill-sync"
+      ],
+      "extensions": {
+        "hooks": [
+          "opencode-command-hooks"
+        ],
+        "mcps": [],
+        "install-steps": [
+          "biome-baseline"
+        ]
+      }
+    },
+    "nest-angular": {
+      "description": "NestJS + Angular fullstack (TypeScript, Clean Architecture)",
+      "agents_md": "setup/types/nest-angular/AGENTS.md",
+      "review_md": "setup/types/nest-angular/REVIEW.md",
+      "lefthook_yml": "setup/types/nest-angular/lefthook.yml",
+      "skills": [
+        "git-commit",
+        "biome",
+        "typescript",
+        "angular",
+        "tailwind-4",
+        "skill-creator",
+        "skill-sync"
+      ],
+      "extensions": {
+        "hooks": [
+          "opencode-command-hooks"
+        ],
+        "mcps": [],
+        "install-steps": [
+          "biome-baseline"
+        ]
+      }
+    },
+    "nest-react": {
+      "description": "NestJS + React fullstack (TypeScript, Clean Architecture)",
+      "agents_md": "setup/types/nest-react/AGENTS.md",
+      "review_md": "setup/types/nest-react/REVIEW.md",
+      "lefthook_yml": "setup/types/nest-react/lefthook.yml",
+      "skills": [
+        "git-commit",
+        "biome",
+        "typescript",
+        "react-19",
+        "tailwind-4",
+        "skill-creator",
+        "skill-sync"
+      ],
+      "extensions": {
+        "hooks": [
+          "opencode-command-hooks"
+        ],
+        "mcps": [],
+        "install-steps": [
+          "biome-baseline"
+        ]
+      }
+    },
+    "python": {
+      "description": "Python backend / scripts (FastAPI, Django, scripts)",
+      "agents_md": "setup/types/python/AGENTS.md",
+      "review_md": "setup/types/python/REVIEW.md",
+      "lefthook_yml": "setup/types/python/lefthook.yml",
+      "skills": [
+        "git-commit",
+        "skill-creator",
+        "skill-sync"
+      ],
+      "extensions": {
+        "hooks": [],
+        "mcps": [],
+        "install-steps": []
+      }
+    },
+    "dotnet": {
+      "description": ".NET / C# backend (ASP.NET Core, Clean Architecture)",
+      "agents_md": "setup/types/dotnet/AGENTS.md",
+      "review_md": "setup/types/dotnet/REVIEW.md",
+      "lefthook_yml": "setup/types/dotnet/lefthook.yml",
+      "skills": [
+        "git-commit",
+        "skill-creator",
+        "skill-sync"
+      ],
+      "extensions": {
+        "hooks": [],
+        "mcps": [],
+        "install-steps": []
+      }
+    },
+    "generic": {
+      "description": "Generic project (language-agnostic defaults)",
+      "agents_md": "setup/types/generic/AGENTS.md",
+      "review_md": "setup/types/generic/REVIEW.md",
+      "lefthook_yml": "setup/types/generic/lefthook.yml",
+      "skills": [
+        "git-commit",
+        "skill-creator",
+        "skill-sync"
+      ],
+      "extensions": {
+        "hooks": [],
+        "mcps": [],
+        "install-steps": []
+      }
+    }
+  },
+  "base_config": {
+    "description": "Common baseline applied to all project types",
+    "append_agents_templates": [
+      "setup/lib/templates/sdd-orchestrator.md",
+      "setup/lib/templates/engram-protocol.md"
+    ],
+    "extensions": {
+      "hooks": [],
+      "mcps": [
+        "context7-mcp"
+      ],
+      "install-steps": [
+        "github-prompts",
+        "engram-setup"
+      ]
+    },
+    "copy_shared_skills": true,
+    "copy_commands": true,
+    "init_ga": true
+  },
+  "default": "nest"
+}

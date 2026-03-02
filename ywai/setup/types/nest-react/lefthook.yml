@@ -1,0 +1,16 @@
+pre-commit:
+  parallel: true
+  commands:
+    ga-review:
+      run: ga run
+      stage_fixed: false
+    biome:
+      run: |
+        if [ -f biome.json ]; then
+          if command -v npm >/dev/null 2>&1; then
+            npm run lint --silent || npx @biomejs/biome check .
+          else
+            npx @biomejs/biome check .
+          fi
+        fi
+      stage_fixed: false
