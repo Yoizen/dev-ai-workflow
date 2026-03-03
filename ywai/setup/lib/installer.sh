@@ -70,11 +70,64 @@ _ga_clone_at_ref() {
   git clone --depth 1 --branch "$ref" "$GA_REPO" "$dest" 2>/dev/null
 }
 
+# Resolve GA source dir inside the cloned repository.
+# Supports both modern layout (ywai/ga) and legacy layout (repo root).
+_ga_source_dir() {
+  if [[ -d "$GA_DIR/ywai/ga/bin" && -d "$GA_DIR/ywai/ga/lib" ]]; then
+    echo "$GA_DIR/ywai/ga"
+    return 0
+  fi
+
+  if [[ -d "$GA_DIR/bin" && -d "$GA_DIR/lib" ]]; then
+    echo "$GA_DIR"
+    return 0
+  fi
+
+  return 1
+}
+
+_ga_package_json() {
+  local source_dir
+  source_dir="$(_ga_source_dir)" || return 1
+  [[ -f "$source_dir/package.json" ]] || return 1
+  echo "$source_dir/package.json"
+}
+
+_ga_install_systemwide() {
+  # Legacy layout still ships an install.sh at repo root.
+  if [[ -f "$GA_DIR/install.sh" ]]; then
+    (cd "$GA_DIR" && bash install.sh >/dev/null 2>&1)
+    return $?
+  fi
+
+  local source_dir
+  source_dir="$(_ga_source_dir)" || return 1
+
+  mkdir -p "$HOME/.local/bin" "$HOME/.local/share/ga/lib"
+  cp "$source_dir/bin/ga" "$HOME/.local/bin/ga" || return 1
+  chmod +x "$HOME/.local/bin/ga" || return 1
+
+  rm -rf "$HOME/.local/share/ga/lib"
+  mkdir -p "$HOME/.local/share/ga/lib"
+  cp -R "$source_dir/lib/." "$HOME/.local/share/ga/lib/" || return 1
+
+  if [[ -f "$source_dir/package.json" ]]; then
+    cp "$source_dir/package.json" "$HOME/.local/share/ga/package.json" || return 1
+  fi
+
+  return 0
+}
+
 # After a successful pull, re-run npm install and ga install.
 _ga_post_update() {
-  [[ -f "$GA_DIR/package.json" ]] && (cd "$GA_DIR" && npm install >/dev/null 2>&1) || true
-  local v; v=$(get_version "$GA_DIR/package.json")
-  (cd "$GA_DIR" && bash install.sh >/dev/null 2>&1) \
+  local pkg_file=""
+  pkg_file="$(_ga_package_json 2>/dev/null || true)"
+  [[ -n "$pkg_file" ]] && (cd "$(dirname "$pkg_file")" && npm install >/dev/null 2>&1) || true
+
+  local v=""
+  [[ -n "$pkg_file" ]] && v=$(get_version "$pkg_file")
+
+  _ga_install_systemwide \
     && print_success "GA updated to version ${v:-latest}" \
     || print_warning "GA installation completed with warnings"
 }
@@ -127,12 +180,15 @@ install_ga() {
     if ! _ga_clone_at_ref "$GA_DIR" "$ref"; then
       print_error "Failed to clone GA repository at ref '${ref}'"; return 1
     fi
-    local v; v=$(get_version "$GA_DIR/package.json")
+
+    local pkg_file="" v=""
+    pkg_file="$(_ga_package_json 2>/dev/null || true)"
+    [[ -n "$pkg_file" ]] && v=$(get_version "$pkg_file")
     [[ -n "$v" ]] && print_success "GA $v cloned" || print_success "GA cloned (${ref})"
   fi
 
   print_info "Installing GA system-wide..."
-  (cd "$GA_DIR" && bash install.sh >/dev/null 2>&1) \
+  _ga_install_systemwide \
     && print_success "GA installed successfully" \
     || print_warning "GA installation completed with warnings"
 }
