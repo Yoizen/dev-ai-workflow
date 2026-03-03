@@ -732,6 +732,7 @@ except: pass
 configure_project() {
   local provider="${1:-}" target_dir="${2:-.}" skip_ga="${3:-false}"
   local project_type="${4:-nest}"
+  local force="${5:-false}"
 
   print_info "Configuring project at $target_dir..."
 
@@ -740,7 +741,7 @@ configure_project() {
   local repo_root; repo_root="$(cd "$_LIB_DIR/../.." && pwd)"
   [[ -f "$repo_root/setup/setup.sh" ]] && ga_install_dir="$repo_root"
 
-  apply_project_type "$project_type" "$target_dir"
+  apply_project_type "$project_type" "$target_dir" "$force"
 
   # Copy skills/ assets that may still be missing after apply_project_type
   local types_dir; types_dir="$(_types_dir)"

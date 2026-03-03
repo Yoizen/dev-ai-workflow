@@ -333,7 +333,9 @@ _run_installs() {
     else
       local skip_ga_flag="false"
       [[ "$SKIP_GA" == true ]] && skip_ga_flag="true"
-      configure_project "$PROVIDER" "$TARGET_DIR" "$skip_ga_flag" "$PROJECT_TYPE"
+      local force_flag="false"
+      [[ "$FORCE" == true ]] && force_flag="true"
+      configure_project "$PROVIDER" "$TARGET_DIR" "$skip_ga_flag" "$PROJECT_TYPE" "$force_flag"
     fi
     configured_project=true
   fi
