@@ -93,11 +93,46 @@ _ga_package_json() {
   echo "$source_dir/package.json"
 }
 
+_ga_version_from_ref() {
+  local ref="${1:-}"
+  case "$ref" in
+    ""|stable|latest|main|master)
+      return 1
+      ;;
+    v*)
+      echo "${ref#v}"
+      ;;
+    *)
+      echo "$ref"
+      ;;
+  esac
+}
+
+_ga_apply_installed_version_override() {
+  local version="${1:-}"
+  local pkg="$HOME/.local/share/ga/package.json"
+  [[ -n "$version" && -f "$pkg" ]] || return 0
+
+  local tmp
+  tmp="$(mktemp)"
+  sed -E "s/(\"version\"[[:space:]]*:[[:space:]]*\")[^\"]*(\")/\1${version}\2/" "$pkg" > "$tmp" \
+    && mv "$tmp" "$pkg" || {
+      rm -f "$tmp"
+      return 1
+    }
+}
+
 _ga_install_systemwide() {
+  local ref="${1:-}"
+  local version_override=""
+  version_override="$(_ga_version_from_ref "$ref" 2>/dev/null || true)"
+
   # Legacy layout still ships an install.sh at repo root.
   if [[ -f "$GA_DIR/install.sh" ]]; then
     (cd "$GA_DIR" && bash install.sh >/dev/null 2>&1)
-    return $?
+    local status=$?
+    [[ $status -eq 0 ]] && _ga_apply_installed_version_override "$version_override"
+    return $status
   fi
 
   local source_dir
@@ -115,19 +150,25 @@ _ga_install_systemwide() {
     cp "$source_dir/package.json" "$HOME/.local/share/ga/package.json" || return 1
   fi
 
+  _ga_apply_installed_version_override "$version_override" || return 1
+
   return 0
 }
 
 # After a successful pull, re-run npm install and ga install.
 _ga_post_update() {
+  local ref="${1:-}"
   local pkg_file=""
   pkg_file="$(_ga_package_json 2>/dev/null || true)"
   [[ -n "$pkg_file" ]] && (cd "$(dirname "$pkg_file")" && npm install >/dev/null 2>&1) || true
 
   local v=""
   [[ -n "$pkg_file" ]] && v=$(get_version "$pkg_file")
+  local version_override=""
+  version_override="$(_ga_version_from_ref "$ref" 2>/dev/null || true)"
+  [[ -n "$version_override" ]] && v="$version_override"
 
-  _ga_install_systemwide \
+  _ga_install_systemwide "$ref" \
     && print_success "GA updated to version ${v:-latest}" \
     || print_warning "GA installation completed with warnings"
 }
@@ -150,7 +191,7 @@ install_ga() {
       print_success "GA is already up to date"; return 0
     fi
     print_info "Updating GA to ${ref}..."
-    _ga_update_to_ref "$ref" && _ga_post_update \
+    _ga_update_to_ref "$ref" && _ga_post_update "$ref" \
       || print_warning "Could not update GA automatically"
     return 0
   fi
@@ -167,7 +208,7 @@ install_ga() {
 
       if [[ "$do_update" == true ]]; then
         print_info "Updating GA to ${ref}..."
-        _ga_update_to_ref "$ref" && _ga_post_update \
+        _ga_update_to_ref "$ref" && _ga_post_update "$ref" \
           || print_warning "Could not update GA automatically"
       else
         print_info "Continuing with current version"
@@ -188,7 +229,7 @@ install_ga() {
   fi
 
   print_info "Installing GA system-wide..."
-  _ga_install_systemwide \
+  _ga_install_systemwide "$ref" \
     && print_success "GA installed successfully" \
     || print_warning "GA installation completed with warnings"
 }
@@ -642,10 +683,12 @@ apply_project_type() {
     fi
   done
 
-  # Copy skills defined in types.json
+  # Copy skills (type-specific + always-on SDD)
   local types_json="$types_dir/types.json"
   local main_skills="$_LIB_DIR/../../skills"
   [[ -d "$main_skills" ]] || main_skills="$GA_DIR/skills"
+  local skills_target="$target_dir/skills"
+  mkdir -p "$skills_target"
 
   if [[ -f "$types_json" ]] && command_exists python3; then
     local type_skills
@@ -656,8 +699,7 @@ try:
   print(' '.join(data.get('types',{}).get('$project_type',{}).get('skills',[])))
 except: pass
 " 2>/dev/null)
-    local skills_target="$target_dir/skills"
-    mkdir -p "$skills_target"
+
     local copied=0
     for skill in $type_skills; do
       [[ -d "$main_skills/$skill" && ! -d "$skills_target/$skill" ]] \
@@ -666,6 +708,21 @@ except: pass
     done
     [[ $copied -gt 0 ]] && print_success "Copied $copied type skills"
   fi
+
+  local copied_sdd=0
+  local sdd_dir sdd_name
+  for sdd_dir in "$main_skills"/sdd-*; do
+    [[ -d "$sdd_dir" ]] || continue
+    sdd_name="$(basename "$sdd_dir")"
+
+    if [[ -d "$skills_target/$sdd_name" || "$sdd_dir" -ef "$skills_target/$sdd_name" ]]; then
+      continue
+    fi
+
+    cp -r "$sdd_dir" "$skills_target/$sdd_name"
+    ((copied_sdd++)) || true
+  done
+  [[ $copied_sdd -gt 0 ]] && print_success "Copied $copied_sdd SDD skill(s)"
 
   print_success "Project type '$project_type' applied"
 }
@@ -685,9 +742,13 @@ configure_project() {
 
   apply_project_type "$project_type" "$target_dir"
 
-  # Copy shared skills/ assets that may still be missing after apply_project_type
+  # Copy skills/ assets that may still be missing after apply_project_type
+  local types_dir; types_dir="$(_types_dir)"
   local types_json="$types_dir/types.json"
   local copy_shared_skills
+  local skills_src="$ga_install_dir/skills"
+  local skills_tgt="$target_dir/skills"
+
   copy_shared_skills=$(python3 -c "
 import json
 try:
@@ -697,8 +758,6 @@ except: print(True)
 " 2>/dev/null)
 
   if [[ "$copy_shared_skills" == "true" ]]; then
-    local skills_src="$ga_install_dir/skills"
-    local skills_tgt="$target_dir/skills"
     if [[ "$skills_src" -ef "$skills_tgt" ]]; then
       print_info "skills/ already in place"
     elif [[ -d "$skills_src" ]]; then
@@ -720,6 +779,26 @@ except: print(True)
         && print_success "Copied $copied_shared shared skill asset(s)" \
         || print_info "skills/ already up to date"
     fi
+  fi
+
+  # Ensure skills/_shared exists even when full shared copy is disabled.
+  if [[ -d "$skills_src/_shared" ]]; then
+    local shared_tgt="$skills_tgt/_shared"
+    mkdir -p "$shared_tgt"
+    local copied_shared_assets=0
+    local shared_item shared_name
+    for shared_item in "$skills_src/_shared"/*; do
+      [[ -e "$shared_item" ]] || continue
+      shared_name="$(basename "$shared_item")"
+      [[ -e "$shared_tgt/$shared_name" ]] && continue
+      if [[ -d "$shared_item" ]]; then
+        cp -r "$shared_item" "$shared_tgt/$shared_name"
+      else
+        cp "$shared_item" "$shared_tgt/$shared_name"
+      fi
+      ((copied_shared_assets++)) || true
+    done
+    [[ $copied_shared_assets -gt 0 ]] && print_success "Copied $copied_shared_assets skills/_shared asset(s)"
   fi
 
   # Run AI skills setup
