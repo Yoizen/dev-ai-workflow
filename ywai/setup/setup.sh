@@ -196,6 +196,7 @@ _parse_args() {
       --target=*)   TARGET_DIR="${1#*=}"; shift ;;
       --type=*)     PROJECT_TYPE="${1#*=}"; shift ;;
       --list-types) list_project_types; exit 0 ;;
+      # shellcheck disable=SC2034
       --version=*)   YWAI_VERSION="${1#*=}"; shift ;;
       --channel=*)   YWAI_CHANNEL="${1#*=}"; shift ;;
       --list-versions) LIST_VERSIONS=true; shift ;;
