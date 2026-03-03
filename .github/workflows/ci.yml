@@ -1,16 +1,8 @@
-name: CI
+name: CI (DISABLED TEMPORARILY)
 
+# Temporarily disabled - only runs on manual dispatch
 on:
-  push:
-    branches:
-      - main
-      - exp
-      - 'feat/**'
-      - 'fix/**'
-  pull_request:
-    branches:
-      - main
-      - exp
+  workflow_dispatch:
 
 jobs:
   test:

@@ -28,7 +28,7 @@ YWAI_FALLBACK_BRANCH="${YWAI_FALLBACK_BRANCH:-${DEV_AI_WORKFLOW_REF:-main}}"
 
 # ── GA local install dir ──────────────────────────────────────────────────────
 
-GA_REPO="$YWAI_REPO_URL"
+GA_REPO="$YWAI_REPO_URL"  # shellcheck disable=SC2034
 GA_DIR="${GA_DIR:-$HOME/.local/share/yoizen/dev-ai-workflow}"
 
 # ── Release resolution ────────────────────────────────────────────────────────
