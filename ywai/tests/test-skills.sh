@@ -18,7 +18,7 @@ docker image inspect "$IMAGE" >/dev/null 2>&1 || {
 echo -e "${GREEN}✅ Image ready${NC}\n"
 
 # Test in Docker
-docker run --rm -v $(pwd):/src $IMAGE bash -c '
+docker run --rm -v "$(pwd):/src" "$IMAGE" bash -c '
 set -e
 echo "Testing skills installation..."
 
