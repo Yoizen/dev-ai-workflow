@@ -2,9 +2,12 @@
 set -e
 
 TARGET_DIR="${1:-.}"
+EXT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE_DIR="$TARGET_DIR/.ywai/engram"
 STATUS_FILE="$STATE_DIR/status.txt"
 README_FILE="$STATE_DIR/README.md"
+VSCODE_MCP_FILE="$TARGET_DIR/.vscode/mcp.json"
+VSCODE_MCP_TEMPLATE="$EXT_DIR/copilot-mcp.json"
 
 mkdir -p "$STATE_DIR"
 
@@ -46,6 +49,24 @@ engram: install_failed
 auto_configured: no
 note: ${note}
 EOF
+}
+
+configure_copilot_mcp() {
+  [[ -f "$VSCODE_MCP_TEMPLATE" ]] || return 1
+
+  mkdir -p "$(dirname "$VSCODE_MCP_FILE")"
+
+  if command -v jq >/dev/null 2>&1 && [[ -f "$VSCODE_MCP_FILE" ]]; then
+    if jq -e . "$VSCODE_MCP_FILE" >/dev/null 2>&1 \
+      && jq -e . "$VSCODE_MCP_TEMPLATE" >/dev/null 2>&1 \
+      && jq -s '.[0] * .[1]' "$VSCODE_MCP_FILE" "$VSCODE_MCP_TEMPLATE" > "${VSCODE_MCP_FILE}.tmp"; then
+      mv "${VSCODE_MCP_FILE}.tmp" "$VSCODE_MCP_FILE"
+      return 0
+    fi
+    rm -f "${VSCODE_MCP_FILE}.tmp"
+  fi
+
+  cp "$VSCODE_MCP_TEMPLATE" "$VSCODE_MCP_FILE"
 }
 
 resolve_platform() {
@@ -140,6 +161,12 @@ for target in opencode codex gemini-cli; do
     failed=$((failed + 1))
   fi
 done
+
+if configure_copilot_mcp; then
+  echo "Configured engram MCP for Copilot at .vscode/mcp.json"
+else
+  echo "Could not configure Copilot MCP at .vscode/mcp.json"
+fi
 
 cat > "$STATUS_FILE" << EOF
 engram: installed

@@ -12,6 +12,7 @@ What it does:
   - `engram setup opencode`
   - `engram setup codex`
   - `engram setup gemini-cli`
+- Ensures `.vscode/mcp.json` includes the `engram` MCP server for Copilot
 
 Notes:
 
