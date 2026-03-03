@@ -486,6 +486,7 @@ _type_extensions() {
   if [[ -f "$types_json" ]] && command_exists python3; then
     python3 -c "
 import json
+import os
 try:
   data=json.load(open('$types_json'))
   base_values=data.get('base_config',{}).get('extensions',{}).get('$ext_type',[])
@@ -496,6 +497,9 @@ try:
       for value in group:
         value=str(value)
         if value and value not in merged:
+          # Skip MCPs if YWAI_SKIP_MCPS is set
+          if '$ext_type' == 'mcps' and os.environ.get('YWAI_SKIP_MCPS') == 'true':
+            continue
           merged.append(value)
   print(' '.join(merged))
 except: pass
@@ -816,9 +820,12 @@ install_type_extensions() {
     install_extension "hooks" "$ext_name" "$target_dir" || ((failed++)) || true
   done
 
-  for ext_name in $(_type_extensions "$project_type" "mcps"); do
-    install_extension "mcps" "$ext_name" "$target_dir" || ((failed++)) || true
-  done
+  # Skip MCPs if requested (useful for testing/CI)
+  if [[ "${YWAI_SKIP_MCPS:-false}" != "true" ]]; then
+    for ext_name in $(_type_extensions "$project_type" "mcps"); do
+      install_extension "mcps" "$ext_name" "$target_dir" || ((failed++)) || true
+    done
+  fi
 
   for ext_name in $(_type_extensions "$project_type" "install-steps"); do
     install_extension "install-steps" "$ext_name" "$target_dir" || ((failed++)) || true

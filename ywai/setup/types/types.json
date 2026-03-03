@@ -20,10 +20,6 @@
         "install-steps": [
           "biome-baseline",
           "sdd-commands"
-        ],
-        "commands": [
-          "opencode-commands",
-          "copilot-skills"
         ]
       }
     },
@@ -49,10 +45,6 @@
         "install-steps": [
           "biome-baseline",
           "sdd-commands"
-        ],
-        "commands": [
-          "opencode-commands",
-          "copilot-skills"
         ]
       }
     },
@@ -78,10 +70,6 @@
         "install-steps": [
           "biome-baseline",
           "sdd-commands"
-        ],
-        "commands": [
-          "opencode-commands",
-          "copilot-skills"
         ]
       }
     },
@@ -137,10 +125,7 @@
         "install-steps": [
           "sdd-commands"
         ],
-        "commands": [
-          "opencode-commands",
-          "copilot-skills"
-        ]
+        "commands": []
       }
     }
   },
