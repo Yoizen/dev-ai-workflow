@@ -23,6 +23,24 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
 
+      - name: Update package.json version
+        run: |
+          # Update ywai/ga/package.json with the tag version
+          if [[ -f "ywai/ga/package.json" ]]; then
+            # Remove 'v' prefix if present
+            VERSION="${GITHUB_REF_NAME#v}"
+            # Update package.json version
+            jq --arg version "$VERSION" '.version = $version' ywai/ga/package.json > ywai/ga/package.json.tmp
+            mv ywai/ga/package.json.tmp ywai/ga/package.json
+            echo "Updated ywai/ga/package.json to version $VERSION"
+            
+            # Commit the version update
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add ywai/ga/package.json
+            git diff --staged --quiet || git commit -m "chore: update package.json to ${VERSION}"
+          fi
+
       - name: Generate changelog from commits
         id: changelog
         run: |
