@@ -52,16 +52,21 @@ _bootstrap_from_repo_if_needed() {
       source "$SCRIPT_DIR/lib/config.sh"
       bootstrap_ref="$(ywai_resolve_ref)"
     else
-      # config.sh not available yet — fetch stable release directly
-      bootstrap_ref=$(curl -fsSL --connect-timeout 5 \
-        "https://api.github.com/repos/Yoizen/dev-ai-workflow/releases" 2>/dev/null \
-        | grep -E '"tag_name"|"prerelease"' \
-        | paste - - \
-        | grep '"prerelease": *false' \
-        | grep -o '"tag_name": *"[^"]*"' \
-        | head -1 \
-        | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
-      bootstrap_ref="${bootstrap_ref:-${DEV_AI_WORKFLOW_REF:-main}}"
+      # When running via curl|bash with specific tag, extract from URL
+      if [[ -n "${YWAI_VERSION:-}" ]]; then
+        bootstrap_ref="$YWAI_VERSION"
+      else
+        # config.sh not available yet — fetch stable release directly
+        bootstrap_ref=$(curl -fsSL --connect-timeout 5 \
+          "https://api.github.com/repos/Yoizen/dev-ai-workflow/releases" 2>/dev/null \
+          | grep -E '"tag_name"|"prerelease"' \
+          | paste - - \
+          | grep '"prerelease": *false' \
+          | grep -o '"tag_name": *"[^"]*"' \
+          | head -1 \
+          | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
+        bootstrap_ref="${bootstrap_ref:-${DEV_AI_WORKFLOW_REF:-main}}"
+      fi
     fi
 
     echo "Bootstrapping installer from ${BOOTSTRAP_REPO} (${bootstrap_ref})..." >&2
