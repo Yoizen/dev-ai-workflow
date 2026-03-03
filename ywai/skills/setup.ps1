@@ -42,8 +42,17 @@ if (Test-Path $UiPath) {
     function Write-Warn([string]$msg) { Write-Host "[WARN] $msg" -ForegroundColor Yellow }
 }
 
-$RepoRoot = (Get-Location).Path
-$SkillsSource = $ScriptDir
+try {
+    $RepoRoot = git rev-parse --show-toplevel 2>$null
+    if ([string]::IsNullOrWhiteSpace($RepoRoot)) { throw "no git" }
+} catch {
+    if ($ScriptDir -match "skills$") {
+        $RepoRoot = Split-Path $ScriptDir -Parent
+    } else {
+        $RepoRoot = (Get-Location).Path
+    }
+}
+$SkillsSource = Join-Path $RepoRoot "skills"
 
 if ($All) {
     $Claude = $true

@@ -5,7 +5,7 @@
 param(
     [Parameter(Position=0)]
     [string]$TargetPath = "",
-    
+
     [switch]$All,
     [switch]$InstallGA,
     [switch]$InstallSDD,
@@ -13,12 +13,12 @@ param(
     [switch]$SkipGA,
     [switch]$SkipSDD,
     [switch]$SkipVSCode,
-    
+
     [ValidateSet('opencode', 'claude', 'gemini', 'ollama')]
     [string]$Provider = "",
-    
+
     [string]$Target = "",
-    
+
     [switch]$UpdateAll,
     [switch]$Force,
     [switch]$Silent,
@@ -27,7 +27,11 @@ param(
     [switch]$Extensions,
 
     [string]$Type = "nest",
-    [switch]$ListTypes
+    [switch]$ListTypes,
+
+    [string]$Version = "",
+    [string]$Channel = "",
+    [switch]$ListVersions
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,14 +39,15 @@ $ErrorActionPreference = "Stop"
 # Script Directory Detection
 $ScriptDir = Split-Path -Parent $PSCommandPath
 
-# Source Library Modules
+# Source Library Modules (config first — provides YWAI_* vars)
+. "$ScriptDir\lib\config.ps1"
 . "$ScriptDir\lib\ui.ps1"
 . "$ScriptDir\lib\detector.ps1"
 . "$ScriptDir\lib\installer.ps1"
 
-# Configuration
-$GA_REPO = "https://github.com/Yoizen/dev-ai-workflow.git"
-$GA_DIR = Join-Path $env:USERPROFILE ".local\share\yoizen\dev-ai-workflow"
+# Apply CLI overrides to config vars
+if ($Version) { $YWAI_VERSION = $Version }
+if ($Channel) { $YWAI_CHANNEL = $Channel }
 
 # ── Show Help ─────────────────────────────────────────────────────────────
 
@@ -71,12 +76,23 @@ CONFIGURATION:
     -Type <name>           Project type: nest, nest-angular, nest-react, python, dotnet, generic
     -ListTypes             List available project types
 
+RELEASE:
+    -Version <ref>         Use specific version: tag (v1.0.0), 'stable', or 'latest'
+    -Channel <name>        Release channel: stable (default), latest
+    -ListVersions          List available releases from GitHub
+
 ADVANCED:
     -UpdateAll             Update all installed components
     -Force                 Force reinstall/overwrite
     -Silent                Minimal output
     -DryRun                Show what would happen without executing
     -Help                  Show this help message
+
+ENVIRONMENT:
+    YWAI_REPO_URL          Override git repository URL
+    YWAI_VERSION           Pin a version/tag (e.g. v1.0.0)
+    YWAI_CHANNEL           Release channel: stable (default) | latest
+    YWAI_FALLBACK_BRANCH   Branch used when no releases exist (default: main)
 
 EXAMPLES:
     .\setup.ps1                               # Interactive mode
@@ -306,6 +322,27 @@ if ($ListTypes) {
     } else {
         Write-Host "Available: nest, nest-angular, nest-react, python, dotnet, generic"
     }
+    exit 0
+}
+
+if ($ListVersions) {
+    Write-Host "Available releases for $YWAI_REPO :"
+    try {
+        $releases = Invoke-RestMethod -Uri "$YWAI_API_URL/releases" -ErrorAction Stop -TimeoutSec 5
+        if ($releases.Count -eq 0) {
+            Write-Host "  (no releases published yet)"
+        } else {
+            foreach ($r in $releases) {
+                $pre = if ($r.prerelease) { " [pre-release]" } else { "" }
+                Write-Host "  $($r.tag_name)$pre"
+            }
+        }
+    } catch {
+        Write-Host "  (could not reach GitHub API)"
+    }
+    Write-Host ""
+    Write-Host "  Current channel : $YWAI_CHANNEL"
+    Write-Host "  Resolved ref    : $(Resolve-YwaiRef)"
     exit 0
 }
 

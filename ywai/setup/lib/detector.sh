@@ -4,9 +4,10 @@
 _LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=ui.sh
 source "$_LIB_DIR/ui.sh"
+# shellcheck source=config.sh
+source "$_LIB_DIR/config.sh"
 
-GA_REPO="Yoizen/dev-ai-workflow"
-GA_API_URL="https://api.github.com/repos/${GA_REPO}"
+GA_API_URL="$YWAI_API_URL"
 
 # ── Version helpers ───────────────────────────────────────────────────────────
 
@@ -18,20 +19,23 @@ get_version() {
 }
 
 # Fetch latest published tag from GitHub (returns "unknown" on failure)
+# Respects YWAI_CHANNEL: stable (default) returns latest non-prerelease.
 get_latest_ga_version() {
-  local version
-  version=$(curl -fsSL "${GA_API_URL}/releases/latest" 2>/dev/null \
-    | grep '"tag_name"' \
-    | sed -E 's/.*"tag_name": *"v?([^"]+)".*/\1/' \
-    | head -1)
+  local tag
+  tag="$(_ywai_fetch_stable_release)"
 
-  if [[ -z "$version" ]]; then
-    version=$(curl -fsSL "${GA_API_URL}/tags" 2>/dev/null \
+  if [[ -z "$tag" ]]; then
+    tag="$(_ywai_fetch_latest_release)"
+  fi
+
+  if [[ -z "$tag" ]]; then
+    tag=$(curl -fsSL --connect-timeout 5 "${GA_API_URL}/tags" 2>/dev/null \
       | grep '"name"' \
       | sed -E 's/.*"name": *"v?([^"]+)".*/\1/' \
       | head -1)
   fi
-  echo "${version:-unknown}"
+
+  echo "${tag:-unknown}"
 }
 
 # Return installed GA version (empty string when not installed)
@@ -119,10 +123,20 @@ detect_prerequisites() {
 }
 
 # ── Check whether a GA git repo has upstream commits ─────────────────────────
-# Returns 0 when updates are available
+# Returns 0 when updates are available.
+# Prefers semver comparison via GitHub API; falls back to git commit count.
 ga_updates_available() {
   local ga_path="$1"
   [[ -d "$ga_path/.git" ]] || return 1
+
+  local installed latest
+  installed=$(get_installed_ga_version)
+  latest=$(get_latest_ga_version)
+
+  if [[ -n "$installed" && "$latest" != "unknown" && "$installed" != "$latest" ]]; then
+    return 0
+  fi
+
   (cd "$ga_path" && git fetch origin -q 2>/dev/null) || return 1
   local behind
   behind=$(cd "$ga_path" && \

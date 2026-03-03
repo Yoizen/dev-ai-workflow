@@ -3,28 +3,24 @@
 
 $ErrorActionPreference = "SilentlyContinue"
 
-# Source UI module
+# Source UI and config modules
 $ScriptDir = Split-Path -Parent $PSCommandPath
 . "$ScriptDir\ui.ps1"
+. "$ScriptDir\config.ps1"
 
-$GA_REPO = "Yoizen/dev-ai-workflow"
-$GA_API_URL = "https://api.github.com/repos/$GA_REPO"
+$GA_API_URL = $YWAI_API_URL
 
 function Get-LatestGaVersion {
-    try {
-        $release = Invoke-RestMethod -Uri "$GA_API_URL/releases/latest" -ErrorAction Stop
-        $version = $release.tag_name -replace '^v', ''
-        return $version
-    } catch {
+    $tag = Get-YwaiStableRelease
+    if (-not $tag) { $tag = Get-YwaiLatestRelease }
+    if (-not $tag) {
         try {
-            $tags = Invoke-RestMethod -Uri "$GA_API_URL/tags" -ErrorAction Stop
-            if ($tags.Count -gt 0) {
-                $version = $tags[0].name -replace '^v', ''
-                return $version
-            }
+            $tags = Invoke-RestMethod -Uri "$YWAI_API_URL/tags" -ErrorAction Stop -TimeoutSec 5
+            if ($tags.Count -gt 0) { $tag = $tags[0].name }
         } catch {}
-        return "unknown"
     }
+    if ($tag) { return $tag }
+    return "unknown"
 }
 
 function Get-InstalledGaVersion {

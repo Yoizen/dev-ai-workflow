@@ -53,6 +53,26 @@ Reemplazá `nest` por cualquiera de estos tipos:
 
 ---
 
+## Versiones y Releases
+
+El setup resuelve automáticamente qué versión instalar consultando las GitHub Releases.
+
+### Canal por defecto: `stable`
+
+Siempre instala la última release estable publicada. Si no hay releases aún, usa el branch `main` como fallback automático.
+
+### Opciones de versión
+
+```bash
+# Versión específica
+curl -sSL ... | bash -s -- --all --version=v1.2.0
+
+# Canal latest (puede incluir pre-releases)
+curl -sSL ... | bash -s -- --all --channel=latest
+```
+
+---
+
 ## Primer uso (SDD) en un repo
 
 Seleccioná **Agent mode** y usá SDD Orchestrator:

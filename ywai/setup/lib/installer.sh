@@ -4,11 +4,10 @@
 _LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=ui.sh
 source "$_LIB_DIR/ui.sh"
+# shellcheck source=config.sh
+source "$_LIB_DIR/config.sh"
 # shellcheck source=detector.sh
 source "$_LIB_DIR/detector.sh"
-
-GA_REPO="https://github.com/Yoizen/dev-ai-workflow.git"
-GA_DIR="$HOME/.local/share/yoizen/dev-ai-workflow"
 
 # ── GA ────────────────────────────────────────────────────────────────────────
 
@@ -39,6 +38,38 @@ _ga_pull() {
   [[ "$ok" == true ]]
 }
 
+# Checkout a specific tag in an existing GA git clone.
+# $1: path to GA_DIR  $2: tag (e.g. v1.2.0)
+_ga_checkout_tag() {
+  local path="$1" tag="$2"
+  local ok=false
+  (
+    cd "$path"
+    git fetch origin --tags -q 2>/dev/null
+    local stashed=false
+    if [[ -n "$(git status --porcelain)" ]]; then
+      git stash push -m "Auto-stash before GA tag checkout" --include-untracked -q \
+        && stashed=true
+    fi
+    if git checkout -q "$tag" 2>/dev/null; then
+      [[ "$stashed" == true ]] && git stash pop -q || true
+      exit 0
+    else
+      [[ "$stashed" == true ]] && git stash pop -q 2>/dev/null || true
+      exit 1
+    fi
+  ) && ok=true
+  [[ "$ok" == true ]]
+}
+
+# Clone the GA repo at a specific ref (tag or branch).
+# $1: destination dir  $2: ref
+_ga_clone_at_ref() {
+  local dest="$1" ref="$2"
+  mkdir -p "$(dirname "$dest")"
+  git clone --depth 1 --branch "$ref" "$GA_REPO" "$dest" 2>/dev/null
+}
+
 # After a successful pull, re-run npm install and ga install.
 _ga_post_update() {
   [[ -f "$GA_DIR/package.json" ]] && (cd "$GA_DIR" && npm install >/dev/null 2>&1) || true
@@ -54,16 +85,19 @@ _ga_post_update() {
 install_ga() {
   local action="${1:-install}" force="${2:-false}"
 
+  local ref; ref="$(ywai_resolve_ref)"
+  local ref_desc; ref_desc="$(ywai_ref_description)"
+
   if [[ "$action" == "update" ]]; then
     if [[ ! -d "$GA_DIR" ]]; then
       print_error "GA not installed. Run install first."; return 1
     fi
-    print_info "Checking for GA updates..."
+    print_info "Checking for GA updates... (${ref_desc})"
     if ! ga_updates_available "$GA_DIR"; then
       print_success "GA is already up to date"; return 0
     fi
-    print_info "Updating GA..."
-    _ga_pull "$GA_DIR" && _ga_post_update \
+    print_info "Updating GA to ${ref}..."
+    _ga_update_to_ref "$ref" && _ga_post_update \
       || print_warning "Could not update GA automatically"
     return 0
   fi
@@ -74,13 +108,13 @@ install_ga() {
       local do_update=false
       if [[ "$force" == "true" ]]; then
         do_update=true
-      elif ask_yes_no "  GA update available. Update now?" "y"; then
+      elif ask_yes_no "  GA update available (${ref_desc}). Update now?" "y"; then
         do_update=true
       fi
 
       if [[ "$do_update" == true ]]; then
-        print_info "Pulling latest changes..."
-        _ga_pull "$GA_DIR" && _ga_post_update \
+        print_info "Updating GA to ${ref}..."
+        _ga_update_to_ref "$ref" && _ga_post_update \
           || print_warning "Could not update GA automatically"
       else
         print_info "Continuing with current version"
@@ -89,18 +123,28 @@ install_ga() {
       print_success "GA is already up to date"
     fi
   else
-    print_info "Cloning GA repository..."
-    mkdir -p "$(dirname "$GA_DIR")"
-    git clone "$GA_REPO" "$GA_DIR" 2>/dev/null \
-      || { print_error "Failed to clone GA repository"; return 1; }
+    print_info "Cloning GA repository (${ref_desc})..."
+    if ! _ga_clone_at_ref "$GA_DIR" "$ref"; then
+      print_error "Failed to clone GA repository at ref '${ref}'"; return 1
+    fi
     local v; v=$(get_version "$GA_DIR/package.json")
-    [[ -n "$v" ]] && print_success "GA $v cloned"
+    [[ -n "$v" ]] && print_success "GA $v cloned" || print_success "GA cloned (${ref})"
   fi
 
   print_info "Installing GA system-wide..."
   (cd "$GA_DIR" && bash install.sh >/dev/null 2>&1) \
     && print_success "GA installed successfully" \
     || print_warning "GA installation completed with warnings"
+}
+
+# Update an existing GA clone to a given ref (tag or branch).
+_ga_update_to_ref() {
+  local ref="$1"
+  if [[ "$ref" == "$YWAI_FALLBACK_BRANCH" || "$ref" == main || "$ref" == master ]]; then
+    _ga_pull "$GA_DIR"
+  else
+    _ga_checkout_tag "$GA_DIR" "$ref"
+  fi
 }
 
 # ── SDD ───────────────────────────────────────────────────────────────────────
@@ -582,28 +626,40 @@ configure_project() {
   apply_project_type "$project_type" "$target_dir"
 
   # Copy shared skills/ assets that may still be missing after apply_project_type
-  local skills_src="$ga_install_dir/skills"
-  local skills_tgt="$target_dir/skills"
-  if [[ "$skills_src" -ef "$skills_tgt" ]]; then
-    print_info "skills/ already in place"
-  elif [[ -d "$skills_src" ]]; then
-    mkdir -p "$skills_tgt"
-    local copied_shared=0
-    local item name
-    for item in "$skills_src"/*; do
-      [[ -e "$item" ]] || continue
-      name="$(basename "$item")"
-      [[ -e "$skills_tgt/$name" ]] && continue
-      if [[ -d "$item" ]]; then
-        cp -r "$item" "$skills_tgt/$name"
-      else
-        cp "$item" "$skills_tgt/$name"
-      fi
-      ((copied_shared++)) || true
-    done
-    [[ $copied_shared -gt 0 ]] \
-      && print_success "Copied $copied_shared shared skill asset(s)" \
-      || print_info "skills/ already up to date"
+  local types_json="$types_dir/types.json"
+  local copy_shared_skills
+  copy_shared_skills=$(python3 -c "
+import json
+try:
+  data=json.load(open('$types_json'))
+  print(data.get('base_config',{}).get('copy_shared_skills', True))
+except: print(True)
+" 2>/dev/null)
+
+  if [[ "$copy_shared_skills" == "true" ]]; then
+    local skills_src="$ga_install_dir/skills"
+    local skills_tgt="$target_dir/skills"
+    if [[ "$skills_src" -ef "$skills_tgt" ]]; then
+      print_info "skills/ already in place"
+    elif [[ -d "$skills_src" ]]; then
+      mkdir -p "$skills_tgt"
+      local copied_shared=0
+      local item name
+      for item in "$skills_src"/*; do
+        [[ -e "$item" ]] || continue
+        name="$(basename "$item")"
+        [[ -e "$skills_tgt/$name" ]] && continue
+        if [[ -d "$item" ]]; then
+          cp -r "$item" "$skills_tgt/$name"
+        else
+          cp "$item" "$skills_tgt/$name"
+        fi
+        ((copied_shared++)) || true
+      done
+      [[ $copied_shared -gt 0 ]] \
+        && print_success "Copied $copied_shared shared skill asset(s)" \
+        || print_info "skills/ already up to date"
+    fi
   fi
 
   # Run AI skills setup
@@ -766,6 +822,10 @@ install_type_extensions() {
 
   for ext_name in $(_type_extensions "$project_type" "install-steps"); do
     install_extension "install-steps" "$ext_name" "$target_dir" || ((failed++)) || true
+  done
+
+  for ext_name in $(_type_extensions "$project_type" "commands"); do
+    install_extension "commands" "$ext_name" "$target_dir" || ((failed++)) || true
   done
 
   [[ $failed -eq 0 ]]

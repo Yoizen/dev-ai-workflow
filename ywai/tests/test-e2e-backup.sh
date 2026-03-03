@@ -315,10 +315,38 @@ check "Dotnet skills ok" 'grep -q "SKILLS_OK:dotnet" "$TMP_OUT"'
 check "Generic skills ok" 'grep -q "SKILLS_OK:generic" "$TMP_OUT"'
 
 # ============================================================================
-# TEST 8: Commands installation verification - REMOVED (syntax issues)
+# TEST 8: Commands installation verification
 # ============================================================================
 
-echo "⚠️ Skipping Commands verification (syntax issues)"
+run "Commands installation verification" "
+$DOCKER_BASE '
+\$CONTAINER_HELPERS
+assets=\$(prepare_assets)
+repo=\$(create_repo commands-repo)
+cd "\$assets"
+bash setup/setup.sh --all --type=nest --target="\$repo" >/tmp/commands.log 2>&1
+cd "\$repo"
+
+# Check commands directory exists and has SDD commands
+test -d ~/.config/opencode/commands
+test -f ~/.config/opencode/commands/sdd-init.md
+test -f ~/.config/opencode/commands/sdd-new.md
+test -f ~/.config/opencode/commands/sdd-ff.md
+test -f ~/.config/opencode/commands/sdd-apply.md
+test -f ~/.config/opencode/commands/sdd-verify.md
+test -f ~/.config/opencode/commands/sdd-archive.md
+test -f ~/.config/opencode/commands/sdd-continue.md
+test -f ~/.config/opencode/commands/sdd-explore.md
+
+# Check command content structure
+grep -q "description:" ~/.config/opencode/commands/sdd-init.md
+grep -q "agent: sdd-orchestrator" ~/.config/opencode/commands/sdd-init.md
+grep -q "WORKFLOW:" ~/.config/opencode/commands/sdd-apply.md
+
+echo "COMMANDS_OK"
+'"
+
+check "Commands installed" 'grep -q "COMMANDS_OK" "$TMP_OUT"'
 
 # ============================================================================
 # TEST 9: MCP servers configuration verification
@@ -354,16 +382,75 @@ echo "MCP_OK"
 check "MCP servers configured" 'grep -q "MCP_OK" "$TMP_OUT"'
 
 # ============================================================================
-# TEST 10: GA hooks installation verification - REMOVED (syntax issues)
+# TEST 10: GA hooks installation verification
 # ============================================================================
 
-echo "⚠️ Skipping GA hooks verification (syntax issues)"
+run "GA hooks installation" "
+$DOCKER_BASE '
+\$CONTAINER_HELPERS
+assets=\$(prepare_assets)
+repo=\$(create_repo ga-hooks-repo)
+cd "\$assets"
+bash setup/setup.sh --all --type=nest --target="\$repo" >/tmp/ga.log 2>&1
+cd "\$repo"
+
+# Check GA configuration
+test -f .ga
+grep -q "PROVIDER=" .ga
+grep -q "FILE_PATTERNS=" .ga
+
+# Check git hooks directory
+test -d .git/hooks
+test -f .git/hooks/pre-commit
+test -x .git/hooks/pre-commit
+
+# Check GA hook content
+grep -q "Guardian Agent" .git/hooks/pre-commit
+grep -q "ga run" .git/hooks/pre-commit
+
+echo "GA_HOOKS_OK"
+'"
+
+check "GA hooks installed" 'grep -q "GA_HOOKS_OK" "$TMP_OUT"'
 
 # ============================================================================
-# TEST 11: SDD workflow files verification - REMOVED (syntax issues)
+# TEST 11: SDD workflow files verification
 # ============================================================================
 
-echo "⚠️ Skipping SDD workflow verification (syntax issues)"
+run "SDD workflow files" "
+$DOCKER_BASE '
+\$CONTAINER_HELPERS
+assets=\$(prepare_assets)
+repo=\$(create_repo sdd-repo)
+cd "\$assets"
+bash setup/setup.sh --all --type=nest --target="\$repo" >/tmp/sdd.log 2>&1
+cd "\$repo"
+
+# Check SDD skills are installed
+test -d skills/sdd-init
+test -d skills/sdd-explore
+test -d skills/sdd-propose
+test -d skills/sdd-spec
+test -d skills/sdd-design
+test -d skills/sdd-tasks
+test -d skills/sdd-apply
+test -d skills/sdd-verify
+test -d skills/sdd-archive
+
+# Check SDD skill files exist
+test -f skills/sdd-init/SKILL.md
+test -f skills/sdd-apply/SKILL.md
+test -f skills/sdd-verify/SKILL.md
+
+# Check SDD skill content
+grep -q "Bootstrap.*structure" skills/sdd-init/SKILL.md
+grep -q "Implement tasks" skills/sdd-apply/SKILL.md
+grep -q "Validate implementation" skills/sdd-verify/SKILL.md
+
+echo "SDD_OK"
+'"
+
+check "SDD workflow installed" 'grep -q "SDD_OK" "$TMP_OUT"'
 
 # ============================================================================
 # TEST 12: Extensions installation verification

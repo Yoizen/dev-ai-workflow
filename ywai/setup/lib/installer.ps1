@@ -2,157 +2,140 @@
 
 $ErrorActionPreference = "SilentlyContinue"
 
-# Source UI module
+# Source UI and config modules
 $ScriptDir = Split-Path -Parent $PSCommandPath
 . "$ScriptDir\ui.ps1"
+. "$ScriptDir\config.ps1"
 
-$GA_REPO = "https://github.com/Yoizen/dev-ai-workflow.git"
-$GA_DIR = "$env:USERPROFILE\.local\share\yoizen\dev-ai-workflow"
+function Invoke-GaPostUpdate {
+    if (Test-Path (Join-Path $GA_DIR "package.json")) {
+        Push-Location $GA_DIR
+        & npm install 2>&1 | Out-Null
+        Pop-Location
+    }
+    Push-Location $GA_DIR
+    & .\install.ps1 2>&1 | Out-Null
+    $ok = $LASTEXITCODE -eq 0
+    Pop-Location
+    if ($ok) { Write-Success "GA updated successfully" }
+    else     { Write-Warning "GA installation completed with warnings" }
+}
+
+function Invoke-GaPull {
+    Push-Location $GA_DIR
+    $updateOk = $false
+    try {
+        git fetch origin --quiet 2>&1 | Out-Null
+        $stashCreated = $false
+        if (git status --porcelain 2>&1) {
+            git stash push -m "Auto-stash before GA update" --include-untracked --quiet 2>&1 | Out-Null
+            $stashCreated = $true
+        }
+        git merge --ff-only origin/main 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) { $updateOk = $true }
+        else {
+            git merge --ff-only origin/master 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) { $updateOk = $true }
+        }
+        if ($stashCreated) { git stash pop --quiet 2>&1 | Out-Null }
+    } finally { Pop-Location }
+    return $updateOk
+}
+
+function Invoke-GaCheckoutTag {
+    param([string]$Tag)
+    Push-Location $GA_DIR
+    $ok = $false
+    try {
+        git fetch origin --tags --quiet 2>&1 | Out-Null
+        $stashCreated = $false
+        if (git status --porcelain 2>&1) {
+            git stash push -m "Auto-stash before GA tag checkout" --include-untracked --quiet 2>&1 | Out-Null
+            $stashCreated = $true
+        }
+        git checkout $Tag --quiet 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) { $ok = $true }
+        if ($stashCreated) { git stash pop --quiet 2>&1 | Out-Null }
+    } finally { Pop-Location }
+    return $ok
+}
+
+function Invoke-GaUpdateToRef {
+    param([string]$Ref)
+    if ($Ref -eq $YWAI_FALLBACK_BRANCH -or $Ref -eq "main" -or $Ref -eq "master") {
+        return Invoke-GaPull
+    }
+    return Invoke-GaCheckoutTag -Tag $Ref
+}
 
 function Install-Ga {
     param(
-        [string]$Action = "install"
+        [string]$Action = "install",
+        [switch]$ForceUpdate
     )
-    
+
+    $ref     = Resolve-YwaiRef
+    $refDesc = Get-YwaiRefDescription
+
     switch ($Action) {
         "install" {
             Write-Info "Installing GA..."
-            
+
             if (Test-Path $GA_DIR) {
-                Write-Warning "GA directory already exists"
-                Write-Info "Pulling latest changes..."
-                Push-Location $GA_DIR
-                try {
-                    git fetch origin --quiet 2>&1 | Out-Null
-
-                    # Stash local changes if any exist
-                    $stashCreated = $false
-                    $status = git status --porcelain 2>&1
-                    if ($status) {
-                        git stash push -m "Auto-stash before GA update" --include-untracked --quiet 2>&1 | Out-Null
-                        $stashCreated = $true
+                Write-Info "GA directory exists — checking for updates ($refDesc)..."
+                $updateOk = Invoke-GaUpdateToRef -Ref $ref
+                if ($updateOk) {
+                    if (Test-Path (Join-Path $GA_DIR "package.json")) {
+                        Push-Location $GA_DIR; & npm install 2>&1 | Out-Null; Pop-Location
                     }
-
-                    # Fast-forward merge
-                    $merged = $false
-                    git merge --ff-only origin/main 2>&1 | Out-Null
-                    if ($LASTEXITCODE -eq 0) { $merged = $true }
-                    else {
-                        git merge --ff-only origin/master 2>&1 | Out-Null
-                        if ($LASTEXITCODE -eq 0) { $merged = $true }
-                    }
-
-                    # Restore stash
-                    if ($stashCreated) {
-                        git stash pop --quiet 2>&1 | Out-Null
-                    }
-
-                    if ($merged) {
-                        # Update npm dependencies if package.json exists
-                        if (Test-Path (Join-Path $GA_DIR "package.json")) {
-                            & npm install 2>&1 | Out-Null
-                        }
-                        Write-Success "GA updated to latest"
-                    } else {
-                        Write-Warning "Could not update GA automatically, you may need to update manually"
-                    }
-                } finally {
-                    Pop-Location
+                    Write-Success "GA updated to $ref"
+                } else {
+                    Write-Warning "Could not update GA automatically"
                 }
             } else {
-                Write-Info "Cloning GA repository..."
+                Write-Info "Cloning GA repository ($refDesc)..."
                 $parentDir = Split-Path -Parent $GA_DIR
                 New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
-                git clone $GA_REPO $GA_DIR --quiet 2>&1 | Out-Null
-                
+                git clone --depth 1 --branch $ref $GA_REPO $GA_DIR --quiet 2>&1 | Out-Null
                 if (-not (Test-Path $GA_DIR)) {
-                    Write-Error "Failed to clone GA repository"
+                    Write-Error "Failed to clone GA repository at ref '$ref'"
                     return $false
                 }
             }
-            
+
             Write-Info "Installing GA system-wide..."
             Push-Location $GA_DIR
             & .\install.ps1 2>&1 | Out-Null
             Pop-Location
-            
+
             if ($LASTEXITCODE -eq 0 -or (Test-Path $GA_DIR)) {
                 Write-Success "GA installed successfully"
                 return $true
-            } else {
-                Write-Warning "GA installation completed with warnings"
-                return $true
             }
+            Write-Warning "GA installation completed with warnings"
+            return $true
         }
-        
+
         "update" {
             if (-not (Test-Path $GA_DIR)) {
                 Write-Error "GA not installed. Use 'install' action first."
                 return $false
             }
-            
-            Write-Info "Updating GA..."
-            Push-Location $GA_DIR
-            $updateOk = $false
-            try {
-                git fetch origin --quiet 2>&1 | Out-Null
-
-                # Stash local changes if any exist
-                $stashCreated = $false
-                $status = git status --porcelain 2>&1
-                if ($status) {
-                    git stash push -m "Auto-stash before GA update" --include-untracked --quiet 2>&1 | Out-Null
-                    $stashCreated = $true
-                }
-
-                # Fast-forward merge
-                git merge --ff-only origin/main 2>&1 | Out-Null
-                if ($LASTEXITCODE -eq 0) { $updateOk = $true }
-                else {
-                    git merge --ff-only origin/master 2>&1 | Out-Null
-                    if ($LASTEXITCODE -eq 0) { $updateOk = $true }
-                }
-
-                # Restore stash
-                if ($stashCreated) {
-                    git stash pop --quiet 2>&1 | Out-Null
-                }
-
-                if ($updateOk) {
-                    # Update npm dependencies
-                    if (Test-Path (Join-Path $GA_DIR "package.json")) {
-                        & npm install 2>&1 | Out-Null
-                    }
-                } else {
-                    Write-Warning "Could not update GA automatically, you may need to update manually"
-                }
-            } finally {
-                Pop-Location
-            }
-
+            Write-Info "Updating GA to $ref ($refDesc)..."
+            $updateOk = Invoke-GaUpdateToRef -Ref $ref
             if (-not $updateOk) {
+                Write-Warning "Could not update GA automatically"
                 return $false
             }
-            
-            Write-Info "Reinstalling GA..."
-            Push-Location $GA_DIR
-            & .\install.ps1 2>&1 | Out-Null
-            Pop-Location
-            
-            if ($LASTEXITCODE -eq 0) {
-                Write-Success "GA updated successfully"
-                return $true
-            } else {
-                Write-Error "Failed to update GA"
-                return $false
-            }
+            Invoke-GaPostUpdate
+            return $true
         }
-        
+
         "skip" {
             Write-Info "Skipping GA installation"
             return $true
         }
-        
+
         default {
             Write-Error "Unknown action: $Action"
             return $false

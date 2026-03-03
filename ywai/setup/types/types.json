@@ -18,7 +18,12 @@
         ],
         "mcps": [],
         "install-steps": [
-          "biome-baseline"
+          "biome-baseline",
+          "sdd-commands"
+        ],
+        "commands": [
+          "opencode-commands",
+          "copilot-skills"
         ]
       }
     },
@@ -42,7 +47,12 @@
         ],
         "mcps": [],
         "install-steps": [
-          "biome-baseline"
+          "biome-baseline",
+          "sdd-commands"
+        ],
+        "commands": [
+          "opencode-commands",
+          "copilot-skills"
         ]
       }
     },
@@ -66,7 +76,12 @@
         ],
         "mcps": [],
         "install-steps": [
-          "biome-baseline"
+          "biome-baseline",
+          "sdd-commands"
+        ],
+        "commands": [
+          "opencode-commands",
+          "copilot-skills"
         ]
       }
     },
@@ -83,7 +98,9 @@
       "extensions": {
         "hooks": [],
         "mcps": [],
-        "install-steps": []
+        "install-steps": [
+          "sdd-commands"
+        ]
       }
     },
     "dotnet": {
@@ -99,7 +116,9 @@
       "extensions": {
         "hooks": [],
         "mcps": [],
-        "install-steps": []
+        "install-steps": [
+          "sdd-commands"
+        ]
       }
     },
     "generic": {
@@ -115,7 +134,13 @@
       "extensions": {
         "hooks": [],
         "mcps": [],
-        "install-steps": []
+        "install-steps": [
+          "sdd-commands"
+        ],
+        "commands": [
+          "opencode-commands",
+          "copilot-skills"
+        ]
       }
     }
   },
@@ -132,10 +157,11 @@
       ],
       "install-steps": [
         "github-prompts",
-        "engram-setup"
+        "engram-setup",
+        "shared-skills"
       ]
     },
-    "copy_shared_skills": true,
+    "copy_shared_skills": false,
     "copy_commands": true,
     "init_ga": true
   },

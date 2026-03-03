@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate changelog from commits
+        id: changelog
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v' | sed -n '2p')
+          if [[ -n "$PREV_TAG" ]]; then
+            CHANGES=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s" --no-merges)
+          else
+            CHANGES=$(git log --pretty=format:"- %s" --no-merges | head -30)
+          fi
+          {
+            echo "changes<<EOF"
+            echo "$CHANGES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          body: |
+            ## What's Changed
+
+            ${{ steps.changelog.outputs.changes }}
+
+            ---
+
+            ### Installation
+
+            **macOS / Linux**
+            ```bash
+            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ steps.version.outputs.version }}/ywai/setup/setup.sh | bash -s -- --all --type=nest
+            ```
+
+            **Windows**
+            ```powershell
+            & ([scriptblock]::Create((irm https://raw.githubusercontent.com/${{ github.repository }}/${{ steps.version.outputs.version }}/ywai/setup/quick-setup.ps1))) -All -Type nest
+            ```
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}

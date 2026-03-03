@@ -18,8 +18,17 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(pwd)"
-SKILLS_SOURCE="$SCRIPT_DIR"
+if git rev-parse --show-toplevel >/dev/null 2>&1; then
+    REPO_ROOT="$(git rev-parse --show-toplevel)"
+else
+    # Fallback to current directory or one level up based on where script is located
+    if [[ "$SCRIPT_DIR" == *"skills"* ]]; then
+        REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+    else
+        REPO_ROOT="$(pwd)"
+    fi
+fi
+SKILLS_SOURCE="$REPO_ROOT/skills"
 
 # Source shared UI (colors + print helpers)
 # shellcheck source=../setup/lib/ui.sh

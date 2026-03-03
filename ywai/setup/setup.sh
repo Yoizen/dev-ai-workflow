@@ -9,8 +9,16 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BOOTSTRAP_REPO="${DEV_AI_WORKFLOW_BOOTSTRAP_REPO:-https://github.com/Yoizen/dev-ai-workflow.git}"
-BOOTSTRAP_REF="${DEV_AI_WORKFLOW_REF:-exp}"
+
+# Source config early so YWAI_* vars are available before bootstrap.
+# config.sh may not exist yet (running via curl|bash), so we guard it.
+[[ -f "$SCRIPT_DIR/lib/config.sh" ]] && source "$SCRIPT_DIR/lib/config.sh"
+
+# Bootstrap compat: honour legacy env vars as overrides
+[[ -n "${DEV_AI_WORKFLOW_BOOTSTRAP_REPO:-}" ]] && YWAI_REPO_URL="$DEV_AI_WORKFLOW_BOOTSTRAP_REPO"
+[[ -n "${DEV_AI_WORKFLOW_REF:-}" ]]            && YWAI_FALLBACK_BRANCH="$DEV_AI_WORKFLOW_REF"
+
+BOOTSTRAP_REPO="${YWAI_REPO_URL:-https://github.com/Yoizen/dev-ai-workflow.git}"
 BOOTSTRAP_DIR="${DEV_AI_WORKFLOW_BOOTSTRAP_DIR:-}"
 
 _bootstrap_from_repo_if_needed() {
@@ -37,12 +45,37 @@ _bootstrap_from_repo_if_needed() {
     }
 
     repo_dir="$(mktemp -d "${TMPDIR:-/tmp}/dev-ai-workflow-setup-XXXXXX")"
-    echo "Bootstrapping full installer from ${BOOTSTRAP_REPO} (${BOOTSTRAP_REF})..." >&2
 
-    if ! git clone --depth 1 --branch "$BOOTSTRAP_REF" "$BOOTSTRAP_REPO" "$repo_dir" >/dev/null 2>&1; then
-      echo "Failed to download the full installer for branch '$BOOTSTRAP_REF'." >&2
-      echo "You can override the branch with DEV_AI_WORKFLOW_REF=<branch>." >&2
-      exit 1
+    # Resolve which ref to bootstrap from: release tag or fallback branch
+    local bootstrap_ref
+    if [[ -f "$SCRIPT_DIR/lib/config.sh" ]]; then
+      source "$SCRIPT_DIR/lib/config.sh"
+      bootstrap_ref="$(ywai_resolve_ref)"
+    else
+      # config.sh not available yet — fetch stable release directly
+      bootstrap_ref=$(curl -fsSL --connect-timeout 5 \
+        "https://api.github.com/repos/Yoizen/dev-ai-workflow/releases" 2>/dev/null \
+        | grep -E '"tag_name"|"prerelease"' \
+        | paste - - \
+        | grep '"prerelease": *false' \
+        | grep -o '"tag_name": *"[^"]*"' \
+        | head -1 \
+        | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
+      bootstrap_ref="${bootstrap_ref:-${DEV_AI_WORKFLOW_REF:-main}}"
+    fi
+
+    echo "Bootstrapping installer from ${BOOTSTRAP_REPO} (${bootstrap_ref})..." >&2
+
+    if ! git clone --depth 1 --branch "$bootstrap_ref" "$BOOTSTRAP_REPO" "$repo_dir" >/dev/null 2>&1; then
+      local fallback="${YWAI_FALLBACK_BRANCH:-${DEV_AI_WORKFLOW_REF:-main}}"
+      echo "Ref '${bootstrap_ref}' not found, falling back to '${fallback}'..." >&2
+      if ! git clone --depth 1 --branch "$fallback" "$BOOTSTRAP_REPO" "$repo_dir" >/dev/null 2>&1; then
+        echo "Failed to download the installer." >&2
+        echo "Override repo:    YWAI_REPO_URL=<url>" >&2
+        echo "Override version: YWAI_VERSION=<tag>" >&2
+        echo "Override branch:  YWAI_FALLBACK_BRANCH=<branch>" >&2
+        exit 1
+      fi
     fi
   fi
 
@@ -76,6 +109,7 @@ FORCE=false
 DRY_RUN=false
 SHOW_HELP=false
 INSTALL_EXTENSIONS=false
+LIST_VERSIONS=false
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 
@@ -105,6 +139,11 @@ CONFIGURATION:
     --list-types             List available project types
     --list-extensions        List available extensions
 
+RELEASE:
+    --version=<ref>          Use specific version: tag (v1.0.0), 'stable', or 'latest'
+    --channel=<name>         Release channel: stable (default), latest
+    --list-versions          List available releases from GitHub
+
 ADVANCED:
     --update-all             Update all installed components
     --force                  Force reinstall/overwrite
@@ -112,6 +151,12 @@ ADVANCED:
     --dry-run                Show what would happen without executing
 
     -h, --help               Show this help message
+
+ENVIRONMENT:
+    YWAI_REPO_URL            Override git repository URL
+    YWAI_VERSION             Pin a version/tag (e.g. v1.0.0)
+    YWAI_CHANNEL             Release channel: stable (default) | latest
+    YWAI_FALLBACK_BRANCH     Branch used when no releases exist (default: main)
 
 EXAMPLES:
     ./setup.sh                               # Interactive mode
@@ -151,6 +196,9 @@ _parse_args() {
       --target=*)   TARGET_DIR="${1#*=}"; shift ;;
       --type=*)     PROJECT_TYPE="${1#*=}"; shift ;;
       --list-types) list_project_types; exit 0 ;;
+      --version=*)   YWAI_VERSION="${1#*=}"; shift ;;
+      --channel=*)   YWAI_CHANNEL="${1#*=}"; shift ;;
+      --list-versions) LIST_VERSIONS=true; shift ;;
       --list-extensions) list_extensions; exit 0 ;;
       --update-all)
         INTERACTIVE_MODE=false; UPDATE_ALL=true; shift ;;
@@ -407,6 +455,18 @@ _parse_args "$@"
 
 if [[ "$SHOW_HELP" == true ]]; then
   _show_help; exit 0
+fi
+
+if [[ "$LIST_VERSIONS" == true ]]; then
+  echo "Available releases for ${YWAI_REPO}:"
+  curl -fsSL --connect-timeout 5 "${YWAI_API_URL}/releases" 2>/dev/null \
+    | grep '"tag_name"' \
+    | sed -E 's/.*"tag_name": *"([^"]+)".*/  \1/' \
+    || echo "  (could not reach GitHub API)"
+  echo ""
+  echo "  Current channel : ${YWAI_CHANNEL}"
+  echo "  Resolved ref    : $(ywai_resolve_ref)"
+  exit 0
 fi
 
 # Auto-switch to non-interactive in CI / piped environments
