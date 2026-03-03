@@ -15,6 +15,9 @@ if [[ -z "${_GA_UI_LOADED:-}" ]]; then
   BOLD='\033[1m'
   NC='\033[0m'
 
+  # Export colors for use in other scripts
+  export RED GREEN YELLOW BLUE CYAN WHITE GRAY BOLD NC
+
   # SILENT can be set externally to suppress non-error output
   SILENT="${SILENT:-false}"
 fi

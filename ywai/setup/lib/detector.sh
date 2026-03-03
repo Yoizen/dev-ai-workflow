@@ -66,6 +66,7 @@ detect_ga() {
 }
 
 # Output: STATUS|INSTALLED_COUNT|TOTAL (9 sdd-* skills expected)
+# $1: optional skills directory (defaults to ./skills)
 detect_sdd() {
   local skills_dir="${1:-.}/skills"
   local count=0 total=9

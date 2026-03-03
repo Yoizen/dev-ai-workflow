@@ -56,8 +56,7 @@ DOCKER_BASE="docker run --rm -i -v $(pwd):/src $IMAGE bash -lc"
 # TEST: Commands Installation
 # ============================================================================
 
-run "Commands installation verification" "
-$DOCKER_BASE '
+run "Commands installation verification" "$DOCKER_BASE '
 set -e
 mkdir -p /tmp/test-repo
 cd /tmp/test-repo
@@ -85,11 +84,11 @@ test -f ~/.config/opencode/commands/sdd-continue.md
 test -f ~/.config/opencode/commands/sdd-explore.md
 
 # Check command content structure
-grep -q "description:" ~/.config/opencode/commands/sdd-init.md
-grep -q "agent: sdd-orchestrator" ~/.config/opencode/commands/sdd-init.md
-grep -q "WORKFLOW:" ~/.config/opencode/commands/sdd-apply.md
+grep -q \"description:\" ~/.config/opencode/commands/sdd-init.md
+grep -q \"agent: sdd-orchestrator\" ~/.config/opencode/commands/sdd-init.md
+grep -q \"WORKFLOW:\" ~/.config/opencode/commands/sdd-apply.md
 
-echo "COMMANDS_OK"
+echo \"COMMANDS_OK\"
 '"
 
 check "Commands installed" 'grep -q "COMMANDS_OK" "$TMP_OUT"'

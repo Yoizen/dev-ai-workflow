@@ -16,10 +16,10 @@ mkdir -p "$TARGET_SKILLS_DIR"
 copied=0
 for skill_dir in "$SOURCE_DIR"/*; do
   [[ -d "$skill_dir" ]] || continue
-  skill_name="$(basename "$skill_dir)"
+  skill_name="$(basename "$skill_dir")"
   if [[ ! -d "$TARGET_SKILLS_DIR/$skill_name" ]]; then
     cp -r "$skill_dir" "$TARGET_SKILLS_DIR/$skill_name"
-    copied=$((copied + 1))
+    ((copied++))
   fi
 done
 

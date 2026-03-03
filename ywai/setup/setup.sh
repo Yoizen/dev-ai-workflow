@@ -292,7 +292,7 @@ _run_installs() {
       print_info "[DRY RUN] Would install GA to $GA_DIR"
     else
       local force_flag="false"
-      [[ "$INTERACTIVE_MODE" == false ]] && force_flag="true"
+      [[ "$INTERACTIVE_MODE" == false || "$FORCE" == true ]] && force_flag="true"
       install_ga "install" "$force_flag"
     fi
   fi
