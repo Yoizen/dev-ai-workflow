@@ -64,11 +64,11 @@ Siempre instala la última release estable publicada. Si no hay releases aún, u
 ### Opciones de versión
 
 ```bash
-# Versión específica
-curl -sSL ... | bash -s -- --all --version=v1.2.0
+# Versión específica (incluye pre-releases)
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/setup.sh | YWAI_VERSION=v5.0.0-beta.2 bash -s -- --all --type=nest
 
-# Canal latest (puede incluir pre-releases)
-curl -sSL ... | bash -s -- --all --channel=latest
+# Canal latest
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/setup.sh | YWAI_CHANNEL=latest bash -s -- --all --type=nest
 ```
 
 ---
