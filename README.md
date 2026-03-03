@@ -29,13 +29,13 @@ Features:
 ### macOS / Linux
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/setup.sh | bash -s -- --all --type=nest
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --all --type=nest
 ```
 
 ### Windows
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/quick-setup.ps1))) -All -Type nest
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/quick-setup.ps1))) -All -Type nest
 ```
 
 ### Otros tipos
