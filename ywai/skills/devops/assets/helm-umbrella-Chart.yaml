@@ -1,0 +1,24 @@
+# DevOps/Helm/Chart.yaml — Umbrella Helm chart
+# Contains all service sub-charts and common-helpers as dependencies.
+# {{chartversion}} is replaced by the Azure Pipeline before packaging.
+
+apiVersion: v2
+name: product-name
+description: Umbrella Helm chart for all services
+type: application
+version: "{{chartversion}}"
+appVersion: "{{chartversion}}"
+
+dependencies:
+  - name: common-helpers
+    version: "1.0.0"
+    repository: "oci://yourregistry.azurecr.io/helm"
+  - name: api1
+    version: "0.1.0"
+    repository: "file://charts/api1"
+  - name: api2
+    version: "0.1.0"
+    repository: "file://charts/api2"
+  - name: api3
+    version: "0.1.0"
+    repository: "file://charts/api3"

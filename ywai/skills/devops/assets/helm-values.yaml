@@ -1,0 +1,51 @@
+# DevOps/Helm/values.yaml — Default values for the Umbrella Helm chart
+#
+# RULES:
+# - global.appVersion uses {{chartversion}} as a replace key, substituted by the pipeline.
+# - Each service has its own top-level node (e.g. api1, api2).
+# - appName MUST match the node key and the chart directory name (e.g. api1).
+# - requiredConfigMapEnv: non-sensitive vars required for startup. Pod won't start if missing.
+# - optionalConfigMapEnv: non-sensitive vars that are optional.
+# - requiredSecretEnv: sensitive vars (secrets) required for startup.
+# - optionalSecretEnv: sensitive vars (secrets) that are optional.
+#
+# IMPORTANT: Deploy-time values.yaml MUST only ADD new keys.
+# NEVER override values defined here.
+
+global:
+  productName: productName          # Static — used for k8s resource naming
+  appVersion: "{{chartversion}}"    # Replace key — injected by pipeline
+
+api1:
+  appName: api1
+  requiredConfigMapEnv:
+    - client
+    # - ADD_MORE_REQUIRED_CONFIG_VARS
+  optionalConfigMapEnv:
+    - NODE_ENV
+    # - ADD_MORE_OPTIONAL_CONFIG_VARS
+  requiredSecretEnv:
+    - exampleSecretToken
+    # - ADD_MORE_REQUIRED_SECRET_VARS
+  optionalSecretEnv: []
+    # - ADD_MORE_OPTIONAL_SECRET_VARS
+
+api2:
+  appName: api2
+  requiredConfigMapEnv:
+    - client
+  optionalConfigMapEnv:
+    - NODE_ENV
+  requiredSecretEnv:
+    - anotherSecretKey
+  optionalSecretEnv: []
+
+api3:
+  appName: api3
+  requiredConfigMapEnv:
+    - client
+  optionalConfigMapEnv:
+    - NODE_ENV
+  requiredSecretEnv:
+    - api3SecretKey
+  optionalSecretEnv: []

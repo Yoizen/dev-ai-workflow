@@ -88,6 +88,7 @@ dev-ai-workflow/
 | `angular/*` | Angular (core, forms, performance, architecture) |
 | `dotnet` | .NET / C# |
 | `python` | Python |
+| `devops` | Azure Pipelines, Helm charts, Kubernetes deployments |
 
 ### Meta Skills
 
