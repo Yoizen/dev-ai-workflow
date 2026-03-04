@@ -5,6 +5,11 @@
       "agents_md": "setup/types/nest/AGENTS.md",
       "review_md": "setup/types/nest/REVIEW.md",
       "lefthook_yml": "setup/types/nest/lefthook.yml",
+      "global_agents": [
+        "sdd-orchestator",
+        "nest-engineer",
+        "devops"
+      ],
       "skills": [
         "git-commit",
         "biome",
@@ -28,6 +33,11 @@
       "agents_md": "setup/types/nest-angular/AGENTS.md",
       "review_md": "setup/types/nest-angular/REVIEW.md",
       "lefthook_yml": "setup/types/nest-angular/lefthook.yml",
+      "global_agents": [
+        "sdd-orchestator",
+        "fe-engineer",
+        "devops"
+      ],
       "skills": [
         "git-commit",
         "biome",
@@ -53,6 +63,11 @@
       "agents_md": "setup/types/nest-react/AGENTS.md",
       "review_md": "setup/types/nest-react/REVIEW.md",
       "lefthook_yml": "setup/types/nest-react/lefthook.yml",
+      "global_agents": [
+        "sdd-orchestator",
+        "fe-engineer",
+        "devops"
+      ],
       "skills": [
         "git-commit",
         "biome",
@@ -78,6 +93,10 @@
       "agents_md": "setup/types/python/AGENTS.md",
       "review_md": "setup/types/python/REVIEW.md",
       "lefthook_yml": "setup/types/python/lefthook.yml",
+      "global_agents": [
+        "sdd-orchestator",
+        "devops"
+      ],
       "skills": [
         "git-commit",
         "skill-creator",
@@ -96,8 +115,35 @@
       "agents_md": "setup/types/dotnet/AGENTS.md",
       "review_md": "setup/types/dotnet/REVIEW.md",
       "lefthook_yml": "setup/types/dotnet/lefthook.yml",
+      "global_agents": [
+        "sdd-orchestator",
+        "dotnet-engineer",
+        "devops"
+      ],
       "skills": [
         "git-commit",
+        "skill-creator",
+        "skill-sync"
+      ],
+      "extensions": {
+        "hooks": [],
+        "mcps": [],
+        "install-steps": [
+          "sdd-commands"
+        ]
+      }
+    },
+    "devops": {
+      "description": "DevOps / Platform workflows (CI/CD, Docker, Helm, Kubernetes)",
+      "agents_md": "setup/types/devops/AGENTS.md",
+      "review_md": "setup/types/devops/REVIEW.md",
+      "global_agents": [
+        "sdd-orchestator",
+        "devops"
+      ],
+      "skills": [
+        "git-commit",
+        "devops",
         "skill-creator",
         "skill-sync"
       ],
@@ -114,6 +160,10 @@
       "agents_md": "setup/types/generic/AGENTS.md",
       "review_md": "setup/types/generic/REVIEW.md",
       "lefthook_yml": "setup/types/generic/lefthook.yml",
+      "global_agents": [
+        "sdd-orchestator",
+        "devops"
+      ],
       "skills": [
         "git-commit",
         "skill-creator",

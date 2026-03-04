@@ -32,10 +32,14 @@ Features:
 curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --all --type=nest
 ```
 
-Si querés desactivar la configuración de skills globales del **repo** (Copilot/OpenCode):
+`--global-skills` está desactivado por defecto. Si querés activarlo para configurar agentes globales de usuario (Copilot/OpenCode):
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --all --type=nest --global-skills=false
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --all --type=nest 
+```
+
+``` 
+--global-skills=true 
 ```
 
 ### Windows
@@ -51,12 +55,13 @@ Reemplazá `nest` por cualquiera de estos tipos:
 - `nest-react`
 - `python`
 - `dotnet`
+- `devops`
 - `generic`
 
 ### Nota
 
 > El setup instala OpenCode automáticamente si no está disponible.
-> La configuración de `--global-skills` aplica al repo objetivo (no instala nada a nivel global del sistema).
+> `--global-skills` configura perfiles globales de usuario para OpenCode/Copilot (no instala nada a nivel global del sistema y no crea agentes dentro del repo).
 
 ### Sync inteligente para chats (`--llm-sync`)
 
@@ -257,6 +262,7 @@ GA Review: PASS
 | `nest-react` | NestJS + React fullstack | git-commit, biome, typescript, react-19, tailwind-4, skill-creator, skill-sync |
 | `python` | Python backend / scripts (FastAPI, Django, scripts) | git-commit, skill-creator, skill-sync |
 | `dotnet` | .NET / C# backend (ASP.NET Core, Clean Architecture) | git-commit, skill-creator, skill-sync |
+| `devops` | DevOps / Platform workflows (CI/CD, Docker, Helm, Kubernetes) | git-commit, devops, skill-creator, skill-sync |
 | `generic` | Genérico — language-agnostic | git-commit, skill-creator, skill-sync |
 
 Cada tipo instala un `AGENTS.md` con reglas específicas del stack y un `REVIEW.md` con checklist de code review adaptado.

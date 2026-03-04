@@ -117,7 +117,7 @@ SHOW_HELP=false
 INSTALL_EXTENSIONS=false
 LIST_VERSIONS=false
 LLM_SYNC=false
-INSTALL_GLOBAL_SKILLS=true
+INSTALL_GLOBAL_SKILLS=false
 GLOBAL_SKILLS_SET=false
 
 # ── Help ──────────────────────────────────────────────────────────────────────
@@ -134,7 +134,7 @@ INSTALLATION OPTIONS:
     --install-ga             Install only GA
     --install-sdd            Install only SDD Orchestrator
     --install-vscode         Install only VS Code extensions
-    --global-skills[=bool]   Configure repo global skills (Copilot/OpenCode), default: true
+    --global-skills[=bool]   Configure global user-profile agents (Copilot/OpenCode), default: false
     --extensions             Install extensions declared by the project type
     --llm-sync               Smart sync AGENTS.md/REVIEW.md/skills (and Biome on JS/Nest stacks)
 
@@ -146,7 +146,7 @@ SKIP OPTIONS:
 CONFIGURATION:
     --provider=<name>        AI provider: opencode, claude, gemini, ollama
     --target=<path>          Target directory (default: current directory)
-    --type=<name>            Project type: nest, nest-angular, nest-react, python, dotnet, generic
+    --type=<name>            Project type: nest, nest-angular, nest-react, python, dotnet, devops, generic
     --list-types             List available project types
     --list-extensions        List available extensions
 
@@ -172,7 +172,7 @@ ENVIRONMENT:
 EXAMPLES:
     ./setup.sh                               # Interactive mode
     ./setup.sh --all                         # Install everything
-    ./setup.sh --all --global-skills=false   # Install all, skip repo global skills setup
+    ./setup.sh --all --global-skills=true    # Install all + global user-profile agents
     ./setup.sh --all --provider=claude       # Install with Claude provider
     ./setup.sh --install-ga --install-sdd    # Install GA and SDD only
     ./setup.sh --llm-sync                    # Sync current repo using inferred project type
@@ -409,6 +409,7 @@ _show_next_steps() {
   [[ "$INSTALL_SDD" == true ]]    && echo -e "${CYAN}  • SDD Orchestrator${NC}"
   [[ "$INSTALL_VSCODE" == true ]] && echo -e "${CYAN}  • VS Code Extensions${NC}"
   [[ "$INSTALL_EXTENSIONS" == true ]] && echo -e "${CYAN}  • Type Extensions (${PROJECT_TYPE:-nest})${NC}"
+  [[ "$INSTALL_GLOBAL_SKILLS" == true ]] && echo -e "${CYAN}  • Global OpenCode/Copilot agents${NC}"
   [[ "$LLM_SYNC" == true ]] && echo -e "${CYAN}  • LLM Smart Sync${NC}"
   echo ""
   echo -e "${YELLOW}Next steps:${NC}"
@@ -470,7 +471,7 @@ _run_interactive() {
   ask_yes_no "Install SDD Orchestrator (spec-first dev)?" "y" && INSTALL_SDD=true
   [[ "${VSCODE_STATUS:-}" == "available" ]] && ask_yes_no "Install VS Code extensions?" "y" && INSTALL_VSCODE=true
   if [[ "$GLOBAL_SKILLS_SET" == false ]]; then
-    ask_yes_no "Install repo global skills (Copilot/OpenCode setup)?" "y" \
+    ask_yes_no "Install global user-profile agents (Copilot/OpenCode)?" "n" \
       && INSTALL_GLOBAL_SKILLS=true || INSTALL_GLOBAL_SKILLS=false
   fi
   echo ""
@@ -479,8 +480,8 @@ _run_interactive() {
   [[ "$INSTALL_GA" == true ]]     && echo "  • GA"
   [[ "$INSTALL_SDD" == true ]]    && echo "  • SDD Orchestrator"
   [[ "$INSTALL_VSCODE" == true ]] && echo "  • VS Code Extensions"
-  [[ "$INSTALL_GLOBAL_SKILLS" == true ]] && echo "  • Repo global skills (Copilot/OpenCode)"
-  [[ "$INSTALL_GLOBAL_SKILLS" == false ]] && echo "  • Repo global skills (Copilot/OpenCode) [SKIPPED]"
+  [[ "$INSTALL_GLOBAL_SKILLS" == true ]] && echo "  • Global user-profile agents (Copilot/OpenCode)"
+  [[ "$INSTALL_GLOBAL_SKILLS" == false ]] && echo "  • Global user-profile agents (Copilot/OpenCode) [SKIPPED]"
   echo "  → Target: $TARGET_DIR"
   echo ""
 

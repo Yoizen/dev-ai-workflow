@@ -14,6 +14,7 @@
 #   ./setup.sh --cursor     # Configure Cursor
 #   ./setup.sh --opencode   # Configure OpenCode
 #   ./setup.sh --gemini     # Configure Gemini CLI
+#   ./setup.sh --global-only --project-type=nest --opencode --copilot
 
 set -e
 
@@ -46,6 +47,9 @@ SETUP_OPENCODE=false
 SETUP_GEMINI=false
 SETUP_CODEX=false
 SETUP_COPILOT=false
+GLOBAL_ONLY=false
+PROJECT_TYPE="generic"
+GLOBAL_AGENTS_CONFIGURED=false
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -64,9 +68,275 @@ show_help() {
     echo "  --gemini     Configure Gemini CLI"
     echo "  --codex      Configure Codex (OpenAI)"
     echo "  --copilot    Configure GitHub Copilot"
+    echo "  --global-only Configure only global user-profile agents (no repo files)"
+    echo "  --project-type=<type> Project type for global agent generation"
     echo "  --help       Show this help message"
     echo ""
     echo "If no options provided, runs in interactive mode."
+}
+
+normalize_project_type() {
+    local project_type="${1:-$PROJECT_TYPE}"
+    case "$project_type" in
+        nest|nest-angular|nest-react|python|dotnet|devops|generic) echo "$project_type" ;;
+        *) echo "generic" ;;
+    esac
+}
+
+types_json_for_global_agents() {
+    local candidate
+    for candidate in \
+        "$REPO_ROOT/ywai/setup/types/types.json" \
+        "$REPO_ROOT/setup/types/types.json" \
+        "$SCRIPT_DIR/../setup/types/types.json"; do
+        [[ -f "$candidate" ]] && { echo "$candidate"; return 0; }
+    done
+    echo ""
+}
+
+global_agent_names_for_type() {
+    local project_type
+    project_type="$(normalize_project_type "$1")"
+
+    local types_json
+    types_json="$(types_json_for_global_agents)"
+    if [[ -f "$types_json" ]] && command -v python3 >/dev/null 2>&1; then
+        local configured
+        configured=$(python3 -c "
+import json
+try:
+  data=json.load(open('$types_json'))
+  values=data.get('types',{}).get('$project_type',{}).get('global_agents',[])
+  if isinstance(values,list):
+    values=[str(v).strip() for v in values if str(v).strip()]
+    print(' '.join(values))
+except: pass
+" 2>/dev/null)
+        [[ -n "$configured" ]] && { echo "$configured"; return 0; }
+    fi
+
+    case "$project_type" in
+        nest)
+            echo "sdd-orchestator nest-engineer devops"
+            ;;
+        nest-angular|nest-react)
+            echo "sdd-orchestator fe-engineer devops"
+            ;;
+        dotnet)
+            echo "sdd-orchestator dotnet-engineer devops"
+            ;;
+        devops|python|generic|*)
+            echo "sdd-orchestator devops"
+            ;;
+    esac
+}
+
+resolve_agents_source_file() {
+    local project_type
+    project_type="$(normalize_project_type "$1")"
+
+    local candidate
+    for candidate in \
+        "$REPO_ROOT/AGENTS.md" \
+        "$REPO_ROOT/AGENTS.MD" \
+        "$REPO_ROOT/ywai/setup/types/$project_type/AGENTS.md" \
+        "$REPO_ROOT/setup/types/$project_type/AGENTS.md" \
+        "$SCRIPT_DIR/../setup/types/$project_type/AGENTS.md" \
+        "$REPO_ROOT/ywai/setup/types/generic/AGENTS.md" \
+        "$REPO_ROOT/setup/types/generic/AGENTS.md" \
+        "$SCRIPT_DIR/../setup/types/generic/AGENTS.md"; do
+        if [[ -f "$candidate" ]]; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+
+    echo ""
+}
+
+resolve_template_file() {
+    local template_name="$1"
+    local candidate
+    for candidate in \
+        "$REPO_ROOT/ywai/setup/lib/templates/$template_name" \
+        "$REPO_ROOT/setup/lib/templates/$template_name" \
+        "$SCRIPT_DIR/../setup/lib/templates/$template_name"; do
+        [[ -f "$candidate" ]] && { echo "$candidate"; return 0; }
+    done
+    echo ""
+}
+
+append_sdd_devops_guidance() {
+    local file_path="$1"
+    local agent_name="$2"
+
+    cat >> "$file_path" << EOF
+
+## How to use Skills (SDD + DevOps)
+
+### SDD quick commands
+- \/sdd:new <change-name>
+- \/sdd:ff <change-name>
+- \/sdd:apply
+- \/sdd:verify
+- \/sdd:archive
+
+### DevOps trigger keywords
+- pipeline
+- azure pipelines
+- helm
+- docker
+- devops
+- kubernetes
+- k8s
+- deploy
+- ci/cd
+
+### Agent focus: ${agent_name}
+EOF
+
+    case "$agent_name" in
+        sdd-orchestator)
+            cat >> "$file_path" << 'EOF'
+- Orchestrate SDD phases and keep implementation aligned with specs.
+- Prefer `/sdd:new` and `/sdd:ff` for multi-file features.
+EOF
+            ;;
+        fe-engineer)
+            cat >> "$file_path" << 'EOF'
+- Focus on frontend architecture, components, styling, and UX quality.
+- Use SDD for cross-cutting UI changes and workflows.
+EOF
+            ;;
+        nest-engineer)
+            cat >> "$file_path" << 'EOF'
+- Focus on NestJS backend architecture, modules, services, and APIs.
+- Coordinate SDD artifacts for backend features before implementation.
+EOF
+            ;;
+        dotnet-engineer)
+            cat >> "$file_path" << 'EOF'
+- Focus on .NET architecture, clean boundaries, and robust service design.
+- Use SDD flow for feature planning and delivery control.
+EOF
+            ;;
+        devops)
+            cat >> "$file_path" << 'EOF'
+- Focus on CI/CD, Docker, Helm, deployment, and environment contracts.
+- Align infrastructure tasks with feature specs and delivery phases.
+EOF
+            ;;
+    esac
+}
+
+write_global_agent_file() {
+    local target_file="$1"
+    local agent_name="$2"
+    local project_type="$3"
+    local source_agents_file="$4"
+    local mode="$5" # opencode | copilot_prompt | copilot_agent
+
+    case "$mode" in
+        copilot_prompt)
+            cat > "$target_file" << EOF
+---
+name: ${agent_name}
+description: Global ${agent_name} instructions for ${project_type} projects
+applyTo: "**"
+---
+
+EOF
+            ;;
+        opencode)
+            cat > "$target_file" << EOF
+---
+description: ${agent_name} global agent for ${project_type} projects
+mode: subagent
+---
+
+EOF
+            ;;
+        copilot_agent|*)
+            cat > "$target_file" << EOF
+---
+name: ${agent_name}
+description: Global ${agent_name} agent for ${project_type} projects
+---
+
+EOF
+            ;;
+    esac
+
+    cat >> "$target_file" << EOF
+# ${agent_name}
+
+Project type scope: ${project_type}
+EOF
+
+    if [[ -f "$source_agents_file" ]]; then
+        cat >> "$target_file" << EOF
+
+## Base directives (from AGENTS.md)
+Source: ${source_agents_file}
+EOF
+        cat "$source_agents_file" >> "$target_file"
+    fi
+
+    append_sdd_devops_guidance "$target_file" "$agent_name"
+
+    if [[ "$agent_name" == "sdd-orchestator" ]]; then
+        local orchestrator_tpl
+        orchestrator_tpl="$(resolve_template_file "sdd-orchestrator.md")"
+        if [[ -f "$orchestrator_tpl" ]]; then
+            echo "" >> "$target_file"
+            cat "$orchestrator_tpl" >> "$target_file"
+        fi
+    fi
+}
+
+setup_global_profile_agents() {
+    [[ "$GLOBAL_AGENTS_CONFIGURED" == "true" ]] && return 0
+
+    local project_type
+    project_type="$(normalize_project_type "$PROJECT_TYPE")"
+    local source_agents_file
+    source_agents_file="$(resolve_agents_source_file "$project_type")"
+
+    local agent_names
+    agent_names="$(global_agent_names_for_type "$project_type")"
+
+    local opencode_dir="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+    local opencode_agents_dir="$opencode_dir/agent"
+    local opencode_agents_alt_dir="$opencode_dir/agents"
+
+    local copilot_agents_dir="$HOME/.copilot/agents"
+    local vscode_user_dir
+    if [[ "$(uname)" == "Darwin" ]]; then
+      vscode_user_dir="$HOME/Library/Application Support/Code/User"
+    else
+      vscode_user_dir="${XDG_CONFIG_HOME:-$HOME/.config}/Code/User"
+    fi
+    local vscode_prompts_dir="$vscode_user_dir/prompts"
+    local legacy_prompt="$vscode_prompts_dir/enterprise-persona.instructions.md"
+
+    mkdir -p "$opencode_agents_dir" "$opencode_agents_alt_dir" "$copilot_agents_dir" "$vscode_prompts_dir"
+
+    local first_prompt=""
+    local agent_name
+    for agent_name in $agent_names; do
+        write_global_agent_file "$opencode_agents_dir/${agent_name}.md" "$agent_name" "$project_type" "$source_agents_file" "opencode"
+        write_global_agent_file "$opencode_agents_alt_dir/${agent_name}.md" "$agent_name" "$project_type" "$source_agents_file" "opencode"
+        write_global_agent_file "$copilot_agents_dir/${agent_name}.md" "$agent_name" "$project_type" "$source_agents_file" "copilot_agent"
+        write_global_agent_file "$vscode_prompts_dir/${agent_name}.instructions.md" "$agent_name" "$project_type" "$source_agents_file" "copilot_prompt"
+        [[ -z "$first_prompt" ]] && first_prompt="$vscode_prompts_dir/${agent_name}.instructions.md"
+    done
+
+    if [[ -n "$first_prompt" && -f "$first_prompt" ]]; then
+        cp "$first_prompt" "$legacy_prompt"
+    fi
+
+    echo -e "${GREEN}  ✓ Configured global agents for type '$project_type': $agent_names${NC}"
+    GLOBAL_AGENTS_CONFIGURED=true
 }
 
 show_menu() {
@@ -165,6 +435,11 @@ setup_cursor() {
 }
 
 setup_opencode() {
+    if [[ "$GLOBAL_ONLY" == "true" ]]; then
+        setup_global_profile_agents
+        return 0
+    fi
+
     local opencode_dir="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
     local opencode_skills="$opencode_dir/skills"
 
@@ -250,6 +525,11 @@ setup_codex() {
 }
 
 setup_copilot() {
+    if [[ "$GLOBAL_ONLY" == "true" ]]; then
+        setup_global_profile_agents
+        return 0
+    fi
+
     local target="$REPO_ROOT/.github/skills"
     mkdir -p "$REPO_ROOT/.github"
 
@@ -474,26 +754,48 @@ while [[ $# -gt 0 ]]; do
         --gemini) SETUP_GEMINI=true; shift ;;
         --codex) SETUP_CODEX=true; shift ;;
         --copilot) SETUP_COPILOT=true; shift ;;
+        --global-only) GLOBAL_ONLY=true; shift ;;
+        --project-type=*) PROJECT_TYPE="${1#*=}"; shift ;;
         --help|-h) show_help; exit 0 ;;
         *) echo -e "${RED}Unknown option: $1${NC}"; exit 1 ;;
     esac
 done
 
+if [[ "$GLOBAL_ONLY" == "true" ]] \
+    && [[ "$SETUP_CLAUDE" == "false" && "$SETUP_CURSOR" == "false" && "$SETUP_OPENCODE" == "false" \
+      && "$SETUP_GEMINI" == "false" && "$SETUP_CODEX" == "false" && "$SETUP_COPILOT" == "false" ]]; then
+    SETUP_OPENCODE=true
+    SETUP_COPILOT=true
+fi
+
+if [[ "$GLOBAL_ONLY" == "true" ]]; then
+    SETUP_CLAUDE=false
+    SETUP_CURSOR=false
+    SETUP_GEMINI=false
+    SETUP_CODEX=false
+fi
+
 echo -e "${BLUE}🤖 yFlow AI Skills Setup${NC}"
 echo "========================="
 echo ""
 
-SKILL_COUNT=$(find "$SKILLS_SOURCE" -maxdepth 2 -name "SKILL.md" | wc -l | tr -d ' ')
+SKILL_COUNT=0
+if [[ "$GLOBAL_ONLY" == "false" ]]; then
+    SKILL_COUNT=$(find "$SKILLS_SOURCE" -maxdepth 2 -name "SKILL.md" | wc -l | tr -d ' ')
 
-if [ "$SKILL_COUNT" -eq 0 ]; then
-    echo -e "${RED}No skills found in $SKILLS_SOURCE${NC}"
-    exit 1
+    if [ "$SKILL_COUNT" -eq 0 ]; then
+        echo -e "${RED}No skills found in $SKILLS_SOURCE${NC}"
+        exit 1
+    fi
+
+    echo -e "${BLUE}Found $SKILL_COUNT skills to configure${NC}"
+    echo ""
+else
+    echo -e "${BLUE}Global-only mode enabled (user-profile agents).${NC}"
+    echo ""
 fi
 
-echo -e "${BLUE}Found $SKILL_COUNT skills to configure${NC}"
-echo ""
-
-if [ "$SETUP_CLAUDE" = false ] && [ "$SETUP_CURSOR" = false ] && [ "$SETUP_OPENCODE" = false ] && [ "$SETUP_GEMINI" = false ] && [ "$SETUP_CODEX" = false ] && [ "$SETUP_COPILOT" = false ]; then
+if [[ "$GLOBAL_ONLY" == "false" ]] && [ "$SETUP_CLAUDE" = false ] && [ "$SETUP_CURSOR" = false ] && [ "$SETUP_OPENCODE" = false ] && [ "$SETUP_GEMINI" = false ] && [ "$SETUP_CODEX" = false ] && [ "$SETUP_COPILOT" = false ]; then
     show_menu
 fi
 
@@ -537,4 +839,8 @@ if [ "$SETUP_COPILOT" = true ]; then
 fi
 
 echo ""
-echo -e "${GREEN}✅ Successfully configured $SKILL_COUNT AI skills!${NC}"
+if [[ "$GLOBAL_ONLY" == "true" ]]; then
+    echo -e "${GREEN}✅ Successfully configured global OpenCode/Copilot agents!${NC}"
+else
+    echo -e "${GREEN}✅ Successfully configured $SKILL_COUNT AI skills!${NC}"
+fi

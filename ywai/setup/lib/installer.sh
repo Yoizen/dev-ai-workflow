@@ -940,7 +940,7 @@ configure_project() {
   local provider="${1:-}" target_dir="${2:-.}" skip_ga="${3:-false}"
   local project_type="${4:-nest}"
   local force="${5:-false}"
-  local install_global_skills="${6:-true}"
+  local install_global_skills="${6:-false}"
 
   print_info "Configuring project at $target_dir..."
 
@@ -1010,15 +1010,18 @@ except: print(True)
     [[ $copied_shared_assets -gt 0 ]] && print_success "Copied $copied_shared_assets skills/_shared asset(s)"
   fi
 
-  # Run AI skills setup (repo global skills: Copilot/OpenCode)
-  local skills_setup="$skills_tgt/setup.sh"
+  # Run AI skills global profile setup (Copilot/OpenCode)
+  local skills_setup="$ga_install_dir/ywai/skills/setup.sh"
+  [[ -f "$skills_setup" ]] || skills_setup="$ga_install_dir/skills/setup.sh"
+  [[ -f "$skills_setup" ]] || skills_setup="$skills_tgt/setup.sh"
+
   if [[ "$install_global_skills" == "true" ]]; then
     if [[ -f "$skills_setup" ]]; then
-      (cd "$target_dir" && bash "$skills_setup" --copilot --opencode >/dev/null 2>&1) \
-        && print_success "Repo global skills configured" || print_warning "Repo global skills setup had issues"
+      (cd "$target_dir" && bash "$skills_setup" --copilot --opencode --global-only --project-type="$project_type" >/dev/null 2>&1) \
+        && print_success "Global OpenCode/Copilot agents configured" || print_warning "Global OpenCode/Copilot agent setup had issues"
     fi
   else
-    print_info "Skipped repo global skills setup"
+    print_info "Skipped global OpenCode/Copilot agents setup"
   fi
 
   _sync_skill_metadata_tables "$target_dir"
