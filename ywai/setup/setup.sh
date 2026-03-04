@@ -109,12 +109,14 @@ SKIP_VSCODE=false
 PROVIDER=""
 TARGET_DIR=""
 PROJECT_TYPE="nest"
+PROJECT_TYPE_SET=false
 UPDATE_ALL=false
 FORCE=false
 DRY_RUN=false
 SHOW_HELP=false
 INSTALL_EXTENSIONS=false
 LIST_VERSIONS=false
+LLM_SYNC=false
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 
@@ -131,6 +133,7 @@ INSTALLATION OPTIONS:
     --install-sdd            Install only SDD Orchestrator
     --install-vscode         Install only VS Code extensions
     --extensions             Install extensions declared by the project type
+    --llm-sync               Smart sync AGENTS.md/REVIEW.md/skills (and Biome on JS/Nest stacks)
 
 SKIP OPTIONS:
     --skip-ga                Skip GA installation
@@ -168,6 +171,8 @@ EXAMPLES:
     ./setup.sh --all                         # Install everything
     ./setup.sh --all --provider=claude       # Install with Claude provider
     ./setup.sh --install-ga --install-sdd    # Install GA and SDD only
+    ./setup.sh --llm-sync                    # Sync current repo using inferred project type
+    ./setup.sh --llm-sync --type=nest-react  # Sync using explicit project type
     ./setup.sh --update-all                  # Update all components
     ./setup.sh --all --dry-run               # Preview what would happen
 
@@ -199,7 +204,7 @@ _parse_args() {
       --skip-vscode) SKIP_VSCODE=true; shift ;;
       --provider=*) PROVIDER="${1#*=}"; shift ;;
       --target=*)   TARGET_DIR="${1#*=}"; shift ;;
-      --type=*)     PROJECT_TYPE="${1#*=}"; shift ;;
+      --type=*)     PROJECT_TYPE="${1#*=}"; PROJECT_TYPE_SET=true; shift ;;
       --list-types) list_project_types; exit 0 ;;
       --version=*)   YWAI_VERSION="${1#*=}"; shift ;;
       --channel=*)   YWAI_CHANNEL="${1#*=}"; shift ;;
@@ -213,6 +218,8 @@ _parse_args() {
       -h|--help) SHOW_HELP=true; shift ;;
       --extensions|--install-extensions)
         INTERACTIVE_MODE=false; INSTALL_EXTENSIONS=true; shift ;;
+      --llm-sync)
+        INTERACTIVE_MODE=false; LLM_SYNC=true; shift ;;
       -*)
         print_error "Unknown option: $1"
         echo "Use --help for usage information"
@@ -283,6 +290,22 @@ _ensure_git_repo() {
 
 _run_installs() {
   local configured_project=false
+
+  if [[ "$LLM_SYNC" == true ]]; then
+    print_step "Running smart LLM sync..."
+    if [[ "$DRY_RUN" == true ]]; then
+      if [[ "$PROJECT_TYPE_SET" == true ]]; then
+        print_info "[DRY RUN] Would run llm-sync in $TARGET_DIR with type $PROJECT_TYPE"
+      else
+        print_info "[DRY RUN] Would run llm-sync in $TARGET_DIR with inferred type"
+      fi
+    else
+      local llm_type=""
+      [[ "$PROJECT_TYPE_SET" == true ]] && llm_type="$PROJECT_TYPE"
+      llm_sync_project "$TARGET_DIR" "$llm_type"
+    fi
+    return
+  fi
 
   if [[ "$UPDATE_ALL" == true ]]; then
     [[ "$DRY_RUN" == true ]] \
@@ -366,8 +389,18 @@ _show_next_steps() {
   [[ "$INSTALL_SDD" == true ]]    && echo -e "${CYAN}  • SDD Orchestrator${NC}"
   [[ "$INSTALL_VSCODE" == true ]] && echo -e "${CYAN}  • VS Code Extensions${NC}"
   [[ "$INSTALL_EXTENSIONS" == true ]] && echo -e "${CYAN}  • Type Extensions (${PROJECT_TYPE:-nest})${NC}"
+  [[ "$LLM_SYNC" == true ]] && echo -e "${CYAN}  • LLM Smart Sync${NC}"
   echo ""
   echo -e "${YELLOW}Next steps:${NC}"
+  if [[ "$LLM_SYNC" == true ]]; then
+    echo -e "${WHITE}  1. Review managed blocks in AGENTS.md and REVIEW.md${NC}"
+    echo -e "${WHITE}  2. Check biome.json updates (if JS/Nest stack)${NC}"
+    echo -e "${WHITE}  3. Re-run --llm-sync after adding/updating skills${NC}"
+    echo ""
+    echo -e "${CYAN}Repository path: $TARGET_DIR${NC}"
+    echo ""
+    return
+  fi
   [[ "$INSTALL_GA" == true && -n "$PROVIDER" ]] && echo -e "${WHITE}  1. Review .ga config (provider: $PROVIDER)${NC}"
   echo -e "${WHITE}  2. Customize AGENTS.md for your project${NC}"
   [[ "$INSTALL_SDD" == true ]]  && echo -e "${WHITE}  3. Use /sdd:new for spec-driven development${NC}"

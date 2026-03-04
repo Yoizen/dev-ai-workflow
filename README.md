@@ -51,6 +51,35 @@ Reemplazá `nest` por cualquiera de estos tipos:
 
 > El setup instala OpenCode automáticamente si no está disponible.
 
+### Sync inteligente para chats (`--llm-sync`)
+
+Si querés que Copilot / Claude Code actualice reglas en un repo existente (sin copy-paste bruto de `AGENTS.md`), usá el modo `--llm-sync`.
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --llm-sync
+```
+
+Con tipo explícito:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --llm-sync --type=nest-react
+```
+
+Qué sincroniza:
+
+- `AGENTS.md` (bloque gestionado, preservando contenido custom fuera del bloque)
+- `REVIEW.md` (bloque gestionado)
+- `skills/` (sync de skills del tipo + SDD sin pisar skills custom)
+- tablas Auto-invoke vía `skill-sync` cuando está disponible
+- `biome.json` y scripts de Biome en `package.json` cuando el proyecto tiene `package.json`
+
+Prompt sugerido para chats:
+
+```text
+Fetch the installation guide and follow it:
+curl -s https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/docs/guide/installation.md
+```
+
 ---
 
 ## Versiones y Releases

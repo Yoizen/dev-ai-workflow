@@ -656,6 +656,142 @@ _resolve_type_file() {
   [[ -f "$fallback" ]] && echo "$fallback"
 }
 
+infer_project_type() {
+  local target_dir="${1:-.}"
+
+  if [[ -f "$target_dir/pyproject.toml" || -f "$target_dir/requirements.txt" || -f "$target_dir/poetry.lock" ]]; then
+    echo "python"
+    return 0
+  fi
+
+  if find "$target_dir" -maxdepth 3 -type f \( -name "*.csproj" -o -name "*.sln" \) | grep -q .; then
+    echo "dotnet"
+    return 0
+  fi
+
+  local package_json="$target_dir/package.json"
+  if [[ -f "$package_json" ]]; then
+    if command_exists python3; then
+      python3 - "$package_json" << 'PY' 2>/dev/null
+import json
+import sys
+
+pkg_path = sys.argv[1]
+try:
+  data = json.load(open(pkg_path, 'r', encoding='utf-8'))
+except Exception:
+  print("generic")
+  raise SystemExit
+
+deps = {}
+for key in ("dependencies", "devDependencies", "peerDependencies"):
+  values = data.get(key, {})
+  if isinstance(values, dict):
+    deps.update(values)
+
+has_nest = any(name.startswith("@nestjs/") for name in deps)
+has_angular = "@angular/core" in deps
+has_react = any(name in deps for name in ("react", "react-dom", "next"))
+
+if has_nest and has_angular:
+  print("nest-angular")
+elif has_nest and has_react:
+  print("nest-react")
+elif has_nest:
+  print("nest")
+else:
+  print("generic")
+PY
+      return 0
+    fi
+
+    if grep -q '"@nestjs/' "$package_json" 2>/dev/null; then
+      if grep -q '"@angular/core"' "$package_json" 2>/dev/null; then
+        echo "nest-angular"
+      elif grep -q '"react"\|"next"\|"react-dom"' "$package_json" 2>/dev/null; then
+        echo "nest-react"
+      else
+        echo "nest"
+      fi
+      return 0
+    fi
+  fi
+
+  echo "generic"
+}
+
+_render_type_doc_payload() {
+  local doc="$1" source_file="$2" output_file="$3"
+  cat "$source_file" > "$output_file"
+
+  if [[ "$doc" == "AGENTS.md" ]]; then
+    local tpl
+    for tpl in "$_LIB_DIR/templates/sdd-orchestrator.md" "$_LIB_DIR/templates/engram-protocol.md"; do
+      [[ -f "$tpl" ]] && { echo ""; cat "$tpl"; } >> "$output_file"
+    done
+  fi
+}
+
+_upsert_managed_doc_block() {
+  local doc="$1" target="$2" source_file="$3" project_type="$4"
+  local marker="${doc%.*}"
+  local begin="<!-- YWAI:BEGIN managed:${marker} -->"
+  local end="<!-- YWAI:END managed:${marker} -->"
+
+  local payload_file block_file tmp_file
+  payload_file="$(mktemp)"
+  block_file="$(mktemp)"
+  tmp_file="$(mktemp)"
+
+  _render_type_doc_payload "$doc" "$source_file" "$payload_file"
+
+  {
+    echo "$begin"
+    echo "<!-- source_type: $project_type -->"
+    cat "$payload_file"
+    echo "$end"
+  } > "$block_file"
+
+  if grep -qF "$begin" "$target" 2>/dev/null && grep -qF "$end" "$target" 2>/dev/null; then
+    awk -v begin="$begin" -v end="$end" -v block_file="$block_file" '
+      BEGIN {
+        in_block = 0
+        replaced = 0
+        while ((getline line < block_file) > 0) {
+          replacement = replacement line ORS
+        }
+        close(block_file)
+      }
+      index($0, begin) {
+        if (!replaced) {
+          printf "%s", replacement
+          replaced = 1
+        }
+        in_block = 1
+        next
+      }
+      in_block && index($0, end) {
+        in_block = 0
+        next
+      }
+      !in_block { print }
+      END {
+        if (!replaced) {
+          printf "%s", replacement
+        }
+      }
+    ' "$target" > "$tmp_file"
+    mv "$tmp_file" "$target"
+    print_success "Updated managed $doc block ($project_type)"
+  else
+    [[ -s "$target" && -n "$(tail -n 1 "$target" 2>/dev/null)" ]] && echo "" >> "$target"
+    cat "$block_file" >> "$target"
+    print_success "Appended managed $doc block ($project_type)"
+  fi
+
+  rm -f "$payload_file" "$block_file" "$tmp_file"
+}
+
 list_project_types() {
   local types_dir; types_dir="$(_types_dir)"
   local types_json="$types_dir/types.json"
@@ -697,14 +833,14 @@ apply_project_type() {
     if [[ -f "$source_file" ]]; then
       local target="$target_dir/$doc"
       if [[ ! -f "$target" || "$force" == "true" ]]; then
-        cp "$source_file" "$target"
-        # Append optional template sections for AGENTS.md
-        if [[ "$doc" == "AGENTS.md" ]]; then
-          for tpl in "$_LIB_DIR/templates/sdd-orchestrator.md" "$_LIB_DIR/templates/engram-protocol.md"; do
-            [[ -f "$tpl" ]] && { echo ""; cat "$tpl"; } >> "$target"
-          done
-        fi
+        local payload_file
+        payload_file="$(mktemp)"
+        _render_type_doc_payload "$doc" "$source_file" "$payload_file"
+        cp "$payload_file" "$target"
+        rm -f "$payload_file"
         print_success "Copied $doc ($project_type)"
+      elif [[ "$doc" == "AGENTS.md" || "$doc" == "REVIEW.md" ]]; then
+        _upsert_managed_doc_block "$doc" "$target" "$source_file" "$project_type"
       else
         print_info "$doc already exists, skipping (pass force=true to overwrite)"
       fi
@@ -753,6 +889,30 @@ except: pass
   [[ $copied_sdd -gt 0 ]] && print_success "Copied $copied_sdd SDD skill(s)"
 
   print_success "Project type '$project_type' applied"
+}
+
+_sync_skill_metadata_tables() {
+  local target_dir="${1:-.}"
+  local sync_script="$target_dir/skills/skill-sync/assets/sync.sh"
+
+  if [[ -f "$sync_script" ]]; then
+    (cd "$target_dir" && bash "$sync_script" >/dev/null 2>&1) \
+      && print_success "Synced AGENTS auto-invoke tables from skills metadata" \
+      || print_warning "skill-sync execution had issues"
+  fi
+}
+
+llm_sync_project() {
+  local target_dir="${1:-.}" project_type="${2:-}"
+  [[ -n "$project_type" ]] || project_type="$(infer_project_type "$target_dir")"
+
+  print_info "Running LLM sync for project type: $project_type"
+  apply_project_type "$project_type" "$target_dir" "false" || return 1
+
+  [[ -f "$target_dir/package.json" ]] && install_biome "$target_dir"
+
+  _sync_skill_metadata_tables "$target_dir"
+  print_success "LLM sync completed"
 }
 
 # ── Full project configure ────────────────────────────────────────────────────
@@ -836,6 +996,8 @@ except: print(True)
     (cd "$target_dir" && bash "$skills_setup" --copilot --opencode >/dev/null 2>&1) \
       && print_success "AI skills configured" || print_warning "AI skills setup had issues"
   fi
+
+  _sync_skill_metadata_tables "$target_dir"
 
   _update_gitignore "$target_dir"
   _init_ga_in_project "$provider" "$target_dir" "$skip_ga" "$ga_install_dir"
@@ -1041,11 +1203,12 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     install-extension) install_extension "${2:-}" "${3:-}" "${4:-.}" ;;
     install-type-extensions) install_type_extensions "${2:-nest}" "${3:-.}" ;;
     configure)        configure_project "${2:-}" "${3:-.}" "false" "${4:-nest}" ;;
+    llm-sync)         llm_sync_project "${2:-.}" "${3:-}" ;;
     list-extensions)  list_extensions ;;
     list-types)       list_project_types ;;
     update-all)       update_all_components "${2:-.}" ;;
     *)
-      echo "Usage: $0 {install-ga|update-ga|install-sdd|install-vscode|install-extension|install-type-extensions|configure|list-extensions|list-types|update-all}"
+      echo "Usage: $0 {install-ga|update-ga|install-sdd|install-vscode|install-extension|install-type-extensions|configure|llm-sync|list-extensions|list-types|update-all}"
       exit 1
       ;;
   esac
