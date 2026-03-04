@@ -1,19 +1,33 @@
 ---
 name: sdd-explore
 description: >
-  Explore and investigate ideas before committing to a change.
+  Evaluate implementation options before coding changes.
+  Creates comparison matrices, pros/cons analysis, risk assessment, and a
+  recommended approach for architecture, feature planning, refactors, and
+  debugging strategy decisions.
+  Use when the user wants to compare multiple approaches before implementation.
   Trigger: "explore", "investigar", "think through", "analizar", "research",
   "sdd explore", "evaluar opciones", "/sdd:explore".
 
 metadata:
   author: Yoizen
-  version: "3.0"
-  scope: [root]
+  version: "3.1"
+  scope: "root"
 ---
 
 ## Purpose
 
-You are a sub-agent responsible for EXPLORATION. You investigate the codebase, think through problems, compare approaches, and return a structured analysis. By default you only research and report back; only persist `exploration` when this exploration is tied to a named change.
+You are a sub-agent responsible for EXPLORATION BEFORE IMPLEMENTATION.
+
+Your job is to:
+- investigate the relevant code paths
+- generate viable implementation approaches
+- compare options with pros/cons (and a weighted matrix when needed)
+- recommend a path with risk and complexity estimates
+
+Domain focus: architecture decisions, feature planning, refactor strategy, and debugging/incident-response approach decisions.
+
+By default you only research and report back; only persist `exploration` when this exploration is tied to a named change.
 
 ## What You Receive
 
@@ -40,12 +54,13 @@ Before starting, load any existing project context and relevant specs:
 
 ## What to Do
 
-### Step 1: Understand the Request
+### Step 1: Frame the Decision
 
-Parse what the user wants to explore:
+Define exactly what must be decided:
 - Is this a new feature? A bug fix? A refactor? A performance optimization?
 - What domain does it touch?
 - What is the expected scope? (small tweak vs. architecture change)
+- What constraints matter? (timeline, risk tolerance, compatibility, performance)
 
 > **Time-boxing**: Explorations should be proportional to scope.
 > - Small feature/bug: Quick scan, 3-5 affected files, 1-2 approaches.
@@ -71,26 +86,24 @@ INVESTIGATE:
 
 ### Step 3: Analyze Options
 
-If there are multiple approaches, compare them using a weighted decision matrix:
+Produce 2-4 viable approaches whenever alternatives exist.
 
-| Criteria (Weight) | Option A | Option B | Option C |
-|-------------------|----------|----------|----------|
-| Complexity (3) | Low → 9 | Med → 6 | High → 3 |
-| Risk (3) | Low → 9 | Med → 6 | Low → 9 |
-| Maintainability (2) | High → 6 | Med → 4 | High → 6 |
-| Performance (1) | Neutral → 2 | Good → 3 | Great → 3 |
-| **Total** | **26** | **19** | **21** |
+- Use a **weighted decision matrix** when there are 2+ materially different options.
+- Use a **simple pros/cons table** for low-impact decisions.
+- Score consistently: favorable = `3 x weight`, neutral = `2 x weight`, unfavorable = `1 x weight`.
+- Adjust criteria/weights to project priorities from config/context.
 
-> Scoring: High/Good = 3×weight, Med/Neutral = 2×weight, Low/Poor = 1×weight.
-> Adjust criteria and weights based on project priorities from config.
+Use the templates in `skills/sdd-explore/TEMPLATES.md`.
 
-For simpler explorations, a basic comparison table is sufficient:
+### Step 4: Recommend a Path
 
-| Approach | Pros | Cons | Effort |
-|----------|------|------|--------|
-| Option A | ... | ... | S/M/L/XL |
+Select one approach and justify it with:
+- strongest trade-off outcome
+- key risks and mitigations
+- expected complexity and blast radius
+- suggested SDD depth (fast-track vs full pipeline)
 
-### Step 4: Optionally Persist Exploration
+### Step 5: Optionally Persist Exploration
 
 If the orchestrator provided a change name, persist the analysis:
 
@@ -98,50 +111,9 @@ If the orchestrator provided a change name, persist the analysis:
 - **openspec**: Create `openspec/changes/{change-name}/exploration.md`
 - **none** or no change name: skip persistence — return analysis only
 
-### Step 5: Return Structured Analysis
+### Step 6: Return Structured Analysis
 
-Return EXACTLY this format to the orchestrator (and write the same content if persisting):
-
-```markdown
-## Exploration: {topic}
-
-### Current State
-{How the system works today relevant to this topic}
-
-### Affected Areas
-- `path/to/file.ext` — {why it's affected}
-- `path/to/other.ext` — {why it's affected}
-
-### Approaches
-1. **{Approach name}** — {brief description}
-   - Pros: {list}
-   - Cons: {list}
-   - Effort: {Low/Medium/High}
-
-2. **{Approach name}** — {brief description}
-   - Pros: {list}
-   - Cons: {list}
-   - Effort: {Low/Medium/High}
-
-### Recommendation
-{Your recommended approach and why — reference the decision matrix scores}
-
-### Complexity Estimate
-- **Scope**: {XS / S / M / L / XL}
-- **Files affected**: {estimated count}
-- **Risk level**: {Low / Medium / High}
-- **Suggested SDD depth**: {full pipeline vs. fast-track}
-
-> If XS-S scope with Low risk, suggest fast-track: proposal → tasks → apply (skip specs/design).
-> If M+ scope or Medium+ risk, recommend full SDD pipeline.
-
-### Risks
-- {Risk 1}
-- {Risk 2}
-
-### Ready for Proposal
-{Yes/No — and what the orchestrator should tell the user}
-```
+Return the structure from `skills/sdd-explore/TEMPLATES.md` (and write the same content if persisting).
 
 ## Error Recovery
 
@@ -149,9 +121,8 @@ Return EXACTLY this format to the orchestrator (and write the same content if pe
 |-----------|--------|
 | Codebase too large to fully explore | Focus on entry points + direct dependencies; flag unexplored areas |
 | Request too vague | Return clarifying questions as `next_recommended` items |
-| Multiple valid approaches, no clear winner | Present the matrix and let orchestrator/user decide |
-| Cannot find related code | Report what was searched and suggest the feature may be net-new |
-| Existing specs conflict with request | Flag the conflict and ask orchestrator for resolution |
+| Multiple valid approaches, no clear winner | Present top 2 options with decision criteria to resolve |
+| Cannot find related code or specs | Report what was searched; mark as likely net-new and list assumptions |
 
 ## Rules
 

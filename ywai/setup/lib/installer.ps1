@@ -168,6 +168,8 @@ function Install-SDD {
             New-Item -ItemType Directory -Path $skillsTarget -Force | Out-Null
             
             $copied = 0
+            $replaced = 0
+            $skippedSamePath = 0
             $sddSkills = Get-ChildItem -Path $sourceDir -Directory -Filter "sdd-*" -ErrorAction SilentlyContinue
             
             foreach ($skillDir in $sddSkills) {
@@ -176,15 +178,39 @@ function Install-SDD {
                 $srcNorm = [System.IO.Path]::GetFullPath($skillDir.FullName)
                 $dstNorm = [System.IO.Path]::GetFullPath($destPath)
                 if ($srcNorm -eq $dstNorm) {
-                    $copied++
+                    $skippedSamePath++
                     continue
                 }
+
+                if (Test-Path $destPath) {
+                    Remove-Item -Path $destPath -Recurse -Force
+                    $replaced++
+                }
+
                 Copy-Item $skillDir.FullName $destPath -Recurse -Force
+
+                # Normalize legacy-bug layout: skill-name\skill-name\SKILL.md
+                $nestedPath = Join-Path $destPath $skillDir.Name
+                if (Test-Path $nestedPath) {
+                    $nestedSkillFile = Join-Path $nestedPath "SKILL.md"
+                    $rootSkillFile = Join-Path $destPath "SKILL.md"
+                    if ((-not (Test-Path $rootSkillFile)) -and (Test-Path $nestedSkillFile)) {
+                        Copy-Item -Path (Join-Path $nestedPath "*") -Destination $destPath -Recurse -Force
+                    }
+                    Remove-Item -Path $nestedPath -Recurse -Force
+                }
+
                 $copied++
             }
             
             if ($copied -gt 0) {
-                Write-Success "Copied $copied SDD skills to skills/"
+                if ($replaced -gt 0) {
+                    Write-Success "Synced $copied SDD skills to skills/ ($replaced replaced)"
+                } else {
+                    Write-Success "Copied $copied SDD skills to skills/"
+                }
+            } elseif ($skippedSamePath -gt 0) {
+                Write-Info "SDD skills already in place"
             } else {
                 Write-Warning "No SDD skills found in $sourceDir"
             }

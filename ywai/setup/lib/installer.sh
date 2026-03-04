@@ -256,18 +256,46 @@ install_sdd() {
   local skills_target="$target_dir/skills"
   mkdir -p "$skills_target"
 
-  local copied=0
+  local found=0 copied=0 replaced=0 skipped_same_path=0
   for skill_dir in "$source_dir"/sdd-*; do
     [[ -d "$skill_dir" ]] || continue
+    ((found++)) || true
     local skill_name; skill_name=$(basename "$skill_dir")
-    # Skip when source and target are the same inode
-    [[ "$skill_dir" -ef "$skills_target/$skill_name" ]] && ((copied++)) && continue
-    cp -r "$skill_dir" "$skills_target/$skill_name"
+    local target_skill_dir="$skills_target/$skill_name"
+
+    # Source and target are the same directory (e.g. running setup in this repo).
+    if [[ "$skill_dir" -ef "$target_skill_dir" ]]; then
+      ((skipped_same_path++)) || true
+      continue
+    fi
+
+    # Replace existing target skill to avoid nested copies and keep updated content.
+    if [[ -d "$target_skill_dir" ]]; then
+      rm -rf "$target_skill_dir"
+      ((replaced++)) || true
+    fi
+
+    cp -r "$skill_dir" "$target_skill_dir"
+
+    # Normalize legacy-bug layout: skill-name/skill-name/SKILL.md
+    if [[ -d "$target_skill_dir/$skill_name" ]]; then
+      if [[ ! -f "$target_skill_dir/SKILL.md" && -f "$target_skill_dir/$skill_name/SKILL.md" ]]; then
+        cp -R "$target_skill_dir/$skill_name/." "$target_skill_dir/"
+      fi
+      rm -rf "$target_skill_dir/$skill_name"
+    fi
+
     ((copied++)) || true
   done
 
   if [[ $copied -gt 0 ]]; then
-    print_success "Copied $copied SDD skills to skills/"
+    if [[ $replaced -gt 0 ]]; then
+      print_success "Synced $copied SDD skills to skills/ ($replaced replaced)"
+    else
+      print_success "Copied $copied SDD skills to skills/"
+    fi
+  elif [[ $found -gt 0 && $skipped_same_path -gt 0 ]]; then
+    print_info "SDD skills already in place"
   else
     print_warning "No SDD skills found in $source_dir"
   fi
