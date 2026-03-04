@@ -117,6 +117,8 @@ SHOW_HELP=false
 INSTALL_EXTENSIONS=false
 LIST_VERSIONS=false
 LLM_SYNC=false
+INSTALL_GLOBAL_SKILLS=true
+GLOBAL_SKILLS_SET=false
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 
@@ -132,6 +134,7 @@ INSTALLATION OPTIONS:
     --install-ga             Install only GA
     --install-sdd            Install only SDD Orchestrator
     --install-vscode         Install only VS Code extensions
+    --global-skills[=bool]   Configure repo global skills (Copilot/OpenCode), default: true
     --extensions             Install extensions declared by the project type
     --llm-sync               Smart sync AGENTS.md/REVIEW.md/skills (and Biome on JS/Nest stacks)
 
@@ -169,6 +172,7 @@ ENVIRONMENT:
 EXAMPLES:
     ./setup.sh                               # Interactive mode
     ./setup.sh --all                         # Install everything
+    ./setup.sh --all --global-skills=false   # Install all, skip repo global skills setup
     ./setup.sh --all --provider=claude       # Install with Claude provider
     ./setup.sh --install-ga --install-sdd    # Install GA and SDD only
     ./setup.sh --llm-sync                    # Sync current repo using inferred project type
@@ -218,6 +222,22 @@ _parse_args() {
       -h|--help) SHOW_HELP=true; shift ;;
       --extensions|--install-extensions)
         INTERACTIVE_MODE=false; INSTALL_EXTENSIONS=true; shift ;;
+      --global-skills)
+        INSTALL_GLOBAL_SKILLS=true; GLOBAL_SKILLS_SET=true; shift ;;
+      --global-skills=*)
+        local global_skills_value
+        global_skills_value="${1#*=}"
+        global_skills_value="${global_skills_value,,}"
+        case "$global_skills_value" in
+          true|1|yes|y) INSTALL_GLOBAL_SKILLS=true ;;
+          false|0|no|n) INSTALL_GLOBAL_SKILLS=false ;;
+          *)
+            print_error "Invalid value for --global-skills: ${1#*=}"
+            echo "Use true/false (also accepts yes/no, 1/0)"
+            exit 1 ;;
+        esac
+        GLOBAL_SKILLS_SET=true
+        shift ;;
       --llm-sync)
         INTERACTIVE_MODE=false; LLM_SYNC=true; shift ;;
       -*)
@@ -358,7 +378,7 @@ _run_installs() {
       [[ "$SKIP_GA" == true ]] && skip_ga_flag="true"
       local force_flag="false"
       [[ "$FORCE" == true ]] && force_flag="true"
-      configure_project "$PROVIDER" "$TARGET_DIR" "$skip_ga_flag" "$PROJECT_TYPE" "$force_flag"
+      configure_project "$PROVIDER" "$TARGET_DIR" "$skip_ga_flag" "$PROJECT_TYPE" "$force_flag" "$INSTALL_GLOBAL_SKILLS"
     fi
     configured_project=true
   fi
@@ -449,12 +469,18 @@ _run_interactive() {
   ask_yes_no "Install GA (AI code review)?" "y"      && INSTALL_GA=true
   ask_yes_no "Install SDD Orchestrator (spec-first dev)?" "y" && INSTALL_SDD=true
   [[ "${VSCODE_STATUS:-}" == "available" ]] && ask_yes_no "Install VS Code extensions?" "y" && INSTALL_VSCODE=true
+  if [[ "$GLOBAL_SKILLS_SET" == false ]]; then
+    ask_yes_no "Install repo global skills (Copilot/OpenCode setup)?" "y" \
+      && INSTALL_GLOBAL_SKILLS=true || INSTALL_GLOBAL_SKILLS=false
+  fi
   echo ""
 
   echo -e "${WHITE}Will install:${NC}"
   [[ "$INSTALL_GA" == true ]]     && echo "  • GA"
   [[ "$INSTALL_SDD" == true ]]    && echo "  • SDD Orchestrator"
   [[ "$INSTALL_VSCODE" == true ]] && echo "  • VS Code Extensions"
+  [[ "$INSTALL_GLOBAL_SKILLS" == true ]] && echo "  • Repo global skills (Copilot/OpenCode)"
+  [[ "$INSTALL_GLOBAL_SKILLS" == false ]] && echo "  • Repo global skills (Copilot/OpenCode) [SKIPPED]"
   echo "  → Target: $TARGET_DIR"
   echo ""
 
@@ -480,7 +506,7 @@ _run_interactive() {
   print_step "Configuring project..."
   local skip_ga_flag="false"
   [[ "$INSTALL_GA" == false ]] && skip_ga_flag="true"
-  configure_project "$PROVIDER" "$TARGET_DIR" "$skip_ga_flag" "$PROJECT_TYPE"
+  configure_project "$PROVIDER" "$TARGET_DIR" "$skip_ga_flag" "$PROJECT_TYPE" "false" "$INSTALL_GLOBAL_SKILLS"
 
   INSTALL_EXTENSIONS=true
   print_step "Installing extensions for type: $PROJECT_TYPE..."

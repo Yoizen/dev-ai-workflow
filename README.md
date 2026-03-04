@@ -32,6 +32,12 @@ Features:
 curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --all --type=nest
 ```
 
+Si querés desactivar la configuración de skills globales del **repo** (Copilot/OpenCode):
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --all --type=nest --global-skills=false
+```
+
 ### Windows
 
 ```powershell
@@ -50,6 +56,7 @@ Reemplazá `nest` por cualquiera de estos tipos:
 ### Nota
 
 > El setup instala OpenCode automáticamente si no está disponible.
+> La configuración de `--global-skills` aplica al repo objetivo (no instala nada a nivel global del sistema).
 
 ### Sync inteligente para chats (`--llm-sync`)
 
