@@ -1017,14 +1017,19 @@ except: print(True)
 
   if [[ "$install_global_skills" == "true" ]]; then
     if [[ -f "$skills_setup" ]]; then
-      (cd "$target_dir" && bash "$skills_setup" --copilot --opencode --global-only --project-type="$project_type" >/dev/null 2>&1) \
-        && print_success "Global OpenCode/Copilot agents configured" || print_warning "Global OpenCode/Copilot agent setup had issues"
+      local global_setup_output
+      if ! global_setup_output="$(cd "$target_dir" && bash "$skills_setup" --copilot --opencode --global-only --project-type="$project_type" 2>&1)"; then
+        print_warning "Global OpenCode/Copilot agent setup had issues"
+        [[ -n "$global_setup_output" ]] && printf '%s\n' "$global_setup_output" | sed 's/^/  │ /'
+      else
+        print_success "Global OpenCode/Copilot agents configured"
+      fi
+    else
+      print_warning "Global OpenCode/Copilot setup script not found"
     fi
   else
     print_info "Skipped global OpenCode/Copilot agents setup"
   fi
-
-  _sync_skill_metadata_tables "$target_dir"
 
   _update_gitignore "$target_dir"
   _init_ga_in_project "$provider" "$target_dir" "$skip_ga" "$ga_install_dir"

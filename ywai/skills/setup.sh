@@ -94,6 +94,24 @@ types_json_for_global_agents() {
     echo ""
 }
 
+setup_global_opencode_skills_link() {
+    local opencode_dir="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+    local opencode_skills="$opencode_dir/skills"
+
+    mkdir -p "$opencode_dir"
+
+    if [ -L "$opencode_skills" ]; then
+        rm "$opencode_skills"
+    elif [ -d "$opencode_skills" ]; then
+        mv "$opencode_skills" "$opencode_dir/skills.backup.$(date +%s)"
+    elif [ -e "$opencode_skills" ]; then
+        mv "$opencode_skills" "$opencode_dir/skills.backup.$(date +%s)"
+    fi
+
+    ln -s "$SKILLS_SOURCE" "$opencode_skills"
+    echo -e "${GREEN}  ✓ $opencode_dir/skills -> skills/ (OpenCode global)${NC}"
+}
+
 global_agent_names_for_type() {
     local project_type
     project_type="$(normalize_project_type "$1")"
@@ -251,7 +269,6 @@ EOF
             cat > "$target_file" << EOF
 ---
 description: ${agent_name} global agent for ${project_type} projects
-mode: subagent
 ---
 
 EOF
@@ -436,6 +453,7 @@ setup_cursor() {
 
 setup_opencode() {
     if [[ "$GLOBAL_ONLY" == "true" ]]; then
+        setup_global_opencode_skills_link
         setup_global_profile_agents
         return 0
     fi
@@ -448,6 +466,8 @@ setup_opencode() {
     if [ -L "$opencode_skills" ]; then
         rm "$opencode_skills"
     elif [ -d "$opencode_skills" ]; then
+        mv "$opencode_skills" "$opencode_dir/skills.backup.$(date +%s)"
+    elif [ -e "$opencode_skills" ]; then
         mv "$opencode_skills" "$opencode_dir/skills.backup.$(date +%s)"
     fi
 
