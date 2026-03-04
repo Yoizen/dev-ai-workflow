@@ -282,7 +282,7 @@ install_sdd() {
       if [[ ! -f "$target_skill_dir/SKILL.md" && -f "$target_skill_dir/$skill_name/SKILL.md" ]]; then
         cp -R "$target_skill_dir/$skill_name/." "$target_skill_dir/"
       fi
-      rm -rf "$target_skill_dir/$skill_name"
+      rm -rf "${target_skill_dir:?}/${skill_name:?}"
     fi
 
     ((copied++)) || true
