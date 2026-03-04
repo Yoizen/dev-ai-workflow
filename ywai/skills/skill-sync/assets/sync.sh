@@ -14,7 +14,7 @@ get_agents_path() {
         *) 
             # Auto-detect AGENTS.md in subdirectories matching the scope
             # Try exact match first, then case-insensitive
-            local found=$(find "$REPO_ROOT" -maxdepth 5 -type f -name "AGENTS.md" | 
+            local found=$(find "$REPO_ROOT" -maxdepth 5 -type f -iname "AGENTS.md" | 
                 grep -i "$scope" | head -n 1)
             [ -n "$found" ] && echo "$found" || echo ""
             ;;

@@ -809,6 +809,24 @@ print(f'\n  default: {data.get(\"default\",\"nest\")}')
   fi
 }
 
+_resolve_doc_target_case_insensitive() {
+  local target_dir="$1" expected_name="$2"
+  local expected_lc
+  expected_lc="$(printf '%s' "$expected_name" | tr '[:upper:]' '[:lower:]')"
+
+  local candidate base
+  for candidate in "$target_dir"/*; do
+    [[ -f "$candidate" ]] || continue
+    base="$(basename "$candidate")"
+    if [[ "$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')" == "$expected_lc" ]]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+
+  echo "$target_dir/$expected_name"
+}
+
 apply_project_type() {
   local project_type="${1:-nest}" target_dir="${2:-.}" force="${3:-false}"
   local types_dir; types_dir="$(_types_dir)"
@@ -831,7 +849,8 @@ apply_project_type() {
     esac
     source_file="$(_resolve_type_file "$project_type" "$config_key" "$doc")"
     if [[ -f "$source_file" ]]; then
-      local target="$target_dir/$doc"
+      local target
+      target="$(_resolve_doc_target_case_insensitive "$target_dir" "$doc")"
       if [[ ! -f "$target" || "$force" == "true" ]]; then
         local payload_file
         payload_file="$(mktemp)"
