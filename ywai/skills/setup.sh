@@ -149,20 +149,21 @@ except: pass
     esac
 }
 
-resolve_agents_source_file() {
+resolve_global_agent_template_file() {
+    local agent_name="$1"
     local project_type
-    project_type="$(normalize_project_type "$1")"
+    project_type="$(normalize_project_type "${2:-$PROJECT_TYPE}")"
 
     local candidate
     for candidate in \
-        "$REPO_ROOT/AGENTS.md" \
-        "$REPO_ROOT/AGENTS.MD" \
-        "$REPO_ROOT/ywai/setup/types/$project_type/AGENTS.md" \
-        "$REPO_ROOT/setup/types/$project_type/AGENTS.md" \
-        "$SCRIPT_DIR/../setup/types/$project_type/AGENTS.md" \
-        "$REPO_ROOT/ywai/setup/types/generic/AGENTS.md" \
-        "$REPO_ROOT/setup/types/generic/AGENTS.md" \
-        "$SCRIPT_DIR/../setup/types/generic/AGENTS.md"; do
+        "$REPO_ROOT/ywai/extensions/install-steps/global-agents/templates/$project_type/$agent_name.md" \
+        "$REPO_ROOT/ywai/extensions/install-steps/global-agents/templates/$agent_name.md" \
+        "$REPO_ROOT/extensions/install-steps/global-agents/templates/$project_type/$agent_name.md" \
+        "$REPO_ROOT/extensions/install-steps/global-agents/templates/$agent_name.md" \
+        "$SCRIPT_DIR/../extensions/install-steps/global-agents/templates/$project_type/$agent_name.md" \
+        "$SCRIPT_DIR/../extensions/install-steps/global-agents/templates/$agent_name.md" \
+        "$SCRIPT_DIR/../../extensions/install-steps/global-agents/templates/$project_type/$agent_name.md" \
+        "$SCRIPT_DIR/../../extensions/install-steps/global-agents/templates/$agent_name.md"; do
         if [[ -f "$candidate" ]]; then
             echo "$candidate"
             return 0
@@ -251,8 +252,7 @@ write_global_agent_file() {
     local target_file="$1"
     local agent_name="$2"
     local project_type="$3"
-    local source_agents_file="$4"
-    local mode="$5" # opencode | copilot_prompt | copilot_agent
+    local mode="$4" # opencode | copilot_prompt | copilot_agent
 
     case "$mode" in
         copilot_prompt)
@@ -290,13 +290,22 @@ EOF
 Project type scope: ${project_type}
 EOF
 
-    if [[ -f "$source_agents_file" ]]; then
+    local agent_template_file
+    agent_template_file="$(resolve_global_agent_template_file "$agent_name" "$project_type")"
+    if [[ -f "$agent_template_file" ]]; then
         cat >> "$target_file" << EOF
 
-## Base directives (from AGENTS.md)
-Source: ${source_agents_file}
+## Base directives (from extensions)
+Source: ${agent_template_file}
 EOF
-        cat "$source_agents_file" >> "$target_file"
+        cat "$agent_template_file" >> "$target_file"
+    else
+        cat >> "$target_file" << 'EOF'
+
+## Base directives (from extensions)
+Template not found for this agent. Use focused, minimal, and safe defaults.
+EOF
+        echo -e "${YELLOW}  ! Missing template for global agent '${agent_name}' (project type '${project_type}')${NC}"
     fi
 
     append_sdd_devops_guidance "$target_file" "$agent_name"
@@ -316,8 +325,6 @@ setup_global_profile_agents() {
 
     local project_type
     project_type="$(normalize_project_type "$PROJECT_TYPE")"
-    local source_agents_file
-    source_agents_file="$(resolve_agents_source_file "$project_type")"
 
     local agent_names
     agent_names="$(global_agent_names_for_type "$project_type")"
@@ -341,10 +348,10 @@ setup_global_profile_agents() {
     local first_prompt=""
     local agent_name
     for agent_name in $agent_names; do
-        write_global_agent_file "$opencode_agents_dir/${agent_name}.md" "$agent_name" "$project_type" "$source_agents_file" "opencode"
-        write_global_agent_file "$opencode_agents_alt_dir/${agent_name}.md" "$agent_name" "$project_type" "$source_agents_file" "opencode"
-        write_global_agent_file "$copilot_agents_dir/${agent_name}.md" "$agent_name" "$project_type" "$source_agents_file" "copilot_agent"
-        write_global_agent_file "$vscode_prompts_dir/${agent_name}.instructions.md" "$agent_name" "$project_type" "$source_agents_file" "copilot_prompt"
+        write_global_agent_file "$opencode_agents_dir/${agent_name}.md" "$agent_name" "$project_type" "opencode"
+        write_global_agent_file "$opencode_agents_alt_dir/${agent_name}.md" "$agent_name" "$project_type" "opencode"
+        write_global_agent_file "$copilot_agents_dir/${agent_name}.md" "$agent_name" "$project_type" "copilot_agent"
+        write_global_agent_file "$vscode_prompts_dir/${agent_name}.instructions.md" "$agent_name" "$project_type" "copilot_prompt"
         [[ -z "$first_prompt" ]] && first_prompt="$vscode_prompts_dir/${agent_name}.instructions.md"
     done
 
