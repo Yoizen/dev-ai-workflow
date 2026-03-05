@@ -62,6 +62,9 @@ Reemplazá `nest` por cualquiera de estos tipos:
 
 > El setup instala OpenCode automáticamente si no está disponible.
 > `--global-skills` configura perfiles globales de usuario para OpenCode/Copilot (no instala nada a nivel global del sistema y no crea agentes dentro del repo).
+> Los agentes globales se generan desde `ywai/extensions/install-steps/global-agents/templates/` y no desde `AGENTS.md`.
+> Además, cada agente global se genera con un bundle Agent-Skills definido en `ywai/extensions/install-steps/global-agents/bundles.json` (ej: `devops` -> skill `devops`).
+> Los agentes globales invocan habilidades (skills) según el bundle configurado, lo que permite una mayor flexibilidad en la configuración de habilidades para cada tipo de proyecto.
 
 ### Sync inteligente para chats (`--llm-sync`)
 

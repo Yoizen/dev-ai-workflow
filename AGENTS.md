@@ -96,6 +96,7 @@ dev-ai-workflow/
 |:---|:---|
 | `skill-creator` | Create new AI agent skills |
 | `extension-creator` | Create and wire new setup extensions |
+| `global-agents` | Create/update global agents templates, bundles, and skills invoke sync |
 | `skill-sync` | Sync skill metadata with AGENTS.md |
 | `git-commit` | Conventional commits |
 

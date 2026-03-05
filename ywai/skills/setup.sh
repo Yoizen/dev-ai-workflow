@@ -94,6 +94,166 @@ types_json_for_global_agents() {
     echo ""
 }
 
+global_agent_bundles_json() {
+    local candidate
+    for candidate in \
+        "$REPO_ROOT/ywai/extensions/install-steps/global-agents/bundles.json" \
+        "$REPO_ROOT/extensions/install-steps/global-agents/bundles.json" \
+        "$SCRIPT_DIR/../extensions/install-steps/global-agents/bundles.json" \
+        "$SCRIPT_DIR/../../extensions/install-steps/global-agents/bundles.json"; do
+        [[ -f "$candidate" ]] && { echo "$candidate"; return 0; }
+    done
+    echo ""
+}
+
+default_bundle_for_agent() {
+    local agent_name="$1"
+    case "$agent_name" in
+        sdd-orchestator)
+            echo "sdd-init sdd-explore sdd-propose sdd-spec sdd-design sdd-tasks sdd-apply sdd-verify sdd-archive"
+            ;;
+        fe-engineer)
+            echo "react-19 tailwind-4 typescript biome"
+            ;;
+        nest-engineer)
+            echo "typescript biome"
+            ;;
+        dotnet-engineer)
+            echo "dotnet"
+            ;;
+        devops)
+            echo "devops"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
+
+global_agent_skills_bundle() {
+    local agent_name="$1"
+    local project_type
+    project_type="$(normalize_project_type "${2:-$PROJECT_TYPE}")"
+
+    local bundles_json
+    bundles_json="$(global_agent_bundles_json)"
+    if [[ -f "$bundles_json" ]] && command -v python3 >/dev/null 2>&1; then
+        local configured
+        configured=$(python3 -c "
+import json
+try:
+  data=json.load(open('$bundles_json'))
+  defaults=data.get('defaults',{}).get('$agent_name',[])
+  overrides=data.get('by_project_type',{}).get('$project_type',{}).get('$agent_name',[])
+  values=overrides if isinstance(overrides,list) and overrides else defaults
+  if isinstance(values,list):
+    values=[str(v).strip() for v in values if str(v).strip()]
+    print(' '.join(values))
+except: pass
+" 2>/dev/null)
+        [[ -n "$configured" ]] && { echo "$configured"; return 0; }
+    fi
+
+    default_bundle_for_agent "$agent_name"
+}
+
+skill_auto_invoke_patterns() {
+    local skill_name="$1"
+    local skill_file="$SKILLS_SOURCE/$skill_name/SKILL.md"
+    [[ -f "$skill_file" ]] || { echo ""; return 0; }
+    command -v python3 >/dev/null 2>&1 || { echo ""; return 0; }
+
+    python3 - "$skill_file" << 'PY' 2>/dev/null
+import re
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8", errors="ignore")
+front = text
+
+if text.startswith("---"):
+    markers = list(re.finditer(r"^---\s*$", text, flags=re.M))
+    if len(markers) >= 2:
+        front = text[markers[0].end():markers[1].start()]
+else:
+    marker = re.search(r"^---\s*$", text, flags=re.M)
+    if marker:
+        front = text[:marker.start()]
+
+lines = front.splitlines()
+patterns = []
+
+for i, line in enumerate(lines):
+    if re.match(r"^\s*auto_invoke\s*:", line):
+        value = line.split(":", 1)[1].strip()
+        if value.startswith("[") and value.endswith("]"):
+            inner = value[1:-1]
+            items = [x.strip().strip('"\'') for x in inner.split(",") if x.strip()]
+            patterns.extend(items)
+            break
+        if value:
+            patterns.append(value.strip('"\''))
+            break
+
+        j = i + 1
+        while j < len(lines):
+            cur = lines[j]
+            if re.match(r"^\s*-\s+", cur):
+                patterns.append(re.sub(r"^\s*-\s+", "", cur).strip().strip('"\''))
+                j += 1
+                continue
+            if re.match(r"^\s*$", cur):
+                j += 1
+                continue
+            break
+        break
+
+clean = []
+for p in patterns:
+    p = str(p).strip()
+    if p and p not in clean:
+        clean.append(p)
+
+print(" | ".join(clean[:3]))
+PY
+}
+
+append_global_agent_skills_bundle() {
+    local file_path="$1"
+    local agent_name="$2"
+    local project_type="$3"
+
+    local bundle_skills
+    bundle_skills="$(global_agent_skills_bundle "$agent_name" "$project_type")"
+    [[ -n "$bundle_skills" ]] || return 0
+
+    cat >> "$file_path" << 'EOF'
+
+## Skills bundle (global)
+EOF
+
+    local skill_name
+    for skill_name in $bundle_skills; do
+        echo "- \`$skill_name\`" >> "$file_path"
+    done
+
+    cat >> "$file_path" << 'EOF'
+
+## Skills invoke
+EOF
+
+    for skill_name in $bundle_skills; do
+        local triggers
+        triggers="$(skill_auto_invoke_patterns "$skill_name")"
+        if [[ -n "$triggers" ]]; then
+            echo "- Use \`$skill_name\` when tasks match: $triggers" >> "$file_path"
+        else
+            echo "- Use \`$skill_name\` when its domain is required." >> "$file_path"
+        fi
+    done
+}
+
 setup_global_opencode_skills_link() {
     local opencode_dir="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
     local opencode_skills="$opencode_dir/skills"
@@ -307,6 +467,8 @@ Template not found for this agent. Use focused, minimal, and safe defaults.
 EOF
         echo -e "${YELLOW}  ! Missing template for global agent '${agent_name}' (project type '${project_type}')${NC}"
     fi
+
+    append_global_agent_skills_bundle "$target_file" "$agent_name" "$project_type"
 
     append_sdd_devops_guidance "$target_file" "$agent_name"
 
