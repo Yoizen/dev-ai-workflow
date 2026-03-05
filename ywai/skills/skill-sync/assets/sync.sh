@@ -4,10 +4,20 @@
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
 SKILLS_DIR="$REPO_ROOT/skills"
 
+resolve_root_agents_md() {
+    local found
+    found=$(find "$REPO_ROOT" -maxdepth 1 -type f -iname "AGENTS.md" | head -n 1)
+    if [ -n "$found" ]; then
+        echo "$found"
+    else
+        echo "$REPO_ROOT/AGENTS.md"
+    fi
+}
+
 get_agents_path() {
     local scope="$1"
-    local agents_md="$REPO_ROOT/AGENTS.md"
-    [ ! -f "$agents_md" ] && agents_md="$REPO_ROOT/AGENTS.MD"
+    local agents_md
+    agents_md="$(resolve_root_agents_md)"
     case "$scope" in
         root) echo "$agents_md" ;;
         copilot) echo "$REPO_ROOT/.github/copilot-instructions.md" ;;

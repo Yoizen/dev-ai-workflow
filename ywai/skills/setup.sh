@@ -51,6 +51,24 @@ GLOBAL_ONLY=false
 PROJECT_TYPE="generic"
 GLOBAL_AGENTS_CONFIGURED=false
 
+resolve_repo_doc_case_insensitive() {
+    local expected_name="$1"
+    local expected_lc
+    expected_lc="$(printf '%s' "$expected_name" | tr '[:upper:]' '[:lower:]')"
+
+    local candidate base
+    for candidate in "$REPO_ROOT"/*; do
+        [[ -f "$candidate" ]] || continue
+        base="$(basename "$candidate")"
+        if [[ "$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')" == "$expected_lc" ]]; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+
+    echo "$REPO_ROOT/$expected_name"
+}
+
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
@@ -614,8 +632,10 @@ setup_cursor() {
 
     copy_agents_md "CURSOR.md"
     
-    if [ -f "$REPO_ROOT/AGENTS.MD" ]; then
-        cp "$REPO_ROOT/AGENTS.MD" "$REPO_ROOT/.cursorrules"
+    local root_agents
+    root_agents="$(resolve_repo_doc_case_insensitive "AGENTS.md")"
+    if [ -f "$root_agents" ]; then
+        cp "$root_agents" "$REPO_ROOT/.cursorrules"
         echo -e "${GREEN}  ✓ AGENTS.MD -> .cursorrules${NC}"
     fi
 }
@@ -924,7 +944,7 @@ copy_agents_md() {
         fi
     done < <(find "$REPO_ROOT" \
         -type d \( -name "node_modules" -o -name ".git" -o -name "bin" -o -name "obj" -o -name ".next" -o -name "dist" \) -prune \
-        -o \( -name "AGENTS.md" -o -name "AGENTS.MD" \) -print 2>/dev/null)
+        -o \( -iname "AGENTS.md" \) -print 2>/dev/null)
 
     echo -e "${GREEN}  ✓ Copied and built $count instruction files -> $target_name${NC}"
 }

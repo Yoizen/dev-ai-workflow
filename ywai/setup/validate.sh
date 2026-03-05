@@ -27,6 +27,12 @@ issues=()
 warnings=()
 success=()
 
+find_file_case_insensitive() {
+    local base_dir="$1"
+    local expected_name="$2"
+    find "$base_dir" -maxdepth 1 -type f -iname "$expected_name" | head -n1
+}
+
 # Check commands
 echo -e "${YELLOW}Checking installed tools...${NC}"
 
@@ -65,15 +71,22 @@ for dir in "${required_dirs[@]}"; do
     fi
 done
 
-# Check files
-required_files=(
-    "AGENTS.MD"
-    "REVIEW.md"
-    ".specify/memory/constitution.md"
-    ".ga"
-)
+# Check files (AGENTS/REVIEW case-insensitive)
+agents_file=$(find_file_case_insensitive "$REPO_PATH" "AGENTS.md")
+if [ -n "$agents_file" ]; then
+    success+=("✓ $(basename "$agents_file") exists")
+else
+    issues+=("✗ AGENTS.md is missing")
+fi
 
-for file in "${required_files[@]}"; do
+review_file=$(find_file_case_insensitive "$REPO_PATH" "REVIEW.md")
+if [ -n "$review_file" ]; then
+    success+=("✓ $(basename "$review_file") exists")
+else
+    issues+=("✗ REVIEW.md is missing")
+fi
+
+for file in ".specify/memory/constitution.md" ".ga"; do
     if [ -f "$REPO_PATH/$file" ]; then
         success+=("✓ $file exists")
     else

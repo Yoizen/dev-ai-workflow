@@ -827,6 +827,17 @@ _resolve_doc_target_case_insensitive() {
   echo "$target_dir/$expected_name"
 }
 
+_backup_existing_doc_if_needed() {
+  local target="$1" force="$2"
+  [[ -f "$target" ]] || return 0
+  [[ "$force" == "true" ]] && return 0
+
+  local backup_path
+  backup_path="${target}.backup.$(date +%Y%m%d%H%M%S)"
+  cp "$target" "$backup_path"
+  print_info "Backed up $(basename "$target") -> $(basename "$backup_path")"
+}
+
 apply_project_type() {
   local project_type="${1:-nest}" target_dir="${2:-.}" force="${3:-false}"
   local types_dir; types_dir="$(_types_dir)"
@@ -851,17 +862,21 @@ apply_project_type() {
     if [[ -f "$source_file" ]]; then
       local target
       target="$(_resolve_doc_target_case_insensitive "$target_dir" "$doc")"
-      if [[ ! -f "$target" || "$force" == "true" ]]; then
-        local payload_file
-        payload_file="$(mktemp)"
-        _render_type_doc_payload "$doc" "$source_file" "$payload_file"
-        cp "$payload_file" "$target"
-        rm -f "$payload_file"
-        print_success "Copied $doc ($project_type)"
-      elif [[ "$doc" == "AGENTS.md" || "$doc" == "REVIEW.md" ]]; then
-        _upsert_managed_doc_block "$doc" "$target" "$source_file" "$project_type"
+      local target_existed="false"
+      [[ -f "$target" ]] && target_existed="true"
+
+      _backup_existing_doc_if_needed "$target" "$force"
+
+      local payload_file
+      payload_file="$(mktemp)"
+      _render_type_doc_payload "$doc" "$source_file" "$payload_file"
+      cp "$payload_file" "$target"
+      rm -f "$payload_file"
+
+      if [[ "$target_existed" == "true" && "$force" != "true" ]]; then
+        print_success "Replaced $doc with fresh template ($project_type)"
       else
-        print_info "$doc already exists, skipping (pass force=true to overwrite)"
+        print_success "Copied $doc ($project_type)"
       fi
     fi
   done
