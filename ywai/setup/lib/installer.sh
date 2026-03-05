@@ -1031,6 +1031,20 @@ except: print(True)
     print_info "Skipped global OpenCode/Copilot agents setup"
   fi
 
+  # Run AI skills setup for local assistants (Claude, Cursor, OpenCode, etc.)
+  # This configures symlinks and copies for the current project
+  if [[ -f "$skills_setup" ]]; then
+    local local_setup_output
+    if ! local_setup_output="$(cd "$target_dir" && bash "$skills_setup" --all 2>&1)"; then
+      print_warning "Local AI skills setup had issues"
+      [[ -n "$local_setup_output" ]] && printf '%s\n' "$local_setup_output" | sed 's/^/  │ /'
+    else
+      print_success "Local AI skills configured"
+    fi
+  else
+    print_warning "Local AI skills setup script not found"
+  fi
+
   _update_gitignore "$target_dir"
   _init_ga_in_project "$provider" "$target_dir" "$skip_ga" "$ga_install_dir"
   _setup_lefthook "$target_dir" "$project_type" "$ga_install_dir"
