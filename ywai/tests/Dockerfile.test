@@ -9,8 +9,17 @@ RUN apt-get update && apt-get install -y \
     git \
     python3 \
     ca-certificates \
+    wget \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Go
+RUN GO_VERSION="1.21.0" && \
+    curl -L -o go.tar.gz "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" && \
+    tar -C /usr/local -xzf go.tar.gz && \
+    rm go.tar.gz
+
+ENV PATH="/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 WORKDIR /workspace
 
 CMD ["/bin/bash"]

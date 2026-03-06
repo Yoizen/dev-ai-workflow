@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==========================================================================
-# E2E Test Suite for ywai/setup/setup.sh
+# E2E Test Suite for ywai/setup/setup-wizard
 # ==========================================================================
 
 set -u
@@ -14,7 +14,7 @@ TMP_CHECK="/tmp/ywai-e2e-check.txt"
 rm -f "$TMP_OUT" "$TMP_CHECK"
 
 echo -e "${CYAN}============================================${NC}"
-echo -e "${CYAN}  E2E Test Suite: ywai/setup/setup.sh${NC}"
+echo -e "${CYAN}  E2E Test Suite: ywai/setup/setup-wizard${NC}"
 echo -e "${CYAN}============================================${NC}\n"
 
 docker image inspect "$IMAGE" >/dev/null 2>&1 || {
@@ -68,6 +68,7 @@ prepare_assets() {
   cp -r /src/ywai/skills "$dir/"
   cp -r /src/ywai/commands "$dir/"
   cp -r /src/ywai/config "$dir/"
+  (cd "$dir/setup" && make build >/dev/null 2>&1)
   printf "%s" "$dir"
 }
 
@@ -90,11 +91,11 @@ $DOCKER_BASE '
 $CONTAINER_HELPERS
 assets=\$(prepare_assets)
 cd "\$assets"
-bash setup/setup.sh --help
+./setup/setup-wizard --help
 '"
 
 check "Has USAGE section" 'grep -q "USAGE:" "$TMP_OUT"'
-check "Has INSTALLATION OPTIONS" 'grep -q "INSTALLATION OPTIONS" "$TMP_OUT"'
+check "Has OPTIONS section" 'grep -q "OPTIONS:" "$TMP_OUT"'
 check "Has --extensions" 'grep -q -- "--extensions" "$TMP_OUT"'
 
 # ============================================================================
@@ -106,7 +107,7 @@ $DOCKER_BASE '
 $CONTAINER_HELPERS
 assets=\$(prepare_assets)
 cd "\$assets"
-bash setup/setup.sh --list-types
+./setup/setup-wizard --list-types
 '"
 
 check "Lists nest" 'grep -q "nest" "$TMP_OUT"'
@@ -125,7 +126,7 @@ $DOCKER_BASE '
 $CONTAINER_HELPERS
 assets=\$(prepare_assets)
 cd "\$assets"
-bash setup/setup.sh --list-extensions
+./setup/setup-wizard --list-extensions
 '"
 
 check "Lists opencode-command-hooks" 'grep -q "opencode-command-hooks" "$TMP_OUT"'
@@ -143,7 +144,7 @@ $CONTAINER_HELPERS
 assets=\$(prepare_assets)
 repo=\$(create_repo dryrun-repo)
 cd "\$assets"
-bash setup/setup.sh --dry-run --all --type=generic --target="\$repo"
+./setup/setup-wizard --dry-run --all --type=generic --target="\$repo"
 '"
 
 check "Dry-run mode works" 'grep -q "DRY RUN" "$TMP_OUT"'
@@ -164,7 +165,7 @@ validate_type() {
   local dir
   dir=\$(create_repo "repo-\${type}")
   cd "\$assets"
-  bash setup/setup.sh --all --type="\$type" --target="\$dir" >/tmp/install-"\$type".log 2>&1
+  ./setup/setup-wizard --all --type="\$type" --target="\$dir" >/tmp/install-"\$type".log 2>&1
   cd "\$dir"
 
   test -f AGENTS.md
@@ -234,7 +235,7 @@ $CONTAINER_HELPERS
 assets=\$(prepare_assets)
 repo=\$(create_repo provider-repo)
 cd "\$assets"
-bash setup/setup.sh --skip-sdd --skip-vscode --provider=claude --target="\$repo"
+./setup/setup-wizard --skip-sdd --skip-vscode --provider=claude --target="\$repo"
 '"
 
 check "Provider claude applied" 'grep -q "Provider set to: claude" "$TMP_OUT"'
@@ -253,7 +254,7 @@ validate_skills() {
   local dir
   dir=\$(create_repo "skills-\${type}")
   cd "\$assets"
-  bash setup/setup.sh --all --type="\$type" --target="\$dir" >/tmp/skills-"\$type".log 2>&1
+  ./setup/setup-wizard --all --type="\$type" --target="\$dir" >/tmp/skills-"\$type".log 2>&1
   cd "\$dir"
 
   # Check skills directory exists
@@ -330,7 +331,7 @@ $DOCKER_BASE '
 assets=\$(prepare_assets)
 repo=\$(create_repo mcp-repo)
 cd "\$assets"
-bash setup/setup.sh --all --type=generic --target="\$repo" >/tmp/mcp.log 2>&1
+./setup/setup-wizard --all --type=generic --target="\$repo" >/tmp/mcp.log 2>&1
 cd "\$repo"
 
 # Check MCP configuration exists
@@ -375,7 +376,7 @@ $DOCKER_BASE '
 assets=\$(prepare_assets)
 repo=\$(create_repo extensions-repo)
 cd "\$assets"
-bash setup/setup.sh --all --type=nest --target="\$repo" >/tmp/extensions.log 2>&1
+./setup/setup-wizard --all --type=nest --target="\$repo" >/tmp/extensions.log 2>&1
 cd "\$repo"
 
 # Check extensions are installed

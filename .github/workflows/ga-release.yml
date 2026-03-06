@@ -1,0 +1,71 @@
+name: GA Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  release:
+    types: [published]
+
+jobs:
+  download-release:
+    name: Download Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download release assets
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          mkdir -p ~/.local/bin
+          
+          # Download all platform binaries
+          for asset in ga-darwin-amd64 ga-darwin-arm64 ga-linux-amd64 ga-linux-arm64 ga-windows-amd64.exe; do
+            URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/${asset}"
+            echo "Downloading ${asset}..."
+            curl -sSL -o "$HOME/.local/bin/${asset}" "$URL" || echo "Asset not found: ${asset}"
+          done
+          
+          # Rename for convenience
+          cd ~/.local/bin
+          if [ -f ga-darwin-amd64 ]; then
+            if [ "$(uname)" = "Darwin" ]; then
+              cp ga-darwin-amd64 ga
+              chmod +x ga
+            fi
+          elif [ -f ga-linux-amd64 ]; then
+            if [ "$(uname)" = "Linux" ]; then
+              cp ga-linux-amd64 ga
+              chmod +x ga
+            fi
+          elif [ -f ga-windows-amd64.exe ]; then
+            if [ "$(uname)" = "Windows" ]; then
+              cp ga-windows-amd64.exe ga.exe
+            fi
+          fi
+          
+          ls -la ~/.local/bin/
+
+      - name: Verify ga works
+        run: ~/.local/bin/ga --version || echo "Binary not for this platform"
+
+  test-release:
+    name: Test Release
+    needs: download-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download GA
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          curl -sSL -o ga "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/ga-linux-amd64"
+          chmod +x ga
+
+      - name: Test GA
+        run: |
+          ./ga --version
+          ./ga --help

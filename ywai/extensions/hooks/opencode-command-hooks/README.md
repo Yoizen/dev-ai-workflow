@@ -197,6 +197,38 @@ Create `.opencode/command-hooks.jsonc` in your project (the plugin searches upwa
 | `tool`            | `ToolHook[]`    | Array of tool execution hooks                                                                                                      |
 | `session`         | `SessionHook[]` | Array of session lifecycle hooks                                                                                                   |
 
+### Project YAML Config
+
+You can also create a friendlier `.hooks-config.yml` (or `.hooks-config.yaml`) in the project root:
+
+```yaml
+project_hooks:
+  enabled:
+    - name: "typescript-lint"
+      command: "npm run lint"
+      trigger: "after"
+      inject: "Lint Results:\n{stdout}\n{stderr}"
+
+    - name: "session-summary"
+      trigger: "session.idle"
+      command: "git status --short"
+      agent: "engineer"
+
+  disabled:
+    - "legacy-hook-id"
+
+  settings:
+    truncation_limit: 12000
+```
+
+#### YAML Config Notes
+
+- `enabled` compiles into normal runtime hooks
+- `disabled` removes hooks by `id` after merge
+- `trigger` supports `before`, `after`, `session.created`, `session.start`, `session.idle`, `session.end`
+- Tool hooks default to `tool: ["edit", "write"]` unless you provide a full `when.tool`
+- For advanced matching (`toolArgs`, `slashCommand`, exact schema), use the full JSON config
+
 ### Markdown Frontmatter
 
 Use `hooks:` in agent markdown for the simplified format:
@@ -217,10 +249,12 @@ hooks:
 ### Configuration Precedence
 
 1. Hooks are loaded from `.opencode/command-hooks.jsonc`
-2. Markdown hooks are converted to normal hooks with auto-generated IDs
-3. If a markdown hook and a global hook share the same `id`, the markdown hook wins
-4. Duplicate IDs within the same source are errors
-5. Global config is cached to avoid repeated file reads
+2. `.hooks-config.yml` / `.hooks-config.yaml` is merged on top of the JSON config
+3. Markdown hooks are converted to normal hooks with auto-generated IDs
+4. If a markdown hook and a previous hook share the same `id`, the markdown hook wins
+5. `disabled` IDs from `.hooks-config.yml` are removed after merge
+6. Duplicate IDs within the same source are errors
+7. Global config is cached to avoid repeated file reads
 
 ---
 

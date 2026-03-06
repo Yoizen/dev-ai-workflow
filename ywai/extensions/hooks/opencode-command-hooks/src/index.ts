@@ -6,6 +6,7 @@ import { executeHooks, filterSessionHooks, filterToolHooks } from "./executor.js
 import { normalizeString } from "./utils.js"
 import { loadGlobalConfig } from "./config/global.js"
 import { loadAgentConfig } from "./config/agent.js"
+import { applyDisabledHookIds, loadProjectConfig } from "./config/project.js"
 import { mergeConfigs } from "./config/merge.js"
 
 const notifyConfigError = async (
@@ -52,6 +53,43 @@ const deleteToolArgs = (callId: string | undefined): void => {
   toolCallArgsCache.delete(callId)
 }
 
+const combineConfigErrors = (...errors: (string | null)[]): string | null => {
+  const messages = errors.filter(
+    (error): error is string => typeof error === "string" && error.length > 0,
+  )
+
+  return messages.length > 0 ? messages.join(" | ") : null
+}
+
+const resolveRuntimeConfig = async (
+  agentName?: string,
+): Promise<{ config: CommandHooksConfig; error: string | null }> => {
+  const { config: globalConfig, error: globalConfigError } = await loadGlobalConfig()
+  const { config: projectConfig, disabledIds, error: projectConfigError } =
+    await loadProjectConfig()
+
+  let mergedConfig = mergeConfigs(globalConfig, projectConfig).config
+
+  if (projectConfig.truncationLimit !== undefined) {
+    mergedConfig = {
+      ...mergedConfig,
+      truncationLimit: projectConfig.truncationLimit,
+    }
+  }
+
+  if (agentName) {
+    const agentConfig = await loadAgentConfig(agentName)
+    mergedConfig = mergeConfigs(mergedConfig, agentConfig).config
+  }
+
+  mergedConfig = applyDisabledHookIds(mergedConfig, disabledIds)
+
+  return {
+    config: mergedConfig,
+    error: combineConfigErrors(globalConfigError, projectConfigError),
+  }
+}
+
 
 
 /**
@@ -69,11 +107,9 @@ const handleSessionEvent = async (
   }
 
   try {
-    const { config: globalConfig, error: globalConfigError } = await loadGlobalConfig()
-    await notifyConfigError(globalConfigError, sessionId, client)
-
-    const markdownConfig = { tool: [], session: [] }
-    const { config: mergedConfig } = mergeConfigs(globalConfig, markdownConfig)
+    const { config: mergedConfig, error: configError } =
+      await resolveRuntimeConfig()
+    await notifyConfigError(configError, sessionId, client)
 
     const matchedHooks = filterSessionHooks(mergedConfig.session || [], {
       event: eventType,
@@ -106,21 +142,18 @@ const handleToolExecutionHook = async (
   client: OpencodeClient
 ): Promise<void> => {
   try {
-    const { config: globalConfig, error: globalConfigError } = await loadGlobalConfig()
-    await notifyConfigError(globalConfigError, input.sessionID, client)
-
-    let agentConfig: CommandHooksConfig = { tool: [], session: [] }
     let subagentType: string | undefined
     
     if (input.tool === "task" && toolArgs) {
       subagentType = normalizeString(toolArgs.subagent_type) || undefined
       if (subagentType) {
         logger.debug(`Detected task tool call with subagent_type: ${subagentType}`)
-        agentConfig = await loadAgentConfig(subagentType)
       }
     }
 
-    const { config: mergedConfig } = mergeConfigs(globalConfig, agentConfig)
+    const { config: mergedConfig, error: configError } =
+      await resolveRuntimeConfig(subagentType)
+    await notifyConfigError(configError, input.sessionID, client)
 
     const matchedHooks = filterToolHooks(mergedConfig.tool || [], {
       phase,
@@ -250,30 +283,27 @@ export const CommandHooksPlugin: Plugin = async ({ client }) => {
 
             // For tool.result, we need to pass the stored tool args and handle agent differently
             try {
-              const { config: globalConfig, error: globalConfigError } = await loadGlobalConfig()
-              await notifyConfigError(globalConfigError, sessionId, client as OpencodeClient)
-
-              // Load agent-specific config if this is a task tool with subagent_type
-              let agentConfig: CommandHooksConfig = { tool: [], session: [] }
               let subagentType: string | undefined
               if (toolName === "task" && storedToolArgs) {
                 subagentType = normalizeString(storedToolArgs.subagent_type)
                 if (subagentType) {
                   logger.debug(`Detected task tool call with subagent_type: ${subagentType}`)
-                  agentConfig = await loadAgentConfig(subagentType)
                 }
               }
 
-              const { config: mergedConfig } = mergeConfigs(
-                globalConfig,
-                agentConfig
+              const { config: mergedConfig, error: configError } =
+                await resolveRuntimeConfig(subagentType)
+              await notifyConfigError(
+                configError,
+                sessionId,
+                client as OpencodeClient,
               )
 
               // Filter tool hooks for after phase
               const matchedHooks = filterToolHooks(mergedConfig.tool || [], {
                 phase: "after",
                 toolName,
-                callingAgent: agent,
+                callingAgent: subagentType || agent,
                 slashCommand: normalizeString(event.properties?.slashCommand),
                 toolArgs: storedToolArgs,
               })
@@ -285,7 +315,7 @@ export const CommandHooksPlugin: Plugin = async ({ client }) => {
                // Build execution context
                const context: HookExecutionContext = {
                  sessionId,
-                 agent: agent || "unknown",
+                 agent: subagentType || agent || "unknown",
                  tool: toolName,
                  callId,
                  toolArgs: storedToolArgs,
@@ -362,4 +392,3 @@ export const CommandHooksPlugin: Plugin = async ({ client }) => {
     return fallbackHooks
   }
 }
-

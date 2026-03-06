@@ -110,3 +110,10 @@ GEMINI.md
 
 # Local development
 *.local
+
+# Go build artifacts
+ywai/setup/setup-wizard
+ywai/setup/wizard/setup-wizard
+ywai/setup/dist/
+ywai/ga/bin/ga
+ywai/ga/dist/

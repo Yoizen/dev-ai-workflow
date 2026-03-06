@@ -29,23 +29,33 @@ Features:
 ### macOS / Linux
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --all --type=nest
+# Homebrew (recomendado)
+brew install ywai
+ywai --all --type=nest
+
+# O curl (installer desde releases)
+curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash -s -- --all --type=nest
 ```
 
-`--global-skills` está desactivado por defecto. Si querés activarlo para configurar agentes globales de usuario (Copilot/OpenCode):
+`--global-skills` está desactivado por defecto. Si querés activarlo:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --all --type=nest 
-```
+# Con brew
+ywai --all --type=nest --global-skills=true
 
-``` 
---global-skills=true 
+# Con curl
+curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash -s -- --all --type=nest --global-skills=true
 ```
 
 ### Windows
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/quick-setup.ps1))) -All -Type nest
+# Descarga binario desde releases y ejecuta
+irm https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/setup-wizard-windows-amd64.exe -OutFile ywai.exe
+.\ywai.exe --all --type=nest
+
+# Con global-skills
+.\ywai.exe --all --type=nest --global-skills=true
 ```
 
 ### Otros tipos
@@ -66,27 +76,51 @@ Reemplazá `nest` por cualquiera de estos tipos:
 > Además, cada agente global se genera con un bundle Agent-Skills definido en `ywai/extensions/install-steps/global-agents/bundles.json` (ej: `devops` -> skill `devops`).
 > Los agentes globales invocan habilidades (skills) según el bundle configurado, lo que permite una mayor flexibilidad en la configuración de habilidades para cada tipo de proyecto.
 
-### Sync inteligente para chats (`--llm-sync`)
+### Sync inteligente para proyectos existentes (`--sync`)
 
-Si querés que Copilot / Claude Code actualice reglas en un repo existente (sin copy-paste bruto de `AGENTS.md`), usá el modo `--llm-sync`.
-
-```bash
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --llm-sync
-```
-
-Con tipo explícito:
+Para proyectos existentes, usá `--sync` para obtener un reporte de cambios sugeridos que el LLM puede leer y aplicar selectivamente:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --llm-sync --type=nest-react
+# Auto-detectar tipo de proyecto
+ywai --sync
+
+# Tipo específico
+ywai --sync --type=nest-angular
 ```
 
-Qué sincroniza:
+**Output**: Reporte markdown con:
+- Skills faltantes
+- Skills actualizables
+- Cambios sugeridos en AGENTS.md
+- Cambios sugeridos en REVIEW.md
+- Instrucciones paso a paso
 
-- `AGENTS.md` (bloque gestionado, preservando contenido custom fuera del bloque)
-- `REVIEW.md` (bloque gestionado)
-- `skills/` (sync de skills del tipo + SDD sin pisar skills custom)
-- tablas Auto-invoke vía `skill-sync` cuando está disponible
-- `biome.json` y scripts de Biome en `package.json` cuando el proyecto tiene `package.json`
+**El sync NO hace cambios**, solo genera instrucciones. El LLM decide qué aplicar.
+
+### Instalar skill específica (`--install-skill`)
+
+Para instalar una skill individual con sus dependencias:
+
+```bash
+ywai --install-skill angular/signals
+ywai --install-skill react-19
+ywai --install-skill devops
+```
+
+El comando genera instrucciones de instalación incluyendo:
+- Archivos a copiar
+- Dependencias requeridas
+- Pasos para actualizar AGENTS.md
+
+### Uso con LLM
+
+```text
+User: "Use ywai --sync to update this repo"
+
+LLM: [ejecuta ywai --sync]
+     [lee el reporte]
+     [aplica cambios selectivamente según preferencias del usuario]
+```
 
 Prompt sugerido para chats:
 
@@ -108,11 +142,34 @@ Siempre instala la última release estable publicada. Si no hay releases aún, u
 ### Opciones de versión
 
 ```bash
-# Versión específica (incluye pre-releases)
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/setup.sh | YWAI_VERSION=v5.0.0-beta.2 bash -s -- --all --type=nest
+# Versión específica (incluye pre-releases) - NUEVO COMANDO GO
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | YWAI_VERSION=v5.0.0-beta.2 bash -s -- --all --type=nest
 
-# Canal latest
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/setup.sh | YWAI_CHANNEL=latest bash -s -- --all --type=nest
+# Canal latest - NUEVO COMANDO GO
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | YWAI_CHANNEL=latest bash -s -- --all --type=nest
+
+# Descarga directa del binario (más rápido)
+curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/setup-wizard-linux-amd64 -o ywai && chmod +x ywai && ./ywai --all --type=nest
+```
+
+### Migración a Binario Go ⚡
+
+Estamos migrando del script bash original a un binario Go compilado para mejor performance y mantenimiento.
+
+**Ventajas del binario Go:**
+- ⚡ **10x más rápido** que el script bash
+- 📦 **Zero dependencies** - solo un binario
+- 🛡️ **Mejor manejo de errores**
+- 🧪 **Testing automatizado**
+- 🌐 **Multi-plataforma** (Linux/macOS/Windows)
+
+**Comandos equivalentes:**
+```bash
+# ANTIGUO (bash) - seguirá funcionando temporalmente
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | YWAI_VERSION=v5.0.0-beta.2 bash -s -- --all --type=nest
+
+# NUEVO (Go) - recomendado
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | YWAI_VERSION=v5.0.0-beta.2 bash -s -- --all --type=nest
 ```
 
 ---

@@ -26,28 +26,16 @@ jobs:
 
       - name: ShellCheck — setup scripts
         run: |
-          shellcheck -S warning \
-            ywai/setup/setup.sh \
-            ywai/setup/lib/config.sh \
-            ywai/setup/lib/ui.sh \
-            ywai/setup/lib/detector.sh \
-            ywai/setup/lib/installer.sh
+          find ywai -name '*.sh' -not -path '*/node_modules/*' -print0 \
+            | xargs -0 shellcheck -S warning
 
       - name: ShellCheck — test scripts
         run: |
           shellcheck -S warning \
             ywai/tests/run-all-tests.sh \
-            ywai/tests/test-e2e-simple.sh \
+            ywai/tests/test-e2e.sh \
             ywai/tests/test-skills.sh \
-            ywai/tests/test-commands.sh \
-            ywai/tests/test-mcp.sh \
-            ywai/tests/test-ga.sh
-
-      - name: ShellCheck — update/validate scripts
-        run: |
-          shellcheck -S warning \
-            ywai/setup/update-all.sh \
-            ywai/setup/validate.sh
+            ywai/tests/test-syntax.sh
 
   bash-syntax:
     name: Bash Syntax
@@ -108,19 +96,58 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify config.sh sources correctly
+      - name: Validate opencode config JSON
         run: |
-          source ywai/setup/lib/config.sh
-          [[ -n "$YWAI_REPO" ]]        || { echo "YWAI_REPO not set";        exit 1; }
-          [[ -n "$YWAI_REPO_URL" ]]    || { echo "YWAI_REPO_URL not set";    exit 1; }
-          [[ -n "$YWAI_API_URL" ]]     || { echo "YWAI_API_URL not set";     exit 1; }
-          [[ -n "$YWAI_CHANNEL" ]]     || { echo "YWAI_CHANNEL not set";     exit 1; }
-          [[ -n "$YWAI_FALLBACK_BRANCH" ]] || { echo "YWAI_FALLBACK_BRANCH not set"; exit 1; }
-          echo "config.sh OK — YWAI_REPO=$YWAI_REPO channel=$YWAI_CHANNEL fallback=$YWAI_FALLBACK_BRANCH"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("ywai/config/opencode.json")
+          data = json.loads(path.read_text())
+          assert "permission" in data, "permission config missing"
+          assert "mcp" in data, "mcp config missing"
+          assert "engram" in data["mcp"], "engram mcp missing"
+          assert "context7" in data["mcp"], "context7 mcp missing"
+          print(f"{path} OK")
+          PY
 
-      - name: Verify ywai_resolve_ref falls back to branch (no releases yet)
+      - name: Validate types.json structure
         run: |
-          source ywai/setup/lib/config.sh
-          ref=$(ywai_resolve_ref)
-          [[ -n "$ref" ]] || { echo "ywai_resolve_ref returned empty string"; exit 1; }
-          echo "Resolved ref: $ref"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("ywai/types/types.json")
+          data = json.loads(path.read_text())
+          required = {"generic", "nest", "nest-angular", "nest-react", "python", "dotnet", "devops"}
+          actual = set(data.get("types", {}).keys())
+          missing = sorted(required - actual)
+          assert not missing, f"missing project types: {missing}"
+          print(f"{path} OK")
+          PY
+
+  go-tests:
+    name: Go Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Test setup wizard
+        run: |
+          cd ywai/setup/wizard
+          GOCACHE=/tmp/go-build-cache go test ./...
+
+      - name: Test GA
+        run: |
+          cd ywai/ga
+          GOCACHE=/tmp/go-build-cache go test ./...
+
+      - name: Test repo suite
+        run: |
+          cd ywai/tests
+          GOCACHE=/tmp/go-build-cache go test ./...

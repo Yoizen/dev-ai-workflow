@@ -38,7 +38,7 @@ engram serve &
 If automatic installation fails, install `engram` manually and rerun:
 
 ```bash
-bash ywai/setup/lib/installer.sh install-type-extensions generic .
+ywai --extensions --type=generic
 ```
 EOF
 

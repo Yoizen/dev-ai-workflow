@@ -6,27 +6,41 @@ on:
 
 jobs:
   test:
-    name: Tests (Docker)
+    name: Tests
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Go tests — setup wizard
+        run: |
+          cd ywai/setup/wizard
+          GOCACHE=/tmp/go-build-cache go test ./...
+
+      - name: Go tests — GA
+        run: |
+          cd ywai/ga
+          GOCACHE=/tmp/go-build-cache go test ./...
+
+      - name: Go tests — repo test suite
+        run: |
+          cd ywai/tests
+          GOCACHE=/tmp/go-build-cache go test ./...
+
       - name: Build test Docker image
         run: docker build -t ywai-test -f ywai/tests/Dockerfile.test .
 
-      - name: Test — e2e simple
-        run: bash ywai/tests/test-e2e-simple.sh
+      - name: Test — E2E
+        run: bash ywai/tests/test-e2e.sh
 
       - name: Test — skills installation
         run: bash ywai/tests/test-skills.sh
 
-      - name: Test — commands installation
-        run: bash ywai/tests/test-commands.sh
-
-      - name: Test — MCP configuration
-        run: bash ywai/tests/test-mcp.sh
-
-      - name: Test — GA installation
-        run: bash ywai/tests/test-ga.sh
+      - name: Test — syntax
+        run: bash ywai/tests/test-syntax.sh

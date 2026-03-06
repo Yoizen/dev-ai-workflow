@@ -5,7 +5,9 @@ TARGET_DIR="${1:-.}"
 ABS_TARGET="$(cd "$TARGET_DIR" && pwd)"
 OPENCODE_DIR="$ABS_TARGET/.opencode"
 PLUGINS_DIR="$OPENCODE_DIR/plugins"
+LEGACY_PLUGINS_DIR="$OPENCODE_DIR/plugin"
 PLUGIN_FILE="$PLUGINS_DIR/command-hooks.js"
+LEGACY_PLUGIN_FILE="$LEGACY_PLUGINS_DIR/command-hooks.js"
 HOOKS_SOURCE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if ! command -v bun >/dev/null 2>&1; then
@@ -15,11 +17,15 @@ if ! command -v bun >/dev/null 2>&1; then
   exit 0
 fi
 
-mkdir -p "$PLUGINS_DIR"
+mkdir -p "$PLUGINS_DIR" "$LEGACY_PLUGINS_DIR"
 
 if [[ -d "$PLUGINS_DIR/opencode-command-hooks" ]]; then
   rm -rf "$PLUGINS_DIR/opencode-command-hooks"
   echo "Removed legacy plugin directory"
+fi
+if [[ -d "$LEGACY_PLUGINS_DIR/opencode-command-hooks" ]]; then
+  rm -rf "$LEGACY_PLUGINS_DIR/opencode-command-hooks"
+  echo "Removed legacy plugin directory (singular path)"
 fi
 
 BUILD_DIR="$(mktemp -d)"
@@ -40,6 +46,7 @@ if ! (cd "$BUILD_DIR" && bun build src/index.ts --target=bun \
   exit 1
 fi
 rm -rf "$BUILD_DIR"
+cp "$PLUGIN_FILE" "$LEGACY_PLUGIN_FILE"
 
 OPENCODE_JSON="$OPENCODE_DIR/opencode.json"
 if [[ -f "$OPENCODE_JSON" ]] && grep -q "file:.*opencode-command-hooks" "$OPENCODE_JSON" 2>/dev/null; then
@@ -112,4 +119,4 @@ AGENT
   fi
 fi
 
-echo "OpenCode command hooks installed"
+echo "OpenCode command hooks installed (.opencode/plugins + .opencode/plugin compatibility)"

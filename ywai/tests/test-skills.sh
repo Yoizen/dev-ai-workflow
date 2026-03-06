@@ -33,6 +33,9 @@ cp -r /src/ywai/skills /tmp/test-repo/
 cp -r /src/ywai/commands /tmp/test-repo/
 cp -r /src/ywai/config /tmp/test-repo/
 
+# Build setup wizard
+(cd /tmp/test-repo/setup && make build >/dev/null 2>&1)
+
 # Run setup for different types
 for type in nest nest-angular nest-react python dotnet generic; do
   echo "Testing $type skills..."
@@ -48,9 +51,10 @@ for type in nest nest-angular nest-react python dotnet generic; do
   cp -r /src/ywai/skills /tmp/test-repo-$type/
   cp -r /src/ywai/commands /tmp/test-repo-$type/
   cp -r /src/ywai/config /tmp/test-repo-$type/
+  (cd /tmp/test-repo-$type/setup && make build >/dev/null 2>&1)
   
   # Run setup
-  bash setup/setup.sh --all --type=$type --target=. >/tmp/setup-$type.log 2>&1
+  ./setup/setup-wizard --all --type=$type --target=. >/tmp/setup-$type.log 2>&1
   
   # Check skills directory exists
   test -d skills || { echo "❌ $type: skills directory missing"; exit 1; }

@@ -41,6 +41,39 @@ jobs:
             git diff --staged --quiet || git commit -m "chore: update package.json to ${VERSION}"
           fi
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build Go binaries
+        run: |
+          cd ywai/setup
+          make clean
+          make build-all
+          
+          # List built binaries
+          ls -la dist/
+
+      - name: Build GA binaries
+        run: |
+          cd ywai/ga
+          mkdir -p dist
+          VERSION="${GITHUB_REF_NAME#v}"
+          for platform in darwin-amd64 darwin-arm64 linux-amd64 linux-arm64 windows-amd64; do
+            GOOS="${platform%-*}"
+            GOARCH="${platform#*-}"
+            EXT=""
+            if [[ "$GOOS" == "windows" ]]; then
+              EXT=".exe"
+            fi
+            OUTPUT="dist/ga-${platform}${EXT}"
+            GOOS="$GOOS" GOARCH="$GOARCH" \
+              go build -ldflags="-s -w -X=github.com/yoizen/ga/internal/version.version=${VERSION}" \
+              -o "$OUTPUT" ./cmd/ga
+          done
+          ls -la dist/
+
       - name: Generate changelog from commits
         id: changelog
         run: |
@@ -70,14 +103,36 @@ jobs:
 
             ### Installation
 
-            **macOS / Linux**
+            **🚀 NEW: Go Binary (Recommended)**
             ```bash
-            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ steps.version.outputs.version }}/ywai/setup/setup.sh | bash -s -- --all --type=nest
+            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ steps.version.outputs.version }}/ywai/setup/install.sh | bash -s -- --all --type=nest
             ```
 
-            **Windows**
-            ```powershell
-            & ([scriptblock]::Create((irm https://raw.githubusercontent.com/${{ github.repository }}/${{ steps.version.outputs.version }}/ywai/setup/quick-setup.ps1))) -All -Type nest
+            **⚡ Direct Binary Download**
+            ```bash
+            # Linux AMD64
+            curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/setup-wizard-linux-amd64 -o setup-wizard && chmod +x setup-wizard && ./setup-wizard --all --type=nest
+
+            # macOS AMD64  
+            curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/setup-wizard-darwin-amd64 -o setup-wizard && chmod +x setup-wizard && ./setup-wizard --all --type=nest
+
+            # Linux ARM64
+            curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/setup-wizard-linux-arm64 -o setup-wizard && chmod +x setup-wizard && ./setup-wizard --all --type=nest
+
+            # macOS ARM64
+            curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/setup-wizard-darwin-arm64 -o setup-wizard && chmod +x setup-wizard && ./setup-wizard --all --type=nest
             ```
+
+            **🔧 Build from Source**
+            ```bash
+            git clone https://github.com/${{ github.repository }}.git
+            cd ${GITHUB_REPOSITORY#*/}/ywai/setup
+            make build
+            ./setup-wizard --all --type=nest
+            ```
+
+          files: |
+            ywai/setup/dist/*
+            ywai/ga/dist/*
           draft: false
           prerelease: ${{ contains(steps.version.outputs.version, '-') }}

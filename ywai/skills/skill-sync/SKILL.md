@@ -1,23 +1,10 @@
+---
 name: skill-sync
 description: >
   Sync skill metadata with the Auto-invoke sections in AGENTS.md.
   Trigger: When you change a skill's metadata (metadata.scope/metadata.auto_invoke), regenerate the Auto-invoke tables, or run ./skills/skill-sync/assets/sync.sh.
 
 metadata:
-  author: Yoizen
-  version: "1.0"
-  scope: [root]
-  auto_invoke:
-    - "skill operations"
-    - "workflow"
-    - "sdd"
-  author: Yoizen
-  version: "1.0"
-  scope: [root]
-  auto_invoke:
-    - "skill operations"
-    - "workflow"
-    - "sdd"
   author: Yoizen
   version: "1.0"
   scope: [root]
@@ -53,27 +40,8 @@ metadata:
   version: "1.0"
   scope: [root]
   auto_invoke:
-    - "skill operations"
-    - "workflow"
-    - "sdd"
-  author: Yoizen
-  version: "1.0"
-  scope: [root]
-  auto_invoke:
-    - "skill operations"
-    - "workflow"
-    - "sdd"
-  author: YourName
-  version: "1.0"
-  scope: [root, backend]                   # AGENTS.md files to update
-
-  # Option A: single action
-  auto_invoke: "Creating/modifying components"
-
-  # Option B: multiple actions
-  # auto_invoke:
-  #   - "Creating/modifying components"
-  #   - "Refactoring business logic"
+    - "Creating/modifying components"
+    - "Refactoring business logic"
 ```
 
 ### Scope Values

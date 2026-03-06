@@ -29,7 +29,20 @@ else
         REPO_ROOT="$(pwd)"
     fi
 fi
-SKILLS_SOURCE="$REPO_ROOT/skills"
+
+resolve_skills_source() {
+    local candidate
+    for candidate in \
+        "$REPO_ROOT/skills" \
+        "$REPO_ROOT/ywai/skills" \
+        "$SCRIPT_DIR" \
+        "$SCRIPT_DIR/../skills"; do
+        [[ -d "$candidate" ]] && { echo "$candidate"; return 0; }
+    done
+    echo "$REPO_ROOT/skills"
+}
+
+SKILLS_SOURCE="$(resolve_skills_source)"
 
 # Source shared UI (colors + print helpers)
 # shellcheck source=../setup/lib/ui.sh
@@ -104,8 +117,11 @@ normalize_project_type() {
 types_json_for_global_agents() {
     local candidate
     for candidate in \
+        "$REPO_ROOT/ywai/types/types.json" \
         "$REPO_ROOT/ywai/setup/types/types.json" \
+        "$REPO_ROOT/types/types.json" \
         "$REPO_ROOT/setup/types/types.json" \
+        "$SCRIPT_DIR/../types/types.json" \
         "$SCRIPT_DIR/../setup/types/types.json"; do
         [[ -f "$candidate" ]] && { echo "$candidate"; return 0; }
     done
@@ -355,8 +371,11 @@ resolve_template_file() {
     local template_name="$1"
     local candidate
     for candidate in \
+        "$REPO_ROOT/ywai/templates/$template_name" \
+        "$REPO_ROOT/templates/$template_name" \
         "$REPO_ROOT/ywai/setup/lib/templates/$template_name" \
         "$REPO_ROOT/setup/lib/templates/$template_name" \
+        "$SCRIPT_DIR/../templates/$template_name" \
         "$SCRIPT_DIR/../setup/lib/templates/$template_name"; do
         [[ -f "$candidate" ]] && { echo "$candidate"; return 0; }
     done
