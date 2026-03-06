@@ -30,7 +30,7 @@ Features:
 
 ```bash
 # Homebrew (recomendado)
-brew install ywai
+brew install --formula https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/ywai.rb
 ywai --all --type=nest
 
 # O curl (installer desde releases)
@@ -41,6 +41,7 @@ curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/ins
 
 ```bash
 # Con brew
+ywai --help
 ywai --all --type=nest --global-skills=true
 
 # Con curl
@@ -133,43 +134,23 @@ curl -s https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/docs/guide
 
 ## Versiones y Releases
 
-El setup resuelve automáticamente qué versión instalar consultando las GitHub Releases.
+La instalación usa GitHub Releases.
 
 ### Canal por defecto: `stable`
 
-Siempre instala la última release estable publicada. Si no hay releases aún, usa el branch `main` como fallback automático.
+Instala la última release estable publicada.
 
 ### Opciones de versión
 
 ```bash
-# Versión específica (incluye pre-releases) - NUEVO COMANDO GO
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | YWAI_VERSION=v5.0.0-beta.2 bash -s -- --all --type=nest
+# Versión específica (incluye pre-releases)
+curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | YWAI_VERSION=v6.0.0-beta.1 bash -s -- --all --type=nest
 
-# Canal latest - NUEVO COMANDO GO
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | YWAI_CHANNEL=latest bash -s -- --all --type=nest
+# Canal latest
+curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | YWAI_CHANNEL=latest bash -s -- --all --type=nest
 
 # Descarga directa del binario (más rápido)
 curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/setup-wizard-linux-amd64 -o ywai && chmod +x ywai && ./ywai --all --type=nest
-```
-
-### Migración a Binario Go ⚡
-
-Estamos migrando del script bash original a un binario Go compilado para mejor performance y mantenimiento.
-
-**Ventajas del binario Go:**
-- ⚡ **10x más rápido** que el script bash
-- 📦 **Zero dependencies** - solo un binario
-- 🛡️ **Mejor manejo de errores**
-- 🧪 **Testing automatizado**
-- 🌐 **Multi-plataforma** (Linux/macOS/Windows)
-
-**Comandos equivalentes:**
-```bash
-# ANTIGUO (bash) - seguirá funcionando temporalmente
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | YWAI_VERSION=v5.0.0-beta.2 bash -s -- --all --type=nest
-
-# NUEVO (Go) - recomendado
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | YWAI_VERSION=v5.0.0-beta.2 bash -s -- --all --type=nest
 ```
 
 ---
