@@ -30,7 +30,7 @@ Features:
 
 ```bash
 # Homebrew (recomendado)
-brew install --formula https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/ywai.rb
+brew install https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/v6.0.0-beta.2/ywai/setup/ywai.rb
 ywai --all --type=nest
 
 # O curl (installer desde releases)
