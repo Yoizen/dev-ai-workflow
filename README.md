@@ -29,23 +29,14 @@ Features:
 ### macOS / Linux
 
 ```bash
-# Homebrew (recomendado)
-brew install https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/v6.0.0-beta.2/ywai/setup/ywai.rb
-ywai --all --type=nest
-
-# O curl (installer desde releases)
-curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash -s -- --all --type=nest
+# Install
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | bash -s -- --all --type=nest
 ```
 
-`--global-skills` está desactivado por defecto. Si querés activarlo:
+Con `--global-skills`:
 
 ```bash
-# Con brew
-ywai --help
-ywai --all --type=nest --global-skills=true
-
-# Con curl
-curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash -s -- --all --type=nest --global-skills=true
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | bash -s -- --all --type=nest --global-skills=true
 ```
 
 ### Windows
