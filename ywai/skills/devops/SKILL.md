@@ -1,269 +1,204 @@
 ---
 name: devops
 description: >
-  Azure Pipelines and Helm chart conventions for multi-service projects.
-  Trigger: When the user asks about CI/CD pipelines, Docker build/push, Helm charts, Kubernetes deployments, versioning strategy, or DevOps configuration.
+  Azure DevOps YAML pipelines and Helm Umbrella chart conventions for multi-service projects.
+  Concrete actions: create multi-stage pipeline YAML for Docker build/push to ACR, generate Umbrella Helm charts with sub-charts, configure values.yaml environment contracts, set up tag-triggered versioning strategy.
+  Trigger: When the user asks to create or modify Azure DevOps pipelines, generate or maintain Helm Umbrella charts, configure values.yaml service nodes, set up Docker-to-ACR image tagging, or scaffold the DevOps directory for a new project.
 license: Apache-2.0
 metadata:
   author: Yoizen
-  version: "1.0"
+  version: "3.0"
   scope: [root]
   auto_invoke:
     - "pipeline"
     - "azure pipelines"
+    - "azure devops"
     - "helm"
-    - "docker"
+    - "helm chart"
+    - "umbrella chart"
+    - "docker acr"
     - "devops"
     - "kubernetes"
     - "k8s"
     - "deploy"
     - "ci/cd"
+    - "cicd"
+    - "values.yaml"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
 
 ## When to Use
 
-- Creating or updating Azure Pipelines for multi-service projects
-- Structuring Helm charts (Umbrella + sub-charts)
-- Defining `values.yaml` with environment variable contracts
-- Setting up versioning strategy for Docker images and Helm charts
-- Configuring build & push pipelines triggered by version tags
+- Create Azure DevOps YAML pipeline files for new multi-service projects
+- Generate Helm Umbrella chart structure (`Chart.yaml`, sub-charts, `values.yaml`)
+- Add a new service (sub-chart + pipeline matrix entry + values node)
+- Configure `values.yaml` environment variable contracts for services
+- Maintain and evolve existing pipelines, Helm charts, and values
+- Set up Docker image tagging and Helm chart versioning strategy
+
+---
+
+## Versioning Strategy
+
+All version management uses a single mechanism: the `{{chartversion}}` placeholder.
+
+- **Where it appears**: Umbrella `Chart.yaml` (`version` + `appVersion`), sub-chart `Chart.yaml` (`version`), and `values.yaml` (`global.appVersion`)
+- **When it's replaced**: The pipeline's `helm-acr-build-and-push` template runs `find ... -exec sed` to replace `{{chartversion}}` in ALL files recursively before packaging
+- **Production version source**: Extracted from the git tag name (`refs/tags/version/*` → `$(Build.SourceBranchName)`)
+- **Dev version source**: Static variable in the dev pipeline (e.g. `appVersion: 0.1.1`)
+- **Rule**: The Umbrella chart version and all Docker image versions **MUST be identical** for the same release. Never hardcode versions — always use `{{chartversion}}`
 
 ---
 
 ## Azure Pipelines
 
+Each project has two pipeline files: production (tag-triggered) and dev (branch-triggered). Both consume shared templates from a central `pipeline-templates` repo via `@pipelines-templates`.
+
 ### Trigger Strategy
 
-- **Production pipeline**: triggered on tag creation matching `version/*`
-- **Dev pipeline**: uses a predefined static version (e.g. `0.0.0-dev`)
-- **NEVER** trigger production builds on branch pushes — only tags
+| Pipeline | Trigger | Version Source |
+|----------|---------|----------------|
+| `azure-pipelines.yml` | `refs/tags/version/*` only | `$(Build.SourceBranchName)` from tag |
+| `azure-pipelines-dev.yml` | Branch pushes (`dev`, feature) | Static variable (e.g. `0.1.1`) |
 
-### Version Extraction from Tag
+**NEVER** trigger production builds on branch pushes — only tags.
 
-The version is derived from the tag name by stripping the `version/` prefix:
+### Shared Templates
 
-| Tag | Extracted Version |
-|-----|-------------------|
-| `version/9.1.0` | `9.1.0` |
-| `version/9.1.0-1` | `9.1.0-1` |
-| `version/1.0.0-rc.1` | `1.0.0-rc.1` |
+| Template | Purpose |
+|----------|---------|
+| `docker-acr-build-and-push.yml` | Build Docker image → push to ACR |
+| `helm-acr-build-and-push.yml` | Replace `{{chartversion}}` → package → push Helm chart to ACR |
+| `restart-deployment.yml` | Restart K8s deployments in AKS (optional, dev only) |
 
-```yaml
-# azure-pipelines.yml
-trigger:
-  tags:
-    include:
-      - version/*
-  branches:
-    exclude:
-      - '*'
-
-variables:
-  - name: imageVersion
-    value: $[ replace(variables['Build.SourceBranch'], 'refs/tags/version/', '') ]
-```
-
-### Pipeline Responsibilities
-
-Each pipeline MUST:
-1. **Build & push** Docker image for each service/API
-2. **Package & push** the Umbrella Helm chart (containing all sub-charts + common-helpers)
-
-Both the Docker image tags and the Helm chart version use the **same version** extracted from the git tag.
-
-### Docker Build & Push Pattern
-
-```yaml
-steps:
-  - task: Docker@2
-    displayName: 'Build & Push $(serviceName)'
-    inputs:
-      containerRegistry: '$(acrServiceConnection)'
-      repository: '$(productName)/$(serviceName)'
-      command: buildAndPush
-      Dockerfile: 'src/$(serviceName)/Dockerfile'
-      tags: |
-        $(imageVersion)
-        latest
-```
-
-### Helm Package & Push Pattern
-
-```yaml
-steps:
-  - script: |
-      # Replace version placeholder in Chart.yaml
-      sed -i "s/{{chartversion}}/$(imageVersion)/g" DevOps/Helm/values.yaml
-      helm dependency update DevOps/Helm
-      helm package DevOps/Helm --version $(imageVersion) --app-version $(imageVersion)
-    displayName: 'Package Helm chart'
-
-  - script: |
-      helm push $(productName)-$(imageVersion).tgz oci://$(acrHost)/helm
-    displayName: 'Push Helm chart to ACR'
-```
+> Full pipeline YAML examples and template parameter tables: [references/PIPELINES.md](references/PIPELINES.md)
 
 ---
 
 ## Helm Chart Structure
 
-### Umbrella Chart Pattern
-
-The project uses an **Umbrella Helm chart** that contains all service sub-charts and `common-helpers` as dependencies.
+The project uses an **Umbrella Helm chart** pattern. The umbrella declares `common-helpers` as its only explicit dependency. Sub-charts live inside `charts/` and are auto-discovered by Helm.
 
 ```
 DevOps/Helm/
-├── Chart.yaml                  # Umbrella chart — lists all sub-charts as dependencies
+├── Chart.yaml                  # apiVersion v2 — common-helpers dependency only
+├── values.yaml                 # Unified values: global + one node per service
 ├── templates/
-│   └── utils.yaml              # Defines shared ConfigMap and Secret templates
-├── charts/
-│   ├── api1/
-│   │   ├── Chart.yaml          # Generic chart — name matches the service (api1)
-│   │   └── templates/
-│   │       ├── deployment.yaml # Generic deployment — no manual changes required
-│   │       └── utils.yaml      # Declares common-helpers dependency hooks
-│   ├── api2/                   # Same structure as api1
-│   └── api3/                   # Same structure as api1
-└── values.yaml                 # Unified values for all services
+│   └── utils.yaml              # ConfigMap, Secret, PV, PVC (umbrella-level)
+└── charts/
+    ├── service1/
+    │   ├── Chart.yaml          # apiVersion v1 — no dependencies
+    │   └── templates/
+    │       ├── deployment.yaml # {{ include "common-helpers.deploymenttemplate" . }}
+    │       └── utils.yaml      # Service, Ingress, PDB, HPA via common-helpers
+    └── service2/               # Same structure — copy for each service
 ```
 
-### Umbrella Chart.yaml
+### Key Rules
 
-```yaml
-apiVersion: v2
-name: product-name
-description: Umbrella Helm chart for all services
-type: application
-version: "{{chartversion}}"   # Replace key — substituted by pipeline
-appVersion: "{{chartversion}}"
+- Sub-charts are **NOT** listed as dependencies in the umbrella `Chart.yaml` — they are auto-discovered from `charts/`
+- Sub-charts use `apiVersion: v1` and declare **no dependencies** — `common-helpers` is inherited from the umbrella
+- Sub-chart templates are **generic** (copy as-is for each new service — no modification needed)
+- All K8s resource names follow: `{productName}-{client}-{environment}-{appName}`
 
-dependencies:
-  - name: common-helpers
-    version: "x.x.x"
-    repository: "oci://your-registry/helm"
-  - name: api1
-    version: "0.1.0"
-    repository: "file://charts/api1"
-  - name: api2
-    version: "0.1.0"
-    repository: "file://charts/api2"
-  - name: api3
-    version: "0.1.0"
-    repository: "file://charts/api3"
-```
-
-### Sub-chart Chart.yaml
-
-```yaml
-# DevOps/Helm/charts/api1/Chart.yaml
-apiVersion: v2
-name: api1        # MUST match the directory name and the values.yaml node name
-description: Chart for api1 service
-type: application
-version: "0.1.0"
-
-dependencies:
-  - name: common-helpers
-    version: "x.x.x"
-    repository: "oci://your-registry/helm"
-```
-
-### Sub-chart deployment.yaml
-
-The deployment template is **generic** — it reads values from `values.yaml` via the parent chart.
-No manual modification is needed per service.
-
-```yaml
-# DevOps/Helm/charts/api1/templates/deployment.yaml
-{{- include "common-helpers.deployment" . }}
-```
-
-### Sub-chart utils.yaml
-
-```yaml
-# DevOps/Helm/charts/api1/templates/utils.yaml
-{{- include "common-helpers.configmap" . }}
-{{- include "common-helpers.secret" . }}
-```
+> Full chart YAML templates, common-helpers reference, and deployment features: [references/HELM-STRUCTURE.md](references/HELM-STRUCTURE.md)
 
 ---
 
 ## values.yaml Contract
 
-### Structure Rules
+One top-level node per service (key MUST match sub-chart directory name and `appName`). `global` holds shared config.
 
-- **One top-level node per service**, named identically to the service (e.g. `api1`, `api2`)
-- `appName` inside each node MUST match the node key and the chart directory name
-- `global.appVersion` uses `{{chartversion}}` as a replace key — substituted by the pipeline
-- Values defined here are **defaults** — they MUST NOT be overridden at deploy time
-- Deploy-time values ONLY extend this file (add new keys), never override existing ones
+### Key Fields (quick reference)
 
-### Environment Variable Categories
+| Scope | Key Fields |
+|-------|------------|
+| **Global** | `productName`, `appVersion` (`{{chartversion}}`), `client`, `environment`, `registry` |
+| **Service identity** | `appName` (must match node key + chart dir) |
+| **Deployment** | `replicas`, `containerPort`, `image`, `healthcheck` |
+| **Resources** | `requestsCPU`, `requestsMEM`, `limitsCPU`, `limitMEM` |
+| **Networking** | `enableIngress`, `IngressUrl`, `IngressClassName` |
+| **Scaling** | `enableHPA`, `minReplicas`, `maxReplicas`, `enablePDB` |
+| **Environment** | `requiredConfigMapEnv`, `optionalConfigMapEnv`, `requiredSecretEnv`, `optionalSecretEnv` |
 
-| Key | Type | Purpose |
-|-----|------|---------|
-| `requiredConfigMapEnv` | list | Non-sensitive vars REQUIRED for startup. Pod won't start if missing. |
-| `optionalConfigMapEnv` | list | Non-sensitive vars that are OPTIONAL. |
-| `requiredSecretEnv` | list | Sensitive vars (secrets) REQUIRED for startup. |
-| `optionalSecretEnv` | list | Sensitive vars (secrets) that are OPTIONAL. |
+> Full field tables, global section details, and values.yaml template: [references/VALUES-REFERENCE.md](references/VALUES-REFERENCE.md)
 
-### values.yaml Template
+---
 
-```yaml
-global:
-  productName: productName          # Static value — used for k8s resource naming
-  appVersion: "{{chartversion}}"    # Replace key — substituted by pipeline
+## Validation & Verification
 
-api1:
-  appName: api1                     # MUST match the top-level node name
-  requiredConfigMapEnv:
-    - client
-    # Add all required non-sensitive env vars
-  optionalConfigMapEnv:
-    - NODE_ENV
-    # Add all optional non-sensitive env vars
-  requiredSecretEnv:
-    - exampleSecretKey
-    # Add all required sensitive env vars
-  optionalSecretEnv: []
-    # Add all optional sensitive env vars
+Run these checks before committing changes or after generating new files:
 
-api2:
-  appName: api2
-  requiredConfigMapEnv:
-    - client
-  optionalConfigMapEnv:
-    - NODE_ENV
-  requiredSecretEnv:
-    - anotherSecretKey
-  optionalSecretEnv: []
+### Helm Chart Validation
 
-# Repeat for each service...
+```bash
+# Lint the chart (catches schema errors, missing required values)
+helm lint DevOps/Helm/
+
+# Render templates locally to verify output (without deploying)
+helm template my-release DevOps/Helm/ --debug
+
+# Verify dependency resolution works
+helm dependency update DevOps/Helm/
+
+# Check that {{chartversion}} placeholder exists in all expected files
+grep -r '{{chartversion}}' DevOps/Helm/
 ```
 
-### Maintenance Rules
+### Pipeline Validation
 
-- **ALWAYS** update `values.yaml` when a service's environment variables change
-- Add new env vars to the correct category (`required` vs `optional`, `ConfigMap` vs `Secret`)
-- **NEVER** move a var from `required` to `optional` without coordinating with the team
-- Sensitive values (passwords, tokens, API keys) → `*SecretEnv`
-- Non-sensitive values (feature flags, URLs, names) → `*ConfigMapEnv`
+```bash
+# Verify YAML syntax
+python -c "import yaml; yaml.safe_load(open('DevOps/azure-pipelines.yml'))"
+
+# Check that shared template references are correct
+grep -n '@pipelines-templates' DevOps/azure-pipelines*.yml
+```
+
+### Naming Consistency Check
+
+```bash
+# Verify service names are in sync across values.yaml nodes, chart dirs, and appName values
+# Each sub-chart dir name must match its Chart.yaml 'name' and its values.yaml node key + appName
+ls DevOps/Helm/charts/
+grep 'appName:' DevOps/Helm/values.yaml
+grep '^name:' DevOps/Helm/charts/*/Chart.yaml
+```
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `{{chartversion}}` appears in deployed resources | Pipeline did not run `sed` replacement | Verify `helm-acr-build-and-push` template `innerPath` points to `DevOps/Helm` |
+| `helm dependency update` fails | `common-helpers` version mismatch or ACR auth issue | Check umbrella `Chart.yaml` dependency version matches published chart; verify ACR login |
+| Pod stuck in `CreateContainerConfigError` | Missing `requiredConfigMapEnv` or `requiredSecretEnv` values | Ensure all required keys exist as `global.*` values or are injected by CD pipeline Variable Group |
+| Ingress not created | `enableIngress` not set to `true` in service node | Add `enableIngress: true` and `IngressUrl` to the service's values.yaml node |
+| HPA ignoring `replicas` field | Expected behavior when `enableHPA: true` | HPA manages replica count — `replicas` is ignored. Set `minReplicas`/`maxReplicas` instead |
+| Sub-chart not rendered | Directory missing from `charts/` or `Chart.yaml` malformed | Verify sub-chart dir exists and its `Chart.yaml` has valid `apiVersion: v1` + `name` matching dir |
+| Resources not appearing in deployment | No resource fields set | At least one of `requestsCPU`/`requestsMEM`/`limitsCPU`/`limitMEM` must be set to render resources block |
 
 ---
 
 ## Critical Patterns
 
-- **NEVER** hardcode versions in `Chart.yaml` or `values.yaml` — always use `{{chartversion}}` and replace via pipeline
-- **ALWAYS** keep the service node key in `values.yaml`, the `appName` value, and the sub-chart directory name **in sync**
-- **ALWAYS** package Helm chart after updating the version placeholder, before pushing
+- **ALWAYS** use `{{chartversion}}` for all versions — never hardcode (see [Versioning Strategy](#versioning-strategy))
+- **ALWAYS** keep service node key, `appName` value, and sub-chart directory name **in sync**
 - **NEVER** override `values.yaml` defaults at deploy time — only extend with new keys
-- **Pod startup is blocked** if `requiredConfigMapEnv` or `requiredSecretEnv` variables are not provided at deploy time
-- The Umbrella chart version and all Docker image versions **MUST be identical** for the same release
+- **ALWAYS** use shared pipeline templates from `pipelines-templates` repo — never inline Docker or Helm commands
+- Sub-charts declare **no dependencies** — `common-helpers` is resolved at the umbrella level only
+- **ALL resource names** follow `{productName}-{client}-{environment}-{appName}` — never deviate
+- `global.environment` and `global.client` are populated by the CD pipeline from Variable Groups
+- Variable Group name convention: `{appName}-{clientName}-{environment}` — keys use `__` as level separator
+- ConfigMap values resolve from `global.*` — any key in `requiredConfigMapEnv`/`optionalConfigMapEnv` **MUST** exist as `global.{key}`
+- **ALWAYS** run `helm lint` and `helm template --debug` before committing chart changes
 
 ---
 
 ## Resources
 
-- **Templates**: See [assets/](assets/) for pipeline and chart templates
-- **References**: See [references/](references/) for Helm and Azure Pipelines docs
+- [references/PIPELINES.md](references/PIPELINES.md) — Full pipeline YAML, template parameters
+- [references/HELM-STRUCTURE.md](references/HELM-STRUCTURE.md) — Chart templates, common-helpers library, deployment features
+- [references/VALUES-REFERENCE.md](references/VALUES-REFERENCE.md) — Global section, service node fields, values.yaml template
+
