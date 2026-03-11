@@ -26,64 +26,94 @@ Features:
 
 ## Instalación
 
-### Quick Install (recomendado)
+### macOS / Linux
 
 ```bash
-# macOS / Linux (NestJS default)
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --all --type=nest
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --all --type=nest
 ```
 
-```powershell
-# Windows (PowerShell - NestJS default)
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -All -Type nest
-```
-
-### Instalacion seleccionando el tipo de proyecto
+`--global-skills` está desactivado por defecto. Si querés activarlo para configurar agentes globales de usuario (Copilot/OpenCode):
 
 ```bash
-# macOS / Linux
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --type=nest
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --type=python
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --type=dotnet
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --all --type=nest 
 ```
+
+``` 
+--global-skills=true 
+```
+
+### Windows
 
 ```powershell
-# Windows (PowerShell)
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Type nest
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Type python
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Type dotnet
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/quick-setup.ps1))) -All -Type nest
 ```
 
-### Opcionales
+### Otros tipos
 
-**OpenCode Hooks**
+Reemplazá `nest` por cualquiera de estos tipos:
+- `nest-angular`
+- `nest-react`
+- `python`
+- `dotnet`
+- `devops`
+- `generic`
+
+### Nota
+
+> El setup instala OpenCode automáticamente si no está disponible.
+> `--global-skills` configura perfiles globales de usuario para OpenCode/Copilot (no instala nada a nivel global del sistema y no crea agentes dentro del repo).
+> Los agentes globales se generan desde `ywai/extensions/install-steps/global-agents/templates/` y no desde `AGENTS.md`.
+> Además, cada agente global se genera con un bundle Agent-Skills definido en `ywai/extensions/install-steps/global-agents/bundles.json` (ej: `devops` -> skill `devops`).
+> Los agentes globales invocan habilidades (skills) según el bundle configurado, lo que permite una mayor flexibilidad en la configuración de habilidades para cada tipo de proyecto.
+
+### Sync inteligente para chats (`--llm-sync`)
+
+Si querés que Copilot / Claude Code actualice reglas en un repo existente (sin copy-paste bruto de `AGENTS.md`), usá el modo `--llm-sync`.
+
 ```bash
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --hooks
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --llm-sync
 ```
 
-```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Hooks
-```
+Con tipo explícito:
 
-**Baseline opcional de Biome**
 ```bash
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --biome
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/latest/ywai/setup/setup.sh | bash -s -- --llm-sync --type=nest-react
 ```
 
-```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Biome
+Qué sincroniza:
+
+- `AGENTS.md` (bloque gestionado, preservando contenido custom fuera del bloque)
+- `REVIEW.md` (bloque gestionado)
+- `skills/` (sync de skills del tipo + SDD sin pisar skills custom)
+- tablas Auto-invoke vía `skill-sync` cuando está disponible
+- `biome.json` y scripts de Biome en `package.json` cuando el proyecto tiene `package.json`
+
+Prompt sugerido para chats:
+
+```text
+Fetch the installation guide and follow it:
+curl -s https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/docs/guide/installation.md
 ```
 
-**OpenCode Hooks + Biome**
+---
+
+## Versiones y Releases
+
+El setup resuelve automáticamente qué versión instalar consultando las GitHub Releases.
+
+### Canal por defecto: `stable`
+
+Siempre instala la última release estable publicada. Si no hay releases aún, usa el branch `main` como fallback automático.
+
+### Opciones de versión
+
 ```bash
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.sh | bash -s -- --hooks --biome
-```
+# Versión específica (incluye pre-releases)
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/setup.sh | YWAI_VERSION=v5.0.0-beta.2 bash -s -- --all --type=nest
 
-```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/auto/quick-setup.ps1))) -Hooks -Biome
+# Canal latest
+curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/setup.sh | YWAI_CHANNEL=latest bash -s -- --all --type=nest
 ```
-
-Ver **instalación avanzada** en `auto/README.md`.
 
 ---
 
@@ -160,7 +190,7 @@ SDD genera specs formales, diseño técnico, tareas, y trackea el progreso.
 | Implementación (Agent) | **Codex 5.3** / **Sonnet 4.6** | Optimizado para código; rápido y preciso |
 | Commits, PRs, docs | **Gemini 3 Flash** | Barato; suficiente para texto |
 | Ajustes de UI/CSS | **Gemini 3.1 Pro** | Buen balance costo/calidad para visual |
-| Code review básica | **Gemini 3 Flash** / **Haiku 4.5** | Económico para checks rutinarios |
+| Code review básica | **Gemini 3 Flash** / **Haiku 4.5** | Económico para checks rutinarias |
 | Code review crítica | **Codex 5.3** | Detecta bugs sutiles; entiende contexto |
 
 Regla general:
@@ -228,36 +258,17 @@ GA Review: PASS
 
 ## Tipos de Proyecto (`--type`)
 
-Al instalar podés especificar el tipo para obtener `AGENTS.md` y `REVIEW.md` adaptados, más skills correspondientes:
-
-```bash
-bash auto/bootstrap.sh --install-sdd --type=nest      # NestJS / TypeScript (default)
-bash auto/bootstrap.sh --install-sdd --type=python    # Python / FastAPI / Django
-bash auto/bootstrap.sh --install-sdd --type=dotnet    # .NET / C# / ASP.NET Core
-bash auto/bootstrap.sh --install-sdd --type=generic   # Genérico
-```
-
-```powershell
-# Windows
-.\auto\bootstrap.ps1 -InstallSDD -Type nest
-.\auto\bootstrap.ps1 -InstallSDD -Type python
-.\auto\bootstrap.ps1 -InstallSDD -Type dotnet
-```
-
-Para ver todos los tipos disponibles:
-
-```bash
-bash auto/bootstrap.sh --list-types
-```
-
 | Tipo | Descripción | Skills incluidas |
 |------|-------------|-----------------|
-| `nest` | NestJS backend (TypeScript, Clean Architecture) (default) | git-commit, biome, skill-creator, skill-sync |
-| `python` | Python backend / scripts (FastAPI, Django) | git-commit, skill-creator, skill-sync |
-| `dotnet` | .NET / C# (ASP.NET Core, Clean Architecture) | git-commit, skill-creator, skill-sync |
+| `nest` | NestJS backend (TypeScript, Clean Architecture) | git-commit, biome, typescript, skill-creator, skill-sync |
+| `nest-angular` | NestJS + Angular fullstack | git-commit, biome, typescript, angular, tailwind-4, skill-creator, skill-sync |
+| `nest-react` | NestJS + React fullstack | git-commit, biome, typescript, react-19, tailwind-4, skill-creator, skill-sync |
+| `python` | Python backend / scripts (FastAPI, Django, scripts) | git-commit, skill-creator, skill-sync |
+| `dotnet` | .NET / C# backend (ASP.NET Core, Clean Architecture) | git-commit, skill-creator, skill-sync |
+| `devops` | DevOps / Platform workflows (CI/CD, Docker, Helm, Kubernetes) | git-commit, devops, skill-creator, skill-sync |
 | `generic` | Genérico — language-agnostic | git-commit, skill-creator, skill-sync |
 
-Cada tipo instala un `AGENTS.md` con reglas específicas del stack y un `REVIEW.md` con checklist de code review adaptado. Si no especificás `--type`, se usa `generic`.
+Cada tipo instala un `AGENTS.md` con reglas específicas del stack y un `REVIEW.md` con checklist de code review adaptado.
 
 ---
 
@@ -357,5 +368,4 @@ which opencode  # Verificá que esté en PATH
 
 ## Links
 
-- Instalación avanzada: `auto/README.md`
 - Issues: https://github.com/Yoizen/dev-ai-workflow/issues
