@@ -798,7 +798,7 @@ function Install-Extensions {
                 Write-Success "Created Context7 MCP example config"
             }
 
-            if ($ProjectType -in @("nest", "nest-angular", "nest-react")) {
+            if ($ProjectType -in @("nest", "nest-angular", "nest-react", "qa-playwright")) {
                 Set-BiomeBaseline -TargetDir $TargetDir | Out-Null
                 Write-Success "Applied Biome baseline extension"
             }
@@ -854,7 +854,7 @@ note: install the engram CLI, then rerun type extensions
                 Write-Warning "Engram CLI not found; wrote local setup instructions"
             }
 
-            if ($ProjectType -notin @("nest", "nest-angular", "nest-react")) {
+            if ($ProjectType -notin @("nest", "nest-angular", "nest-react", "qa-playwright")) {
                 return $true
             }
             

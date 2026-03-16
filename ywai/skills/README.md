@@ -48,6 +48,7 @@ Read skills/{skill-name}/SKILL.md
 |-------|--------------|-------------|
 | `biome` | — | Biome linter and formatter |
 | `git-commit` | — | Commit standards and best practices |
+| `playwright` | — | Playwright E2E, accessibility, visual, and CI testing |
 | `skill-creator` | — | Create new skills |
 | `skill-sync` | — | Sync skills with AGENTS.md |
 
@@ -118,6 +119,7 @@ The assistant scans your request for keywords and auto-loads the matching skill:
 |---------|--------------|
 | "biome", "lint", "format" | `biome` |
 | "commit", "git commit" | `git-commit` |
+| "playwright", "e2e", "flaky test" | `playwright` |
 
 
 ### Manual Loading

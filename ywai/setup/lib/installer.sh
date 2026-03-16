@@ -692,6 +692,7 @@ for key in ("dependencies", "devDependencies", "peerDependencies"):
 has_nest = any(name.startswith("@nestjs/") for name in deps)
 has_angular = "@angular/core" in deps
 has_react = any(name in deps for name in ("react", "react-dom", "next"))
+has_playwright = any(name in deps for name in ("@playwright/test", "playwright"))
 
 if has_nest and has_angular:
   print("nest-angular")
@@ -699,6 +700,8 @@ elif has_nest and has_react:
   print("nest-react")
 elif has_nest:
   print("nest")
+elif has_playwright:
+  print("qa-playwright")
 else:
   print("generic")
 PY
@@ -713,6 +716,11 @@ PY
       else
         echo "nest"
       fi
+      return 0
+    fi
+
+    if grep -q '"@playwright/test"\|"playwright"' "$package_json" 2>/dev/null; then
+      echo "qa-playwright"
       return 0
     fi
   fi

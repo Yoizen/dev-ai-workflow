@@ -17,6 +17,7 @@ Use the repository context and map to one of:
 - `nest-react`
 - `python`
 - `dotnet`
+- `qa-playwright`
 - `devops`
 - `generic`
 

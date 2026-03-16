@@ -73,7 +73,7 @@ SKIP OPTIONS:
 CONFIGURATION:
     -Provider <name>       AI provider: opencode, claude, gemini, ollama
     -Target <path>         Target directory (default: current directory)
-    -Type <name>           Project type: nest, nest-angular, nest-react, python, dotnet, generic
+    -Type <name>           Project type: nest, nest-angular, nest-react, python, dotnet, qa-playwright, devops, generic
     -ListTypes             List available project types
 
 RELEASE:
@@ -315,12 +315,14 @@ if ($ListTypes) {
         Write-Host "  nest-angular - NestJS + Angular fullstack (TypeScript, Clean Architecture)"
         Write-Host "  nest-react   - NestJS + React fullstack (TypeScript, Clean Architecture)"
         Write-Host "  python       - Python backend / scripts (FastAPI, Django, scripts)"
-        Write-Host "  dotnet       - .NET / C# backend (ASP.NET Core, Clean Architecture)"
-        Write-Host "  generic      - Generic project (language-agnostic defaults)"
+        Write-Host "  dotnet         - .NET / C# backend (ASP.NET Core, Clean Architecture)"
+        Write-Host "  qa-playwright  - QA automation with Playwright (E2E, accessibility, visual, CI-driven)"
+        Write-Host "  devops         - DevOps / Platform workflows (CI/CD, Docker, Helm, Kubernetes)"
+        Write-Host "  generic        - Generic project (language-agnostic defaults)"
         Write-Host ""
         Write-Host "default: nest"
     } else {
-        Write-Host "Available: nest, nest-angular, nest-react, python, dotnet, generic"
+        Write-Host "Available: nest, nest-angular, nest-react, python, dotnet, qa-playwright, devops, generic"
     }
     exit 0
 }

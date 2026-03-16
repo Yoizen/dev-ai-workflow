@@ -133,6 +133,35 @@
         ]
       }
     },
+    "qa-playwright": {
+      "description": "QA automation with Playwright (E2E, accessibility, visual, CI-driven)",
+      "agents_md": "setup/types/qa-playwright/AGENTS.md",
+      "review_md": "setup/types/qa-playwright/REVIEW.md",
+      "lefthook_yml": "setup/types/qa-playwright/lefthook.yml",
+      "global_agents": [
+        "sdd-orchestator",
+        "qa-playwright",
+        "devops"
+      ],
+      "skills": [
+        "git-commit",
+        "biome",
+        "typescript",
+        "playwright",
+        "skill-creator",
+        "skill-sync"
+      ],
+      "extensions": {
+        "hooks": [
+          "opencode-command-hooks"
+        ],
+        "mcps": [],
+        "install-steps": [
+          "biome-baseline",
+          "sdd-commands"
+        ]
+      }
+    },
     "devops": {
       "description": "DevOps / Platform workflows (CI/CD, Docker, Helm, Kubernetes)",
       "agents_md": "setup/types/devops/AGENTS.md",

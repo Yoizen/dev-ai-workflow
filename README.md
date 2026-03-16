@@ -55,6 +55,7 @@ Reemplazá `nest` por cualquiera de estos tipos:
 - `nest-react`
 - `python`
 - `dotnet`
+- `qa-playwright`
 - `devops`
 - `generic`
 
@@ -265,6 +266,7 @@ GA Review: PASS
 | `nest-react` | NestJS + React fullstack | git-commit, biome, typescript, react-19, tailwind-4, skill-creator, skill-sync |
 | `python` | Python backend / scripts (FastAPI, Django, scripts) | git-commit, skill-creator, skill-sync |
 | `dotnet` | .NET / C# backend (ASP.NET Core, Clean Architecture) | git-commit, skill-creator, skill-sync |
+| `qa-playwright` | QA automation with Playwright (E2E, accessibility, visual, CI-driven) | git-commit, biome, typescript, playwright, skill-creator, skill-sync |
 | `devops` | DevOps / Platform workflows (CI/CD, Docker, Helm, Kubernetes) | git-commit, devops, skill-creator, skill-sync |
 | `generic` | Genérico — language-agnostic | git-commit, skill-creator, skill-sync |
 

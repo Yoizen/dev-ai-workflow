@@ -17,6 +17,7 @@ Supported names:
 - `fe-engineer`
 - `nest-engineer`
 - `dotnet-engineer`
+- `qa-playwright`
 - `devops`
 
 ## Agent-Skills bundles
@@ -29,6 +30,7 @@ Supported names:
 Example:
 
 - `devops` agent -> `devops` skill
+- `qa-playwright` agent -> `playwright` skill
 - `sdd-orchestator` agent -> full SDD skill set (`sdd-init` ... `sdd-archive`)
 
 During generation, each global agent file gets:

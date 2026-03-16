@@ -146,7 +146,7 @@ SKIP OPTIONS:
 CONFIGURATION:
     --provider=<name>        AI provider: opencode, claude, gemini, ollama
     --target=<path>          Target directory (default: current directory)
-    --type=<name>            Project type: nest, nest-angular, nest-react, python, dotnet, devops, generic
+    --type=<name>            Project type: nest, nest-angular, nest-react, python, dotnet, qa-playwright, devops, generic
     --list-types             List available project types
     --list-extensions        List available extensions
 

@@ -42,6 +42,7 @@ dev-ai-workflow/
 │   │   ├── angular/
 │   │   ├── dotnet/
 │   │   ├── python/
+│   │   ├── playwright/
 │   │   └── skill-creator/
 │   ├── setup/                     # Auto-setup scripts
 │   │   ├── types/                # Project type configs
@@ -88,6 +89,7 @@ dev-ai-workflow/
 | `angular/*` | Angular (core, forms, performance, architecture) |
 | `dotnet` | .NET / C# |
 | `python` | Python |
+| `playwright` | Playwright test automation |
 | `devops` | Azure Pipelines, Helm charts, Kubernetes deployments |
 
 ### Meta Skills
