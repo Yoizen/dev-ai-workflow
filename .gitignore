@@ -12,7 +12,7 @@ dist/
 build/
 out/
 # Except plugin dist for distribution
-!hooks/opencodehooks/dist/
+!ywai/extensions/hooks/opencode-command-hooks/dist/
 *.tsbuildinfo
 
 # Environment variables
@@ -81,6 +81,7 @@ CLAUDE.md
 CURSOR.md
 GEMINI.md
 .cursorrules
+.cursor/
 
 # GGA
 .osgrep
@@ -93,7 +94,7 @@ GEMINI.md
 .opencode/plugins/**/node_modules/
 .opencode/plugins/**/dist/
 .opencode/**/cache/
-
+.opencode
 # Package manager locks (optional - uncomment if needed)
 # package-lock.json
 # yarn.lock

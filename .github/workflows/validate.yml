@@ -1,0 +1,126 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - main
+      - exp
+      - 'feat/**'
+      - 'fix/**'
+  pull_request:
+    branches:
+      - main
+      - exp
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: ShellCheck — setup scripts
+        run: |
+          shellcheck -S warning \
+            ywai/setup/setup.sh \
+            ywai/setup/lib/config.sh \
+            ywai/setup/lib/ui.sh \
+            ywai/setup/lib/detector.sh \
+            ywai/setup/lib/installer.sh
+
+      - name: ShellCheck — test scripts
+        run: |
+          shellcheck -S warning \
+            ywai/tests/run-all-tests.sh \
+            ywai/tests/test-e2e-simple.sh \
+            ywai/tests/test-skills.sh \
+            ywai/tests/test-commands.sh \
+            ywai/tests/test-mcp.sh \
+            ywai/tests/test-ga.sh
+
+      - name: ShellCheck — update/validate scripts
+        run: |
+          shellcheck -S warning \
+            ywai/setup/update-all.sh \
+            ywai/setup/validate.sh
+
+  bash-syntax:
+    name: Bash Syntax
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check bash syntax — all .sh files
+        run: |
+          failed=0
+          while IFS= read -r -d '' file; do
+            if ! bash -n "$file" 2>/dev/null; then
+              echo "SYNTAX ERROR: $file"
+              bash -n "$file"
+              failed=1
+            fi
+          done < <(find ywai -name '*.sh' -not -path '*/node_modules/*' -print0)
+          exit $failed
+
+  powershell-syntax:
+    name: PowerShell Syntax
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PowerShell
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y powershell
+
+      - name: Check PowerShell syntax — all .ps1 files
+        run: |
+          failed=0
+          while IFS= read -r -d '' file; do
+            if ! pwsh -NoProfile -NonInteractive -Command "
+              \$errors = \$null
+              [System.Management.Automation.Language.Parser]::ParseFile('$file', [ref]\$null, [ref]\$errors) | Out-Null
+              if (\$errors.Count -gt 0) {
+                \$errors | ForEach-Object { Write-Error \$_.Message }
+                exit 1
+              }
+            " 2>/dev/null; then
+              echo "SYNTAX ERROR: $file"
+              failed=1
+            fi
+          done < <(find ywai/setup -name '*.ps1' -not -path '*/node_modules/*' -print0)
+          exit $failed
+
+  config-integrity:
+    name: Config Integrity
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify config.sh sources correctly
+        run: |
+          source ywai/setup/lib/config.sh
+          [[ -n "$YWAI_REPO" ]]        || { echo "YWAI_REPO not set";        exit 1; }
+          [[ -n "$YWAI_REPO_URL" ]]    || { echo "YWAI_REPO_URL not set";    exit 1; }
+          [[ -n "$YWAI_API_URL" ]]     || { echo "YWAI_API_URL not set";     exit 1; }
+          [[ -n "$YWAI_CHANNEL" ]]     || { echo "YWAI_CHANNEL not set";     exit 1; }
+          [[ -n "$YWAI_FALLBACK_BRANCH" ]] || { echo "YWAI_FALLBACK_BRANCH not set"; exit 1; }
+          echo "config.sh OK — YWAI_REPO=$YWAI_REPO channel=$YWAI_CHANNEL fallback=$YWAI_FALLBACK_BRANCH"
+
+      - name: Verify ywai_resolve_ref falls back to branch (no releases yet)
+        run: |
+          source ywai/setup/lib/config.sh
+          ref=$(ywai_resolve_ref)
+          [[ -n "$ref" ]] || { echo "ywai_resolve_ref returned empty string"; exit 1; }
+          echo "Resolved ref: $ref"

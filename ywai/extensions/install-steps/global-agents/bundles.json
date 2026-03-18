@@ -1,0 +1,186 @@
+{
+  "defaults": {
+    "sdd-orchestator": [
+      "sdd-init",
+      "sdd-explore",
+      "sdd-propose",
+      "sdd-spec",
+      "sdd-design",
+      "sdd-tasks",
+      "sdd-apply",
+      "sdd-verify",
+      "sdd-archive"
+    ],
+    "fe-engineer": [
+      "react-19",
+      "tailwind-4",
+      "typescript",
+      "biome"
+    ],
+    "nest-engineer": [
+      "typescript",
+      "biome"
+    ],
+    "dotnet-engineer": [
+      "dotnet"
+    ],
+    "qa-playwright": [
+      "playwright"
+    ],
+    "devops": [
+      "devops"
+    ]
+  },
+  "by_project_type": {
+    "nest": {
+      "sdd-orchestator": [
+        "sdd-init",
+        "sdd-explore",
+        "sdd-propose",
+        "sdd-spec",
+        "sdd-design",
+        "sdd-tasks",
+        "sdd-apply",
+        "sdd-verify",
+        "sdd-archive"
+      ],
+      "nest-engineer": [
+        "typescript",
+        "biome"
+      ],
+      "devops": [
+        "devops"
+      ]
+    },
+    "nest-angular": {
+      "sdd-orchestator": [
+        "sdd-init",
+        "sdd-explore",
+        "sdd-propose",
+        "sdd-spec",
+        "sdd-design",
+        "sdd-tasks",
+        "sdd-apply",
+        "sdd-verify",
+        "sdd-archive"
+      ],
+      "fe-engineer": [
+        "react-19",
+        "tailwind-4",
+        "typescript",
+        "biome"
+      ],
+      "devops": [
+        "devops"
+      ]
+    },
+    "nest-react": {
+      "sdd-orchestator": [
+        "sdd-init",
+        "sdd-explore",
+        "sdd-propose",
+        "sdd-spec",
+        "sdd-design",
+        "sdd-tasks",
+        "sdd-apply",
+        "sdd-verify",
+        "sdd-archive"
+      ],
+      "fe-engineer": [
+        "react-19",
+        "tailwind-4",
+        "typescript",
+        "biome"
+      ],
+      "devops": [
+        "devops"
+      ]
+    },
+    "dotnet": {
+      "sdd-orchestator": [
+        "sdd-init",
+        "sdd-explore",
+        "sdd-propose",
+        "sdd-spec",
+        "sdd-design",
+        "sdd-tasks",
+        "sdd-apply",
+        "sdd-verify",
+        "sdd-archive"
+      ],
+      "dotnet-engineer": [
+        "dotnet"
+      ],
+      "devops": [
+        "devops"
+      ]
+    },
+    "qa-playwright": {
+      "sdd-orchestator": [
+        "sdd-init",
+        "sdd-explore",
+        "sdd-propose",
+        "sdd-spec",
+        "sdd-design",
+        "sdd-tasks",
+        "sdd-apply",
+        "sdd-verify",
+        "sdd-archive"
+      ],
+      "qa-playwright": [
+        "playwright"
+      ],
+      "devops": [
+        "devops"
+      ]
+    },
+    "devops": {
+      "sdd-orchestator": [
+        "sdd-init",
+        "sdd-explore",
+        "sdd-propose",
+        "sdd-spec",
+        "sdd-design",
+        "sdd-tasks",
+        "sdd-apply",
+        "sdd-verify",
+        "sdd-archive"
+      ],
+      "devops": [
+        "devops"
+      ]
+    },
+    "python": {
+      "sdd-orchestator": [
+        "sdd-init",
+        "sdd-explore",
+        "sdd-propose",
+        "sdd-spec",
+        "sdd-design",
+        "sdd-tasks",
+        "sdd-apply",
+        "sdd-verify",
+        "sdd-archive"
+      ],
+      "devops": [
+        "devops"
+      ]
+    },
+    "generic": {
+      "sdd-orchestator": [
+        "sdd-init",
+        "sdd-explore",
+        "sdd-propose",
+        "sdd-spec",
+        "sdd-design",
+        "sdd-tasks",
+        "sdd-apply",
+        "sdd-verify",
+        "sdd-archive"
+      ],
+      "devops": [
+        "devops"
+      ]
+    }
+  }
+}

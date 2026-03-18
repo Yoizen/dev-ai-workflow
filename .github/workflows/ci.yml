@@ -1,0 +1,32 @@
+name: CI (DISABLED TEMPORARILY)
+
+# Temporarily disabled - only runs on manual dispatch
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Tests (Docker)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build test Docker image
+        run: docker build -t ywai-test -f ywai/tests/Dockerfile.test .
+
+      - name: Test — e2e simple
+        run: bash ywai/tests/test-e2e-simple.sh
+
+      - name: Test — skills installation
+        run: bash ywai/tests/test-skills.sh
+
+      - name: Test — commands installation
+        run: bash ywai/tests/test-commands.sh
+
+      - name: Test — MCP configuration
+        run: bash ywai/tests/test-mcp.sh
+
+      - name: Test — GA installation
+        run: bash ywai/tests/test-ga.sh
