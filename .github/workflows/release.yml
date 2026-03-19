@@ -103,35 +103,21 @@ jobs:
 
             ### Installation
 
-            **🚀 NEW: Go Binary (Recommended)**
+            **macOS / Linux**
             ```bash
-            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ steps.version.outputs.version }}/ywai/setup/install.sh | bash -s -- --all --type=nest
+            curl -sSL https://github.com/${{ github.repository }}/releases/latest/download/install.sh | bash
             ```
 
-            **⚡ Direct Binary Download**
-            ```bash
-            # Linux AMD64
-            curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/setup-wizard-linux-amd64 -o setup-wizard && chmod +x setup-wizard && ./setup-wizard --all --type=nest
-
-            # macOS AMD64  
-            curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/setup-wizard-darwin-amd64 -o setup-wizard && chmod +x setup-wizard && ./setup-wizard --all --type=nest
-
-            # Linux ARM64
-            curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/setup-wizard-linux-arm64 -o setup-wizard && chmod +x setup-wizard && ./setup-wizard --all --type=nest
-
-            # macOS ARM64
-            curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/setup-wizard-darwin-arm64 -o setup-wizard && chmod +x setup-wizard && ./setup-wizard --all --type=nest
+            **Windows (PowerShell)**
+            ```powershell
+            irm https://github.com/${{ github.repository }}/releases/latest/download/install.ps1 | iex
             ```
 
-            **🔧 Build from Source**
-            ```bash
-            git clone https://github.com/${{ github.repository }}.git
-            cd ${GITHUB_REPOSITORY#*/}/ywai/setup
-            make build
-            ./setup-wizard --all --type=nest
-            ```
+            > The installer downloads the binary, adds it to PATH, and launches the interactive wizard automatically.
 
           files: |
+            ywai/setup/install.sh
+            ywai/setup/install.ps1
             ywai/setup/dist/*
             ywai/ga/dist/*
           draft: false

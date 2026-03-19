@@ -29,26 +29,16 @@ Features:
 ### macOS / Linux
 
 ```bash
-# Install
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | bash -s -- --all --type=nest
-```
-
-Con `--global-skills`:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | bash -s -- --all --type=nest --global-skills=true
+curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash
 ```
 
 ### Windows
 
 ```powershell
-# Descarga binario desde releases y ejecuta
-irm https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/setup-wizard-windows-amd64.exe -OutFile ywai.exe
-.\ywai.exe --all --type=nest
-
-# Con global-skills
-.\ywai.exe --all --type=nest --global-skills=true
+irm https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.ps1 | iex
 ```
+
+> El instalador descarga el binario, lo agrega al PATH y abre el wizard interactivo automáticamente.
 
 ### Otros tipos
 
@@ -135,13 +125,10 @@ Instala la última release estable publicada.
 
 ```bash
 # Versión específica (incluye pre-releases)
-curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | YWAI_VERSION=v6.0.0-beta.1 bash -s -- --all --type=nest
+YWAI_VERSION=v6.0.0-beta.1 curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash
 
 # Canal latest
-curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | YWAI_CHANNEL=latest bash -s -- --all --type=nest
-
-# Descarga directa del binario (más rápido)
-curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/setup-wizard-linux-amd64 -o ywai && chmod +x ywai && ./ywai --all --type=nest
+YWAI_CHANNEL=latest curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash
 ```
 
 ---

@@ -144,19 +144,13 @@ go test ./...
 ./setup-wizard --dry-run --all --target /tmp/test-project
 ```
 
-## Migration from bash
-
-The Go implementation is a drop-in replacement for the bash setup.sh:
+## Installation
 
 ```bash
-# Old way
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | bash
-
-# New way (download Go binary once)
-wget https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/setup-wizard-linux
-chmod +x setup-wizard-linux
-./setup-wizard-linux --all
+curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash
 ```
+
+The installer downloads the Go binary, adds it to PATH, and launches the interactive wizard.
 
 ## Performance Benefits
 
