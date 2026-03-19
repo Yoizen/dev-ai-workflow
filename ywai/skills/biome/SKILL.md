@@ -141,7 +141,7 @@ npm uninstall eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin
           "level": "error"
         },
         "useConst": "error",
-        "useImportType": "off",
+        "useImportType": "warn",
         "noNonNullAssertion": "error",
         "useTemplate": "warn"
       },

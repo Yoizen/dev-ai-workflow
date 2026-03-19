@@ -109,7 +109,7 @@ show_help() {
 normalize_project_type() {
     local project_type="${1:-$PROJECT_TYPE}"
     case "$project_type" in
-        nest|nest-angular|nest-react|python|dotnet|devops|generic) echo "$project_type" ;;
+        nest|nest-angular|nest-react|python|dotnet|qa-playwright|devops|generic) echo "$project_type" ;;
         *) echo "generic" ;;
     esac
 }
@@ -154,6 +154,9 @@ default_bundle_for_agent() {
             ;;
         dotnet-engineer)
             echo "dotnet"
+            ;;
+        qa-playwright)
+            echo "playwright"
             ;;
         devops)
             echo "devops"
@@ -337,6 +340,9 @@ except: pass
         dotnet)
             echo "sdd-orchestator dotnet-engineer devops"
             ;;
+        qa-playwright)
+            echo "sdd-orchestator qa-playwright devops"
+            ;;
         devops|python|generic|*)
             echo "sdd-orchestator devops"
             ;;
@@ -434,6 +440,12 @@ EOF
             cat >> "$file_path" << 'EOF'
 - Focus on .NET architecture, clean boundaries, and robust service design.
 - Use SDD flow for feature planning and delivery control.
+EOF
+            ;;
+        qa-playwright)
+            cat >> "$file_path" << 'EOF'
+- Focus on Playwright E2E coverage, flake reduction, and release confidence.
+- Use SDD flow when test architecture or critical flows need explicit planning.
 EOF
             ;;
         devops)

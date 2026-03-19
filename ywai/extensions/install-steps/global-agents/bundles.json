@@ -24,6 +24,9 @@
     "dotnet-engineer": [
       "dotnet"
     ],
+    "qa-playwright": [
+      "playwright"
+    ],
     "devops": [
       "devops"
     ]
@@ -107,6 +110,25 @@
       ],
       "dotnet-engineer": [
         "dotnet"
+      ],
+      "devops": [
+        "devops"
+      ]
+    },
+    "qa-playwright": {
+      "sdd-orchestator": [
+        "sdd-init",
+        "sdd-explore",
+        "sdd-propose",
+        "sdd-spec",
+        "sdd-design",
+        "sdd-tasks",
+        "sdd-apply",
+        "sdd-verify",
+        "sdd-archive"
+      ],
+      "qa-playwright": [
+        "playwright"
       ],
       "devops": [
         "devops"
