@@ -249,44 +249,13 @@ func (i *Installer) UpdateEngram() error {
 }
 
 func (i *Installer) UpdateContext7() error {
-	if !i.commandExists("npm") {
-		return fmt.Errorf("npm not available")
+	extDir := i.firstExistingDir(
+		filepath.Join(i.getRepoRoot(), "ywai", "extensions", "mcps", "context7-mcp"),
+		filepath.Join(i.getRepoRoot(), "extensions", "mcps", "context7-mcp"),
+	)
+	if extDir == "" {
+		return fmt.Errorf("context7-mcp extension not found")
 	}
 
-	home, _ := os.UserHomeDir()
-	mcpDir := filepath.Join(home, ".config", "opencode")
-	os.MkdirAll(mcpDir, 0755)
-
-	mcpFile := filepath.Join(mcpDir, "mcp.json")
-
-	if err := i.runCommand("npm", "install", "-g", "context7-mcp"); err != nil {
-		i.logger.LogWarning("Global install failed, trying user prefix")
-		if err2 := i.runCommand("npm", "install", "-g", "context7-mcp", "--prefix", filepath.Join(home, ".local")); err2 != nil {
-			return fmt.Errorf("failed to install context7-mcp: %w", err2)
-		}
-	}
-
-	if i.fileExists(mcpFile) {
-		data, err := os.ReadFile(mcpFile)
-		if err == nil && strings.Contains(string(data), "context7") {
-			i.logger.LogInfo("Context7 already configured in MCP config")
-			return nil
-		}
-	}
-
-	config := `{
-  "mcpServers": {
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"]
-    }
-  }
-}
-`
-	if err := os.WriteFile(mcpFile, []byte(config), 0644); err != nil {
-		return err
-	}
-
-	i.logger.LogSuccess("Context7 MCP configured")
-	return nil
+	return i.executeExtensionScriptWithArgs(extDir, "")
 }
