@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func (i *Installer) runAll() error {
@@ -382,5 +383,118 @@ func (i *Installer) addBiomeToPackageJson(packageJsonPath string) error {
 		i.logger.LogInfo("Biome already configured in package.json")
 	}
 
+	return nil
+}
+
+// ── Public methods for TUI global tools ─────────────────────────────
+
+func (i *Installer) UpdateGA() error {
+	return i.installGA()
+}
+
+func (i *Installer) UpdateSDD() error {
+	return i.installSDD()
+}
+
+func (i *Installer) UpdateGlobalAgents() error {
+	home, _ := os.UserHomeDir()
+	agentsDir := filepath.Join(home, ".config", "opencode")
+
+	// Re-install global agent templates
+	srcDir := i.firstExistingDir(
+		filepath.Join(i.getRepoRoot(), "ywai", "extensions", "install-steps", "global-agents"),
+		filepath.Join(i.getRepoRoot(), "extensions", "install-steps", "global-agents"),
+	)
+	if srcDir == "" {
+		return fmt.Errorf("global-agents extension not found")
+	}
+
+	tplDir := filepath.Join(srcDir, "templates")
+	if !i.dirExists(tplDir) {
+		return fmt.Errorf("global agent templates not found")
+	}
+
+	if err := os.MkdirAll(agentsDir, 0755); err != nil {
+		return err
+	}
+
+	entries, err := os.ReadDir(tplDir)
+	if err != nil {
+		return err
+	}
+
+	installed := 0
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		dest := filepath.Join(agentsDir, e.Name())
+		if err := i.copyFile(filepath.Join(tplDir, e.Name()), dest); err != nil {
+			i.logger.LogWarning(fmt.Sprintf("Failed to copy %s: %v", e.Name(), err))
+			continue
+		}
+		installed++
+	}
+
+	if installed > 0 {
+		i.logger.LogSuccess(fmt.Sprintf("Updated %d global agent(s)", installed))
+	}
+	return nil
+}
+
+func (i *Installer) UpdateEngram() error {
+	extDir := i.firstExistingDir(
+		filepath.Join(i.getRepoRoot(), "ywai", "extensions", "install-steps", "engram-setup"),
+		filepath.Join(i.getRepoRoot(), "extensions", "install-steps", "engram-setup"),
+	)
+	if extDir == "" {
+		return fmt.Errorf("engram-setup extension not found")
+	}
+
+	return i.executeExtensionScriptWithArgs(extDir, "")
+}
+
+func (i *Installer) UpdateContext7() error {
+	if !i.commandExists("npm") {
+		return fmt.Errorf("npm not available")
+	}
+
+	home, _ := os.UserHomeDir()
+	mcpDir := filepath.Join(home, ".config", "opencode")
+	os.MkdirAll(mcpDir, 0755)
+
+	mcpFile := filepath.Join(mcpDir, "mcp.json")
+
+	// Install context7-mcp globally
+	if err := i.runCommand("npm", "install", "-g", "context7-mcp"); err != nil {
+		i.logger.LogWarning("Global install failed, trying user prefix")
+		if err2 := i.runCommand("npm", "install", "-g", "context7-mcp", "--prefix", filepath.Join(home, ".local")); err2 != nil {
+			return fmt.Errorf("failed to install context7-mcp: %w", err2)
+		}
+	}
+
+	// Ensure MCP config has context7 entry
+	if i.fileExists(mcpFile) {
+		data, err := os.ReadFile(mcpFile)
+		if err == nil && strings.Contains(string(data), "context7") {
+			i.logger.LogInfo("Context7 already configured in MCP config")
+			return nil
+		}
+	}
+
+	config := `{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    }
+  }
+}
+`
+	if err := os.WriteFile(mcpFile, []byte(config), 0644); err != nil {
+		return err
+	}
+
+	i.logger.LogSuccess("Context7 MCP configured")
 	return nil
 }

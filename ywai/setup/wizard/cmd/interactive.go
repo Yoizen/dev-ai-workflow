@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Yoizen/dev-ai-workflow/ywai/setup/wizard/pkg/installer"
 	syncpkg "github.com/Yoizen/dev-ai-workflow/ywai/setup/wizard/pkg/sync"
@@ -46,6 +47,9 @@ const (
 	stepAgentDeleteConfirm
 	// File browser step
 	stepFileBrowser
+	// Global tools steps
+	stepGlobalTools
+	stepGlobalToolsRunning
 )
 
 var (
@@ -160,6 +164,13 @@ type setupModel struct {
 	skillValues      []bool
 	skillCursor      int
 	skillLoadError   error
+
+	// Global tools fields
+	globalToolNames  []string
+	globalToolValues []bool
+	globalToolCursor int
+	globalToolDone   bool
+	globalToolOutput string
 }
 
 type menuOption struct {
@@ -316,6 +327,7 @@ func newSetupModel(defaultPath string) setupModel {
 			"Install YWAI in a project",
 			"Update an existing YWAI setup",
 			"Install missing skills in this repo",
+			"Update global tools",
 			"Create a global agent",
 			"Manage global agents",
 			"Quit",
@@ -449,6 +461,10 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateAgentDeleteConfirm(msg)
 	case stepFileBrowser:
 		return m.updateFileBrowser(msg)
+	case stepGlobalTools:
+		return m.updateGlobalTools(msg)
+	case stepGlobalToolsRunning:
+		return m.updateGlobalToolsRunning(msg)
 	default:
 		return m, nil
 	}
@@ -483,13 +499,25 @@ func (m setupModel) updateWelcome(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.skillInstallMode = true
 				m.step = stepPath
 				m.pathInput.Focus()
-			case 3: // Create global agent
+			case 3: // Update global tools
+				m.globalToolNames = []string{
+					"GA (Guardian Agent)",
+					"SDD Orchestrator skills",
+					"Global agents & skills",
+					"Engram CLI",
+					"Context7 MCP",
+				}
+				m.globalToolValues = []bool{true, true, true, true, true}
+				m.globalToolCursor = 0
+				m.globalToolDone = false
+				m.step = stepGlobalTools
+			case 4: // Create global agent
 				m.step = stepAgentType
-			case 4: // List global agents
+			case 5: // List global agents
 				m.agentList = m.loadAgentList()
 				m.agentListCursor = 0
 				m.step = stepAgentList
-			case 5: // Quit
+			case 6: // Quit
 				m.cancel = true
 				m.quitting = true
 				return m, tea.Quit
@@ -782,9 +810,10 @@ func (m setupModel) renderWelcomeStep() string {
 		{Title: m.welcomeOptions[0], Description: "Best for first-time setup in a repository"},
 		{Title: m.welcomeOptions[1], Description: "Refresh an existing setup and re-apply managed files"},
 		{Title: m.welcomeOptions[2], Description: "Install only the YWAI skills that are still missing in this repo"},
-		{Title: m.welcomeOptions[3], Description: "Create a reusable agent for OpenCode / Copilot"},
-		{Title: m.welcomeOptions[4], Description: "View, edit, or delete existing global agents"},
-		{Title: m.welcomeOptions[5], Description: "Exit without making changes"},
+		{Title: m.welcomeOptions[3], Description: "Update GA, SDD, Engram, Context7, global agents — no repo needed"},
+		{Title: m.welcomeOptions[4], Description: "Create a reusable agent for OpenCode / Copilot"},
+		{Title: m.welcomeOptions[5], Description: "View, edit, or delete existing global agents"},
+		{Title: m.welcomeOptions[6], Description: "Exit without making changes"},
 	}
 
 	var items []string
@@ -856,6 +885,10 @@ func (m setupModel) renderBody() string {
 		content = m.renderAgentDeleteConfirmStep()
 	case stepFileBrowser:
 		content = m.renderFileBrowserStep()
+	case stepGlobalTools:
+		content = m.renderGlobalToolsStep()
+	case stepGlobalToolsRunning:
+		content = m.renderGlobalToolsRunningStep()
 	}
 
 	return lipgloss.JoinVertical(
@@ -2466,5 +2499,164 @@ func (m setupModel) renderAgentEditStep() string {
 		content,
 		"",
 		helpStyle.Render("↑↓ select • Enter open editor • s save • q cancel"),
+	)
+}
+
+// ── Global Tools ────────────────────────────────────────────────────
+
+func (m setupModel) updateGlobalTools(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "up", "k":
+			if m.globalToolCursor > 0 {
+				m.globalToolCursor--
+			}
+		case "down", "j":
+			if m.globalToolCursor < len(m.globalToolNames)-1 {
+				m.globalToolCursor++
+			}
+		case " ":
+			m.globalToolValues[m.globalToolCursor] = !m.globalToolValues[m.globalToolCursor]
+		case "a":
+			allSelected := true
+			for _, v := range m.globalToolValues {
+				if !v {
+					allSelected = false
+					break
+				}
+			}
+			for i := range m.globalToolValues {
+				m.globalToolValues[i] = !allSelected
+			}
+		case "enter":
+			m.step = stepGlobalToolsRunning
+			m.globalToolOutput = ""
+			return m, tea.Tick(0, func(t time.Time) tea.Msg {
+				return globalToolsStartMsg{}
+			})
+		case "q", "esc":
+			m.step = stepWelcome
+		}
+	}
+	return m, nil
+}
+
+type globalToolsStartMsg struct{}
+type globalToolsDoneMsg struct{ output string }
+type globalToolsLogMsg struct{ line string }
+
+func (m setupModel) updateGlobalToolsRunning(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case globalToolsStartMsg:
+		m.spinner, _ = m.spinner.Update(spinner.TickMsg{})
+		return m, func() tea.Msg {
+			var buf strings.Builder
+			flags := &installer.Flags{
+				Force:   true,
+				Silent:  false,
+				DryRun:  false,
+				Channel: "stable",
+			}
+
+			inst := installer.New(flags)
+
+			for i, name := range m.globalToolNames {
+				if !m.globalToolValues[i] {
+					continue
+				}
+				line := fmt.Sprintf("  %s ...\n", name)
+				buf.WriteString(line)
+
+				switch i {
+				case 0: // GA
+					if err := inst.UpdateGA(); err != nil {
+						buf.WriteString(fmt.Sprintf("    ✗ %v\n", err))
+					} else {
+						buf.WriteString("    ✓ done\n")
+					}
+				case 1: // SDD
+					if err := inst.UpdateSDD(); err != nil {
+						buf.WriteString(fmt.Sprintf("    ✗ %v\n", err))
+					} else {
+						buf.WriteString("    ✓ done\n")
+					}
+				case 2: // Global agents
+					if err := inst.UpdateGlobalAgents(); err != nil {
+						buf.WriteString(fmt.Sprintf("    ✗ %v\n", err))
+					} else {
+						buf.WriteString("    ✓ done\n")
+					}
+				case 3: // Engram
+					if err := inst.UpdateEngram(); err != nil {
+						buf.WriteString(fmt.Sprintf("    ✗ %v\n", err))
+					} else {
+						buf.WriteString("    ✓ done\n")
+					}
+				case 4: // Context7
+					if err := inst.UpdateContext7(); err != nil {
+						buf.WriteString(fmt.Sprintf("    ✗ %v\n", err))
+					} else {
+						buf.WriteString("    ✓ done\n")
+					}
+				}
+			}
+
+			buf.WriteString("\nDone.")
+			return globalToolsDoneMsg{output: buf.String()}
+		}
+	case globalToolsDoneMsg:
+		m.globalToolOutput = msg.output
+		m.globalToolDone = true
+		m.step = stepGlobalTools
+		return m, nil
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+	}
+	return m, nil
+}
+
+func (m setupModel) renderGlobalToolsStep() string {
+	subtitle := subtitleStyle.Render("Select which global tools to update (no repo needed)")
+
+	var items []string
+	for idx, name := range m.globalToolNames {
+		marker := "[ ]"
+		if m.globalToolValues[idx] {
+			marker = "[✓]"
+		}
+		line := fmt.Sprintf("%s %s", marker, name)
+		if idx == m.globalToolCursor {
+			items = append(items, selectedItemStyle.Render("▸ "+line))
+		} else {
+			items = append(items, itemStyle.Render("  "+line))
+		}
+	}
+
+	menu := lipgloss.JoinVertical(lipgloss.Left, items...)
+
+	parts := []string{
+		subtitle,
+		"",
+		infoStyle.Render("Space toggle • a select all • Enter confirm • q back"),
+		"",
+		menu,
+	}
+
+	if m.globalToolOutput != "" {
+		parts = append(parts, "", boxStyle.Render(m.globalToolOutput))
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, parts...)
+}
+
+func (m setupModel) renderGlobalToolsRunningStep() string {
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		subtitleStyle.Render("Updating global tools..."),
+		"",
+		m.spinner.View()+" Working...",
 	)
 }
