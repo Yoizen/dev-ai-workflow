@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -153,15 +154,20 @@ func (i *Installer) copySkillEntries(sourceDir, targetDir string) (int, error) {
 }
 
 func (i *Installer) resolveLocalSkillsSetupScript() string {
+	ext := "sh"
+	if runtime.GOOS == "windows" {
+		ext = "ps1"
+	}
+
 	candidates := []string{
-		filepath.Join(i.getSkillsDir(), "setup.sh"),
+		filepath.Join(i.getSkillsDir(), fmt.Sprintf("setup.%s", ext)),
 	}
 
 	if source := i.findSkillsSource(i.getRepoRoot()); source != "" {
-		candidates = append(candidates, filepath.Join(source, "setup.sh"))
+		candidates = append(candidates, filepath.Join(source, fmt.Sprintf("setup.%s", ext)))
 	}
 	candidates = append(candidates,
-		i.ywaiCandidates(false, "skills/setup.sh")...,
+		i.ywaiCandidates(false, fmt.Sprintf("skills/setup.%s", ext))...,
 	)
 
 	return i.firstExistingFile(uniqueCleanPaths(candidates)...)
@@ -178,14 +184,26 @@ func (i *Installer) runLocalSkillsSetup() error {
 		return nil
 	}
 
-	cmd := exec.Command("bash", script, "--all")
-	cmd.Dir = i.targetDir
-	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("YWAI_PROJECT_TYPE=%s", i.getEffectiveProjectType()),
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to run local skills setup: %w: %s", err, string(output))
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-File", script, "--all")
+		cmd.Dir = i.targetDir
+		cmd.Env = append(os.Environ(),
+			fmt.Sprintf("YWAI_PROJECT_TYPE=%s", i.getEffectiveProjectType()),
+		)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to run local skills setup: %w: %s", err, string(output))
+		}
+	} else {
+		cmd := exec.Command("bash", script, "--all")
+		cmd.Dir = i.targetDir
+		cmd.Env = append(os.Environ(),
+			fmt.Sprintf("YWAI_PROJECT_TYPE=%s", i.getEffectiveProjectType()),
+		)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to run local skills setup: %w: %s", err, string(output))
+		}
 	}
 
 	i.logger.LogSuccess("Configured local skills")

@@ -10,27 +10,15 @@ if [[ -f "$BIOME_CONFIG" ]]; then
   exit 0
 fi
 
-cat > "$BIOME_CONFIG" <<'EOF'
-{
-  "$schema": "https://biomejs.dev/schemas/2.3.2/schema.json",
-  "files": {
-    "ignoreUnknown": true
-  },
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 80
-  },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true
-    }
-  }
-}
-EOF
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEMPLATE="$SCRIPT_DIR/biome.json"
 
+if [[ ! -f "$TEMPLATE" ]]; then
+  echo "ERROR: biome.json template not found at $TEMPLATE" >&2
+  exit 1
+fi
+
+cp "$TEMPLATE" "$BIOME_CONFIG"
 echo "Created biome.json baseline"
 
 if [[ -f "$PACKAGE_JSON" ]] && command -v npm >/dev/null 2>&1; then

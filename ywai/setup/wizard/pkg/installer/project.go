@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -238,7 +239,12 @@ func (i *Installer) typeDocCandidatePaths(projectType, docName, configuredRelPat
 }
 
 func (i *Installer) syncSkillMetadataTables() error {
-	syncScript := filepath.Join(i.getSkillsDir(), "skill-sync", "assets", "sync.sh")
+	ext := "sh"
+	if runtime.GOOS == "windows" {
+		ext = "ps1"
+	}
+
+	syncScript := filepath.Join(i.getSkillsDir(), "skill-sync", "assets", fmt.Sprintf("sync.%s", ext))
 	if !i.fileExists(syncScript) {
 		return nil
 	}
@@ -248,7 +254,12 @@ func (i *Installer) syncSkillMetadataTables() error {
 		return nil
 	}
 
-	cmd := exec.Command("bash", syncScript)
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-File", syncScript)
+	} else {
+		cmd = exec.Command("bash", syncScript)
+	}
 	cmd.Dir = i.targetDir
 	output, err := cmd.CombinedOutput()
 	if err != nil {

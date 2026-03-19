@@ -26,102 +26,19 @@ func (i *Installer) installBiome() error {
 		return nil
 	}
 
-	biomeContent := `{
-  "$schema": "https://biomejs.dev/schemas/2.3.2/schema.json",
-  "files": {
-    "ignoreUnknown": true,
-    "includes": [
-      "**",
-      "!!**/node_modules", "!!**/dist", "!!**/build",
-      "!!**/coverage", "!!**/.next", "!!**/.nuxt",
-      "!!**/.svelte-kit", "!!**/.turbo", "!!**/.vercel",
-      "!!**/.cache", "!!**/__generated__",
-      "!!**/*.generated.*", "!!**/*.gen.*",
-      "!!**/generated", "!!**/codegen"
-    ]
-  },
-  "formatter": {
-    "enabled": true,
-    "formatWithErrors": true,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineEnding": "lf",
-    "lineWidth": 80,
-    "bracketSpacing": true
-  },
-  "assist": {
-    "actions": {
-      "source": {
-        "organizeImports": "on",
-        "useSortedAttributes": "on",
-        "noDuplicateClasses": "on",
-        "useSortedInterfaceMembers": "on",
-        "useSortedProperties": "on"
-      }
-    }
-  },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "correctness": {
-        "noUnusedImports": { "fix": "safe", "level": "error" },
-        "noUnusedVariables": "error",
-        "noUnusedFunctionParameters": "error",
-        "noUndeclaredVariables": "error",
-        "useParseIntRadix": "warn",
-        "useValidTypeof": "error",
-        "noUnreachable": "error"
-      },
-      "style": {
-        "useBlockStatements": { "fix": "safe", "level": "error" },
-        "useConst": "error",
-        "useImportType": "warn",
-        "noNonNullAssertion": "error",
-        "useTemplate": "warn"
-      },
-      "security": { "noGlobalEval": "error" },
-      "suspicious": {
-        "noExplicitAny": "error",
-        "noImplicitAnyLet": "error",
-        "noDoubleEquals": "warn",
-        "noGlobalIsNan": "error",
-        "noPrototypeBuiltins": "error"
-      },
-      "complexity": {
-        "useOptionalChain": "error",
-        "useLiteralKeys": "warn",
-        "noForEach": "warn"
-      },
-      "nursery": {
-        "useSortedClasses": {
-          "fix": "safe",
-          "level": "error",
-          "options": {
-            "attributes": ["className"],
-            "functions": ["clsx","cva","tw","twMerge","cn","twJoin","tv"]
-          }
-        }
-      }
-    }
-  },
-  "javascript": {
-    "formatter": {
-      "arrowParentheses": "always",
-      "semicolons": "always",
-      "trailingCommas": "es5"
-    }
-  },
-  "organizeImports": { "enabled": true },
-  "vcs": {
-    "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true,
-    "defaultBranch": "main"
-  }
-}
-`
+	templatePath := i.firstExistingFile(
+		i.ywaiCandidates(false, "extensions/install-steps/biome-baseline/biome.json")...,
+	)
+	if templatePath == "" {
+		return fmt.Errorf("biome.json template not found")
+	}
 
-	if err := os.WriteFile(biomeConfig, []byte(biomeContent), 0644); err != nil {
+	data, err := os.ReadFile(templatePath)
+	if err != nil {
+		return fmt.Errorf("failed to read biome template: %w", err)
+	}
+
+	if err := os.WriteFile(biomeConfig, data, 0644); err != nil {
 		return err
 	}
 

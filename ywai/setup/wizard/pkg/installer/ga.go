@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -127,25 +128,21 @@ func (i *Installer) installGASystemWide(gaDir string) error {
 }
 
 func (i *Installer) getPlatform() string {
-	cmd := exec.Command("uname", "-s")
-	out, _ := cmd.Output()
-	os := strings.TrimSpace(string(out))
+	goos := runtime.GOOS
+	goarch := runtime.GOARCH
 
 	arch := "amd64"
-	cmd = exec.Command("uname", "-m")
-	out, _ = cmd.Output()
-	machine := strings.TrimSpace(string(out))
-	if machine == "arm64" {
+	if goarch == "arm64" || goarch == "aarch64" {
 		arch = "arm64"
 	}
 
-	switch os {
-	case "Darwin":
+	switch goos {
+	case "darwin":
 		return "darwin-" + arch
-	case "Linux":
+	case "linux":
 		return "linux-" + arch
-	case "Windows_NT", "MINGW64_NT":
-		return "windows-amd64"
+	case "windows":
+		return "windows-" + arch
 	default:
 		return "linux-amd64"
 	}
