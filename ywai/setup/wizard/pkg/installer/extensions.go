@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 )
@@ -335,6 +336,26 @@ func (i *Installer) executeExtensionScript(srcPath string) error {
 }
 
 func (i *Installer) executeExtensionScriptWithArgs(srcPath, extraArgs string) error {
+	envVars := []string{
+		fmt.Sprintf("YWAI_PROVIDER=%s", i.provider),
+		fmt.Sprintf("YWAI_PROJECT_TYPE=%s", i.getEffectiveProjectType()),
+	}
+
+	if runtime.GOOS == "windows" {
+		psScript := filepath.Join(srcPath, "install.ps1")
+		if i.fileExists(psScript) {
+			args := []string{"-ExecutionPolicy", "Bypass", "-File", psScript, "-TargetDir", i.targetDir}
+			cmd := exec.Command("powershell", args...)
+			cmd.Dir = srcPath
+			cmd.Env = append(os.Environ(), envVars...)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				return fmt.Errorf("%w: %s", err, string(output))
+			}
+			return nil
+		}
+	}
+
 	script := filepath.Join(srcPath, "install.sh")
 	if !i.fileExists(script) {
 		return nil
@@ -347,10 +368,7 @@ func (i *Installer) executeExtensionScriptWithArgs(srcPath, extraArgs string) er
 
 	cmd := exec.Command("bash", args...)
 	cmd.Dir = srcPath
-	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("YWAI_PROVIDER=%s", i.provider),
-		fmt.Sprintf("YWAI_PROJECT_TYPE=%s", i.getEffectiveProjectType()),
-	)
+	cmd.Env = append(os.Environ(), envVars...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%w: %s", err, string(output))
