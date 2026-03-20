@@ -36,6 +36,8 @@ foreach ($platformName in $agentLocations.Keys) {
     $destDir = $agentLocations[$platformName]
     New-Item -ItemType Directory -Force -Path $destDir | Out-Null
 
+    Get-ChildItem -Path $destDir -Filter '*.md' -ErrorAction SilentlyContinue | Remove-Item -Force - ErrorAction SilentlyContinue
+
     Get-ChildItem -Path $agentsSource -Filter '*.md' | ForEach-Object {
         $dest = Join-Path $destDir $_.Name
         Copy-Item -Force $_.FullName $dest

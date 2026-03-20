@@ -69,6 +69,8 @@ for platform_name in "${!SKILL_LOCATIONS[@]}"; do
     echo "Installing to $platform_name: $dest_dir"
     mkdir -p "$dest_dir"
     
+    rm -rf "$dest_dir"/*
+    
     for skill_dir in "$SKILLS_SOURCE"/*/; do
         if [[ -d "$skill_dir" ]]; then
             if install_skill_to_location "$skill_dir" "$dest_dir" "$platform_name"; then

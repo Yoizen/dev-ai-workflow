@@ -25,6 +25,13 @@ $skillLocations = @{
 $copiedTotal = 0
 $skippedTotal = 0
 
+foreach ($platformName in $skillLocations.Keys) {
+    $destDir = $skillLocations[$platformName]
+    if (Test-Path $destDir) {
+        Get-ChildItem -Path $destDir -Directory -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Install-SkillToLocation {
     param(
         [string]$SourceSkillDir,

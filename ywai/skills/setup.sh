@@ -543,8 +543,8 @@ setup_global_profile_agents() {
     local opencode_dir="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
     local opencode_agents_dir="$opencode_dir/agent"
     local opencode_agents_alt_dir="$opencode_dir/agents"
-
     local copilot_agents_dir="$HOME/.copilot/agents"
+
     local vscode_user_dir
     if [[ "$(uname)" == "Darwin" ]]; then
       vscode_user_dir="$HOME/Library/Application Support/Code/User"
@@ -552,6 +552,8 @@ setup_global_profile_agents() {
       vscode_user_dir="${XDG_CONFIG_HOME:-$HOME/.config}/Code/User"
     fi
     local vscode_prompts_dir="$vscode_user_dir/prompts"
+
+    rm -rf "$opencode_agents_dir" "$opencode_agents_alt_dir" "$copilot_agents_dir" "$vscode_prompts_dir"
     local legacy_prompt="$vscode_prompts_dir/enterprise-persona.instructions.md"
 
     mkdir -p "$opencode_agents_dir" "$opencode_agents_alt_dir" "$copilot_agents_dir" "$vscode_prompts_dir"

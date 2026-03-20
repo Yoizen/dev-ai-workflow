@@ -31,6 +31,8 @@ for platform_name in "${!AGENT_LOCATIONS[@]}"; do
     dest_dir="${AGENT_LOCATIONS[$platform_name]}"
     mkdir -p "$dest_dir"
     
+    rm -f "$dest_dir"/*.md
+    
     for agent_file in "$AGENTS_SOURCE"/*.md; do
         if [[ -f "$agent_file" ]]; then
             agent_name=$(basename "$agent_file")
