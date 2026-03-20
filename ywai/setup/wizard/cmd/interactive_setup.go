@@ -218,8 +218,7 @@ func (m setupModel) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter", "y":
-			m.done = true
-			return m, tea.Quit
+			return m.beginProjectInstallation()
 		case "n", "b":
 			m.step = stepComponents
 		}

@@ -3,6 +3,7 @@ package installer
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,7 +20,16 @@ import (
 )
 
 func New(flags *Flags) *Installer {
-	logger := ui.NewLogger(flags.Silent)
+	output := flags.Output
+	if output == nil {
+		if flags.Silent {
+			output = io.Discard
+		} else {
+			output = os.Stdout
+		}
+	}
+
+	logger := ui.NewLogger(flags.Silent, output)
 
 	// ALWAYS install GA, Context7-MCP, and Engram - no matter what
 	// These are the base components that should always be present
@@ -46,6 +56,7 @@ func New(flags *Flags) *Installer {
 		flags:           flags,
 		targetDir:       targetDir,
 		logger:          logger,
+		out:             output,
 		apiClient:       api.NewGitHubAPI("Yoizen/dev-ai-workflow"),
 		versionResolver: version.NewResolver("Yoizen/dev-ai-workflow"),
 		projectType:     flags.ProjectType,
@@ -202,10 +213,27 @@ OPTIONS:
 func (i *Installer) runCommand(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = i.targetDir
-	output, err := cmd.CombinedOutput()
-	if err != nil {
+	return i.runCommandWithCmd(cmd, name, args...)
+}
+
+func (i *Installer) runCommandWithCmd(cmd *exec.Cmd, name string, args ...string) error {
+	if i.out == nil {
+		if i.logger != nil && (!i.logger.Silent || (i.logger.Out != nil && i.logger.Out != os.Stdout)) {
+			if i.logger.Out != nil {
+				i.out = i.logger.Out
+			} else {
+				i.out = os.Stdout
+			}
+		} else {
+			i.out = io.Discard
+		}
+	}
+
+	cmd.Stdout = i.out
+	cmd.Stderr = i.out
+
+	if err := cmd.Run(); err != nil {
 		i.logger.LogError(fmt.Sprintf("Command failed: %s %v", name, args))
-		i.logger.LogError(string(output))
 		return err
 	}
 	return nil

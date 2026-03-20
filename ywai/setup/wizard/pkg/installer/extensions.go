@@ -348,9 +348,8 @@ func (i *Installer) executeExtensionScriptWithArgs(srcPath, extraArgs string) er
 			cmd := exec.Command("powershell", args...)
 			cmd.Dir = srcPath
 			cmd.Env = append(os.Environ(), envVars...)
-			output, err := cmd.CombinedOutput()
-			if err != nil {
-				return fmt.Errorf("%w: %s", err, string(output))
+			if err := i.runCommandWithCmd(cmd, "powershell", args...); err != nil {
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		}
@@ -369,9 +368,8 @@ func (i *Installer) executeExtensionScriptWithArgs(srcPath, extraArgs string) er
 	cmd := exec.Command("bash", args...)
 	cmd.Dir = srcPath
 	cmd.Env = append(os.Environ(), envVars...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("%w: %s", err, string(output))
+	if err := i.runCommandWithCmd(cmd, "bash", args...); err != nil {
+		return fmt.Errorf("%w", err)
 	}
 	return nil
 }

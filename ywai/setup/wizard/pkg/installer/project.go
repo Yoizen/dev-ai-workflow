@@ -254,16 +254,23 @@ func (i *Installer) syncSkillMetadataTables() error {
 		return nil
 	}
 
-	var cmd *exec.Cmd
+	var (
+		cmd         *exec.Cmd
+		commandName string
+		args        []string
+	)
 	if runtime.GOOS == "windows" {
-		cmd = exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-File", syncScript)
+		commandName = "powershell"
+		args = []string{"-ExecutionPolicy", "Bypass", "-File", syncScript}
+		cmd = exec.Command(commandName, args...)
 	} else {
-		cmd = exec.Command("bash", syncScript)
+		commandName = "bash"
+		args = []string{syncScript}
+		cmd = exec.Command(commandName, args...)
 	}
 	cmd.Dir = i.targetDir
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to sync AGENTS metadata tables: %w: %s", err, string(output))
+	if err := i.runCommandWithCmd(cmd, commandName, args...); err != nil {
+		return fmt.Errorf("failed to sync AGENTS metadata tables: %w", err)
 	}
 
 	i.logger.LogSuccess("Synced AGENTS metadata tables")

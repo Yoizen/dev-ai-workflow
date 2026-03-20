@@ -190,9 +190,8 @@ func (i *Installer) runLocalSkillsSetup() error {
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("YWAI_PROJECT_TYPE=%s", i.getEffectiveProjectType()),
 		)
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("failed to run local skills setup: %w: %s", err, string(output))
+		if err := i.runCommandWithCmd(cmd, "powershell", "-ExecutionPolicy", "Bypass", "-File", script, "--all"); err != nil {
+			return fmt.Errorf("failed to run local skills setup: %w", err)
 		}
 	} else {
 		cmd := exec.Command("bash", script, "--all")
@@ -200,9 +199,8 @@ func (i *Installer) runLocalSkillsSetup() error {
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("YWAI_PROJECT_TYPE=%s", i.getEffectiveProjectType()),
 		)
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("failed to run local skills setup: %w: %s", err, string(output))
+		if err := i.runCommandWithCmd(cmd, "bash", script, "--all"); err != nil {
+			return fmt.Errorf("failed to run local skills setup: %w", err)
 		}
 	}
 

@@ -17,12 +17,16 @@ func main() {
 	flags := parseFlags()
 
 	if !flags.NonInteractive && len(os.Args) == 1 {
-		if err := runInteractive(flags); err != nil {
+		handled, err := runInteractive(flags)
+		if err != nil {
 			if err == errInteractiveSetupCancelled {
 				os.Exit(0)
 			}
-			fmt.Fprintf(os.Stderr, "❌ Error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
+		}
+		if handled {
+			return
 		}
 	}
 
@@ -42,7 +46,7 @@ func main() {
 	inst := installer.New(flags)
 
 	if err := inst.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "❌ Error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -111,7 +115,7 @@ func parseFlags() *installer.Flags {
 	flag.BoolVar(&showVersion, "version", false, "Show version")
 
 	flag.BoolVar(&flags.ListTypes, "list-types", false, "List project types")
-	flag.BoolVar(&flags.ListExtensions, "list-extensions", false, "List extensions")
+	flag.BoolVar(&flags.ListExtensions, "list-extensions", false, "List extensions for a project type")
 	flag.BoolVar(&flags.ListInstallableSkills, "list-installable-skills", false, "List skills available to install in this repo")
 	flag.BoolVar(&flags.Sync, "sync", false, "Generate sync report for LLM")
 	flag.StringVar(&flags.InstallSkill, "install-skill", "", "Install specific skill (e.g., angular/signals)")
@@ -164,7 +168,7 @@ OPTIONS:
     --install-sdd       Install SDD Orchestrator
     --install-vscode    Install VS Code / Copilot extensions
     --global-skills     Install global agents
-    --extensions        Install project extensions
+    --extensions       Install project extensions
     --update-all        Refresh an existing YWAI installation
     --sync              Generate sync report for LLM (no changes made)
     --install-skill SKILL   Install one specific skill (e.g. angular/signals)
@@ -218,7 +222,7 @@ func checkForUpdates(flags *installer.Flags) {
 		return
 	}
 
-	fmt.Printf("🔄 Update available: %s → %s\n", current, latest)
+	fmt.Printf("Update available: %s -> %s\n", current, latest)
 	fmt.Println("   If YWAI is already installed, run: ywai --update-all")
 	fmt.Println("   To reinstall the binary manually, run:")
 	fmt.Println("   curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/install.sh | bash")

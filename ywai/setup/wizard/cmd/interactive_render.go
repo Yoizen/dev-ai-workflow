@@ -208,23 +208,88 @@ func (m setupModel) renderInstalling() string {
 		Foreground(lipgloss.Color("86")).
 		Render(fmt.Sprintf("%s YWAI...", m.currentProgressVerb()))
 
-	spinnerFrame := m.spinner.View()
+	parts := []string{
+		header,
+		"",
+		m.spinner.View() + " Working...",
+	}
+
+	if m.installTotal > 0 {
+		parts = append(parts,
+			"",
+			renderProgressBar(m.installProgress, m.installTotal, m.globalToolsProgressWidth()),
+			"",
+			infoStyle.Render(fmt.Sprintf("%d/%d complete", m.installProgress, m.installTotal)),
+		)
+	}
+
+	if m.installCurrent != "" {
+		parts = append(parts,
+			"",
+			titleStyle.Render("Current: "+m.installCurrent),
+		)
+	}
+
+	if len(m.installLogs) > 0 {
+		maxW := 72
+		if m.width > 0 {
+			maxW = m.width / 2
+			if maxW < 40 {
+				maxW = 40
+			}
+		}
+		parts = append(parts,
+			"",
+			boxStyle.Width(maxW).Render(strings.Join(m.installLogs, "\n")),
+		)
+	}
 
 	return lipgloss.JoinVertical(
 		lipgloss.Center,
 		"",
-		header,
-		"",
-		spinnerFrame,
+		lipgloss.JoinVertical(lipgloss.Left, parts...),
 		"",
 		infoStyle.Render(fmt.Sprintf("Please wait while YWAI %s your environment...", strings.ToLower(m.currentActionVerb())+"s")),
-		"",
 		"",
 		helpStyle.Render("This can take a moment depending on downloads and local tools."),
 	)
 }
 
 func (m setupModel) renderDone() string {
+	if m.installErr != nil {
+		icon := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("167")).
+			Render("✗")
+
+		title := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("167")).
+			Render(func() string {
+				if m.skillInstallMode {
+					return "Skill Installation Failed"
+				}
+				if m.updateMode {
+					return "Update Failed"
+				}
+				return "Setup Failed"
+			}())
+
+		message := errorStyle.Render(m.installErr.Error())
+
+		return lipgloss.JoinVertical(
+			lipgloss.Center,
+			"",
+			icon,
+			"",
+			title,
+			"",
+			message,
+			"",
+			helpStyle.Render("Press Enter or q to close"),
+		)
+	}
+
 	icon := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("84")).
@@ -241,6 +306,9 @@ func (m setupModel) renderDone() string {
 		}())
 
 	message := infoStyle.Render(func() string {
+		if m.skillInstallMode {
+			return "Selected skills have been installed successfully."
+		}
 		if m.updateMode {
 			return "YWAI has been updated successfully."
 		}
@@ -255,6 +323,8 @@ func (m setupModel) renderDone() string {
 		title,
 		"",
 		message,
+		"",
+		helpStyle.Render("Press Enter or q to close"),
 	)
 }
 

@@ -2,6 +2,8 @@ package ui
 
 import (
 	"fmt"
+	"io"
+	"os"
 )
 
 const (
@@ -14,44 +16,70 @@ const (
 
 type Logger struct {
 	Silent bool
+	Out    io.Writer
 }
 
-func NewLogger(silent bool) *Logger {
-	return &Logger{Silent: silent}
+func NewLogger(silent bool, out ...io.Writer) *Logger {
+	writer := io.Writer(os.Stdout)
+	if len(out) > 0 && out[0] != nil {
+		writer = out[0]
+	}
+
+	return &Logger{
+		Silent: silent,
+		Out:    writer,
+	}
 }
 
 func (l *Logger) Log(msg string) {
-	if !l.Silent {
-		fmt.Println(msg)
+	if l.shouldWrite() {
+		fmt.Fprintln(l.out(), msg)
 	}
 }
 
 func (l *Logger) LogSuccess(msg string) {
-	if !l.Silent {
-		fmt.Printf("%s✓%s %s\n", ColorGreen, ColorReset, msg)
+	if l.shouldWrite() {
+		fmt.Fprintf(l.out(), "%sâœ“%s %s\n", ColorGreen, ColorReset, msg)
 	}
 }
 
 func (l *Logger) LogWarning(msg string) {
-	fmt.Printf("%s⚠%s %s\n", ColorYellow, ColorReset, msg)
+	fmt.Fprintf(l.out(), "%sâš %s %s\n", ColorYellow, ColorReset, msg)
 }
 
 func (l *Logger) LogError(msg string) {
-	fmt.Printf("%s✗%s %s\n", ColorRed, ColorReset, msg)
+	fmt.Fprintf(l.out(), "%sâœ—%s %s\n", ColorRed, ColorReset, msg)
 }
 
 func (l *Logger) LogStep(msg string) {
-	if !l.Silent {
-		fmt.Printf("\n%s▶%s %s\n", ColorCyan, ColorReset, msg)
+	if l.shouldWrite() {
+		fmt.Fprintf(l.out(), "\n%sâ–¶%s %s\n", ColorCyan, ColorReset, msg)
 	}
 }
 
 func (l *Logger) LogInfo(msg string) {
-	if !l.Silent {
-		fmt.Printf("  %s\n", msg)
+	if l.shouldWrite() {
+		fmt.Fprintf(l.out(), "  %s\n", msg)
 	}
 }
 
 func (l *Logger) LogSeparator() {
-	l.Log(fmt.Sprintf("%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s", ColorCyan, ColorReset))
+	l.Log(fmt.Sprintf("%sâ”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”%s", ColorCyan, ColorReset))
+}
+
+func (l *Logger) out() io.Writer {
+	if l != nil && l.Out != nil {
+		return l.Out
+	}
+	return os.Stdout
+}
+
+func (l *Logger) shouldWrite() bool {
+	if l == nil {
+		return false
+	}
+	if !l.Silent {
+		return true
+	}
+	return l.Out != nil && l.Out != os.Stdout
 }

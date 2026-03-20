@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/Yoizen/dev-ai-workflow/ywai/setup/wizard/pkg/installer"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -11,7 +10,17 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// ── Global Tools ────────────────────────────────────────────────────
+// Global tools
+
+type globalToolsStartMsg struct{}
+
+type globalToolsStepDoneMsg struct {
+	output string
+}
+
+type globalToolsLogMsg struct {
+	line string
+}
 
 func (m setupModel) updateGlobalTools(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -39,11 +48,31 @@ func (m setupModel) updateGlobalTools(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.globalToolValues[i] = !allSelected
 			}
 		case "enter":
-			m.step = stepGlobalToolsRunning
 			m.globalToolOutput = ""
-			return m, tea.Tick(0, func(t time.Time) tea.Msg {
+			m.globalToolLogs = nil
+			m.globalToolDone = false
+			m.globalToolQueue = m.globalToolQueue[:0]
+			m.globalToolCurrent = ""
+			m.globalToolProgress = 0
+
+			for idx, selected := range m.globalToolValues {
+				if selected {
+					m.globalToolQueue = append(m.globalToolQueue, idx)
+				}
+			}
+
+			m.globalToolTotal = len(m.globalToolQueue)
+			if m.globalToolTotal == 0 {
+				m.globalToolOutput = "No global tools selected."
+				m.globalToolDone = true
+				m.step = stepGlobalTools
+				return m, nil
+			}
+
+			m.step = stepGlobalToolsRunning
+			return m, func() tea.Msg {
 				return globalToolsStartMsg{}
-			})
+			}
 		case "q", "esc":
 			m.step = stepWelcome
 		}
@@ -51,19 +80,42 @@ func (m setupModel) updateGlobalTools(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-type globalToolsStartMsg struct{}
-type globalToolsDoneMsg struct{ output string }
-type globalToolsLogMsg struct{ line string }
-
 func (m setupModel) updateGlobalToolsRunning(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case globalToolsLogMsg:
+		line := strings.TrimRight(msg.line, "\r")
+		if line == "" && len(m.globalToolLogs) == 0 {
+			return m, nil
+		}
+
+		m.globalToolLogs = append(m.globalToolLogs, line)
+		if len(m.globalToolLogs) > 16 {
+			m.globalToolLogs = append([]string(nil), m.globalToolLogs[len(m.globalToolLogs)-16:]...)
+		}
+		return m, nil
+
 	case globalToolsStartMsg:
 		m.spinner, _ = m.spinner.Update(spinner.TickMsg{})
+
+		if len(m.globalToolQueue) == 0 {
+			m.globalToolDone = true
+			m.step = stepGlobalTools
+			if strings.TrimSpace(m.globalToolOutput) == "" {
+				m.globalToolOutput = "Done."
+			}
+			return m, nil
+		}
+
+		nextIndex := m.globalToolQueue[0]
+		m.globalToolQueue = m.globalToolQueue[1:]
+		label := m.globalToolNames[nextIndex]
+		m.globalToolCurrent = label
+
 		return m, func() tea.Msg {
 			var buf strings.Builder
 			// Keep Bubble Tea in control of the screen; installer logs are
-			// captured in the local buffer below instead of writing directly
-			// to the terminal and corrupting the TUI.
+			// routed into a live stream below instead of writing directly to the
+			// terminal and corrupting the TUI.
 			flags := &installer.Flags{
 				Force:   true,
 				Silent:  true,
@@ -71,57 +123,73 @@ func (m setupModel) updateGlobalToolsRunning(msg tea.Msg) (tea.Model, tea.Cmd) {
 				Channel: installer.DEFAULT_CHANNEL,
 			}
 
-			inst := installer.New(flags)
-
-			for i, name := range m.globalToolNames {
-				if !m.globalToolValues[i] {
-					continue
-				}
-				line := fmt.Sprintf("  %s ...\n", name)
-				buf.WriteString(line)
-
-				switch i {
-				case 0: // GA
-					if err := inst.UpdateGA(); err != nil {
-						buf.WriteString(fmt.Sprintf("    ✗ %v\n", err))
-					} else {
-						buf.WriteString("    ✓ done\n")
-					}
-				case 1: // SDD
-					if err := inst.UpdateSDD(); err != nil {
-						buf.WriteString(fmt.Sprintf("    ✗ %v\n", err))
-					} else {
-						buf.WriteString("    ✓ done\n")
-					}
-				case 2: // Global agents
-					if err := inst.UpdateGlobalAgents(); err != nil {
-						buf.WriteString(fmt.Sprintf("    ✗ %v\n", err))
-					} else {
-						buf.WriteString("    ✓ done\n")
-					}
-				case 3: // Engram
-					if err := inst.UpdateEngram(); err != nil {
-						buf.WriteString(fmt.Sprintf("    ✗ %v\n", err))
-					} else {
-						buf.WriteString("    ✓ done\n")
-					}
-				case 4: // Context7
-					if err := inst.UpdateContext7(); err != nil {
-						buf.WriteString(fmt.Sprintf("    ✗ %v\n", err))
-					} else {
-						buf.WriteString("    ✓ done\n")
-					}
-				}
+			if m.globalToolStream != nil {
+				flags.Output = m.globalToolStream.writer
 			}
 
-			buf.WriteString("\nDone.")
-			return globalToolsDoneMsg{output: buf.String()}
+			inst := installer.New(flags)
+			buf.WriteString(fmt.Sprintf("  %s ...\n", label))
+
+			var err error
+			switch nextIndex {
+			case 0: // GA
+				err = inst.UpdateGA()
+			case 1: // SDD
+				err = inst.UpdateSDD()
+			case 2: // Global agents
+				err = inst.UpdateGlobalAgents()
+			case 3: // Engram
+				err = inst.UpdateEngram()
+			case 4: // Context7
+				err = inst.UpdateContext7()
+			default:
+				err = fmt.Errorf("unknown global tool index: %d", nextIndex)
+			}
+
+			if flusher, ok := flags.Output.(interface{ Flush() }); ok {
+				flusher.Flush()
+			}
+
+			if err != nil {
+				buf.WriteString(fmt.Sprintf("    ERROR: %v\n", err))
+			} else {
+				buf.WriteString("    OK\n")
+			}
+
+			return globalToolsStepDoneMsg{
+				output: buf.String(),
+			}
 		}
-	case globalToolsDoneMsg:
-		m.globalToolOutput = msg.output
-		m.globalToolDone = true
-		m.step = stepGlobalTools
-		return m, nil
+
+	case globalToolsStepDoneMsg:
+		if strings.TrimSpace(msg.output) != "" {
+			if m.globalToolOutput != "" && !strings.HasSuffix(m.globalToolOutput, "\n") {
+				m.globalToolOutput += "\n"
+			}
+			m.globalToolOutput += msg.output
+		}
+
+		m.globalToolProgress++
+		m.globalToolCurrent = ""
+
+		if len(m.globalToolQueue) == 0 {
+			m.globalToolDone = true
+			m.step = stepGlobalTools
+			if strings.TrimSpace(m.globalToolOutput) == "" {
+				m.globalToolOutput = "Done."
+			} else {
+				if !strings.HasSuffix(m.globalToolOutput, "\n") {
+					m.globalToolOutput += "\n"
+				}
+				m.globalToolOutput += "Done."
+			}
+			return m, nil
+		}
+
+		return m, func() tea.Msg {
+			return globalToolsStartMsg{}
+		}
+
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -137,11 +205,11 @@ func (m setupModel) renderGlobalToolsStep() string {
 	for idx, name := range m.globalToolNames {
 		marker := "[ ]"
 		if m.globalToolValues[idx] {
-			marker = "[✓]"
+			marker = "[x]"
 		}
 		line := fmt.Sprintf("%s %s", marker, name)
 		if idx == m.globalToolCursor {
-			items = append(items, selectedItemStyle.Render("▸ "+line))
+			items = append(items, selectedItemStyle.Render("> "+line))
 		} else {
 			items = append(items, itemStyle.Render("  "+line))
 		}
@@ -152,7 +220,7 @@ func (m setupModel) renderGlobalToolsStep() string {
 	parts := []string{
 		subtitle,
 		"",
-		infoStyle.Render("Space toggle • a select all • Enter confirm • q back"),
+		infoStyle.Render("Space toggle | a select all | Enter confirm | q back"),
 		"",
 		menu,
 	}
@@ -173,10 +241,52 @@ func (m setupModel) renderGlobalToolsStep() string {
 }
 
 func (m setupModel) renderGlobalToolsRunningStep() string {
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
+	parts := []string{
 		subtitleStyle.Render("Updating global tools..."),
 		"",
+	}
+
+	if m.globalToolTotal > 0 {
+		parts = append(parts,
+			renderProgressBar(m.globalToolProgress, m.globalToolTotal, m.globalToolsProgressWidth()),
+			"",
+			infoStyle.Render(fmt.Sprintf("%d/%d complete", m.globalToolProgress, m.globalToolTotal)),
+			"",
+		)
+	}
+
+	parts = append(parts,
 		m.spinner.View()+" Working...",
+	)
+
+	if m.globalToolCurrent != "" {
+		parts = append(parts,
+			"",
+			titleStyle.Render("Now updating: "+m.globalToolCurrent),
+		)
+	}
+
+	if len(m.globalToolLogs) > 0 {
+		maxW := 70
+		if m.width > 0 {
+			maxW = m.width / 2
+			if maxW < 40 {
+				maxW = 40
+			}
+		}
+		parts = append(parts,
+			"",
+			boxStyle.Width(maxW).Render(strings.Join(m.globalToolLogs, "\n")),
+		)
+	}
+
+	parts = append(parts,
+		"",
+		helpStyle.Render("Each tool updates in sequence, so the bar reflects real completed work."),
+	)
+
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		parts...,
 	)
 }

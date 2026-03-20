@@ -46,6 +46,7 @@ const (
 type setupModel struct {
 	step       interactiveStep
 	updateMode bool
+	baseFlags  *installer.Flags
 
 	width  int
 	height int
@@ -106,14 +107,28 @@ type setupModel struct {
 	skillCursor      int
 	skillLoadError   error
 
-	globalToolNames  []string
-	globalToolValues []bool
-	globalToolCursor int
-	globalToolDone   bool
-	globalToolOutput string
+	installLogs       []string
+	installCurrent    string
+	installProgress   int
+	installTotal      int
+	installSeenStages map[string]bool
+	installErr        error
+
+	globalToolNames    []string
+	globalToolValues   []bool
+	globalToolCursor   int
+	globalToolDone     bool
+	globalToolOutput   string
+	globalToolLogs     []string
+	globalToolQueue    []int
+	globalToolCurrent  string
+	globalToolProgress int
+	globalToolTotal    int
+	globalToolStream   *streamState
+	installStream      *streamState
 }
 
-func newSetupModel(defaultPath string) setupModel {
+func newSetupModel(defaultPath string, baseFlags *installer.Flags) setupModel {
 	ti := textinput.New()
 	ti.Placeholder = "~/my-project"
 	ti.SetValue(defaultPath)
@@ -162,7 +177,8 @@ func newSetupModel(defaultPath string) setupModel {
 	promptTi.Prompt = "  "
 
 	return setupModel{
-		step: stepWelcome,
+		step:      stepWelcome,
+		baseFlags: baseFlags,
 		welcomeOptions: []string{
 			"Install YWAI in a project",
 			"Update an existing YWAI setup",
@@ -220,6 +236,11 @@ func newSetupModel(defaultPath string) setupModel {
 		fileBrowserDir:     "",
 		fileBrowserEntries: []os.DirEntry{},
 		fileBrowserCursor:  0,
+		globalToolLogs:     []string{},
+		globalToolStream:   &streamState{},
+		installLogs:        []string{},
+		installSeenStages:  map[string]bool{},
+		installStream:      &streamState{},
 	}
 }
 
@@ -237,7 +258,14 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		return m, nil
 	case tea.KeyMsg:
-		if m.step == stepInstalling || m.step == stepDone {
+		if m.step == stepInstalling {
+			return m, nil
+		}
+		if m.step == stepDone {
+			switch msg.String() {
+			case "enter", "q", "esc", "ctrl+c":
+				return m, tea.Quit
+			}
 			return m, nil
 		}
 		switch msg.String() {
@@ -246,7 +274,14 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		}
+	case installLogMsg:
+		return m.updateInstallLog(msg)
+	case installFinishedMsg:
+		return m.updateInstallFinished(msg)
 	case spinner.TickMsg:
+		if m.step == stepDone {
+			return m, nil
+		}
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
@@ -350,26 +385,49 @@ func (m setupModel) View() string {
 	)
 }
 
-func runInteractive(flags *installer.Flags) error {
+func runInteractive(flags *installer.Flags) (bool, error) {
 	wd, _ := os.Getwd()
-	model := newSetupModel(wd)
+	model := newSetupModel(wd, flags)
 
-	program := tea.NewProgram(
+	var program *tea.Program
+	program = tea.NewProgram(
 		model,
 		tea.WithAltScreen(),
 	)
+	if model.globalToolStream != nil {
+		model.globalToolStream.writer = newLineStreamWriter(func(line string) {
+			program.Send(globalToolsLogMsg{line: line})
+		})
+	}
+	if model.installStream != nil {
+		model.installStream.writer = newLineStreamWriter(func(line string) {
+			program.Send(installLogMsg{line: line})
+		})
+	}
 	finalModel, err := program.Run()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	m, ok := finalModel.(setupModel)
 	if !ok {
-		return fmt.Errorf("failed to read interactive state")
+		return false, fmt.Errorf("failed to read interactive state")
 	}
 
-	if m.cancel || !m.done {
-		return errInteractiveSetupCancelled
+	if m.cancel {
+		return false, errInteractiveSetupCancelled
+	}
+
+	if !m.done {
+		return false, errInteractiveSetupCancelled
+	}
+
+	if m.installErr != nil {
+		return true, m.installErr
+	}
+
+	if !m.skillInstallMode {
+		return true, nil
 	}
 
 	target := strings.TrimSpace(m.pathInput.Value())
@@ -387,10 +445,10 @@ func runInteractive(flags *installer.Flags) error {
 			}
 		}
 		if len(selected) == 0 {
-			return fmt.Errorf("no skills selected")
+			return false, fmt.Errorf("no skills selected")
 		}
 		flags.InstallSkills = selected
-		return nil
+		return false, nil
 	}
 
 	flags.ProjectType = m.projectTypeValues[m.projectTypeIdx]
@@ -421,5 +479,5 @@ func runInteractive(flags *installer.Flags) error {
 		flags.All = true
 	}
 
-	return nil
+	return true, nil
 }

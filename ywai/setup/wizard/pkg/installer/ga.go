@@ -165,15 +165,21 @@ func (i *Installer) downloadFile(url, dest string) error {
 	if runtime.GOOS == "windows" {
 		cmd := exec.Command("powershell", "-Command",
 			fmt.Sprintf("(New-Object Net.WebClient).DownloadFile('%s', '%s')", url, dest))
+		cmd.Stdout = i.out
+		cmd.Stderr = i.out
 		if err := cmd.Run(); err != nil {
 			// Fallback to curl if available
 			cmd = exec.Command("curl", "-fsSL", "-o", dest, url)
+			cmd.Stdout = i.out
+			cmd.Stderr = i.out
 			if err2 := cmd.Run(); err2 != nil {
 				return fmt.Errorf("download failed: %w", err)
 			}
 		}
 	} else {
 		cmd := exec.Command("curl", "-fsSL", "-o", dest, url)
+		cmd.Stdout = i.out
+		cmd.Stderr = i.out
 		if err := cmd.Run(); err != nil {
 			return err
 		}
@@ -232,9 +238,10 @@ func (i *Installer) installGAFromSource(gaDir, binDir string) error {
 	// Try local binary first
 	if !i.fileExists(gaBinary) {
 		i.logger.Log("Building GA from source...")
-		buildCmd := exec.Command("go", "build", "-ldflags="+i.gaBuildLdflags(sourceDir), "-o", gaBinary, "./cmd/ga")
+		ldflags := i.gaBuildLdflags(sourceDir)
+		buildCmd := exec.Command("go", "build", "-ldflags="+ldflags, "-o", gaBinary, "./cmd/ga")
 		buildCmd.Dir = sourceDir
-		if err := buildCmd.Run(); err != nil {
+		if err := i.runCommandWithCmd(buildCmd, "go", "build", "-ldflags="+ldflags, "-o", gaBinary, "./cmd/ga"); err != nil {
 			return fmt.Errorf("failed to build GA: %w", err)
 		}
 	}
@@ -301,7 +308,7 @@ func (i *Installer) getGASourceDir(gaDir string) string {
 func (i *Installer) gaPull(path string) error {
 	cmd := exec.Command("git", "fetch", "origin", "-q")
 	cmd.Dir = path
-	if err := cmd.Run(); err != nil {
+	if err := i.runCommandWithCmd(cmd, "git", "fetch", "origin", "-q"); err != nil {
 		return err
 	}
 
@@ -311,21 +318,21 @@ func (i *Installer) gaPull(path string) error {
 	if output, _ := statusCmd.CombinedOutput(); len(strings.TrimSpace(string(output))) > 0 {
 		stashCmd := exec.Command("git", "stash", "push", "-m", "Auto-stash before GA update", "--include-untracked", "-q")
 		stashCmd.Dir = path
-		if err := stashCmd.Run(); err == nil {
+		if err := i.runCommandWithCmd(stashCmd, "git", "stash", "push", "-m", "Auto-stash before GA update", "--include-untracked", "-q"); err == nil {
 			stashed = true
 		}
 	}
 
 	mergeCmd := exec.Command("git", "merge", "--ff-only", "origin/main")
 	mergeCmd.Dir = path
-	if err := mergeCmd.Run(); err != nil {
+	if err := i.runCommandWithCmd(mergeCmd, "git", "merge", "--ff-only", "origin/main"); err != nil {
 		mergeCmd = exec.Command("git", "merge", "--ff-only", "origin/master")
 		mergeCmd.Dir = path
-		if err := mergeCmd.Run(); err != nil {
+		if err := i.runCommandWithCmd(mergeCmd, "git", "merge", "--ff-only", "origin/master"); err != nil {
 			if stashed {
 				popCmd := exec.Command("git", "stash", "pop", "-q")
 				popCmd.Dir = path
-				popCmd.Run()
+				i.runCommandWithCmd(popCmd, "git", "stash", "pop", "-q")
 			}
 			return err
 		}
@@ -334,7 +341,7 @@ func (i *Installer) gaPull(path string) error {
 	if stashed {
 		popCmd := exec.Command("git", "stash", "pop", "-q")
 		popCmd.Dir = path
-		popCmd.Run()
+		i.runCommandWithCmd(popCmd, "git", "stash", "pop", "-q")
 	}
 
 	return nil

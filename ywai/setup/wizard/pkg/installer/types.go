@@ -1,6 +1,8 @@
 package installer
 
 import (
+	"io"
+
 	"github.com/Yoizen/dev-ai-workflow/ywai/setup/wizard/pkg/installer/api"
 	"github.com/Yoizen/dev-ai-workflow/ywai/setup/wizard/pkg/installer/version"
 	"github.com/Yoizen/dev-ai-workflow/ywai/setup/wizard/pkg/ui"
@@ -35,6 +37,7 @@ type Flags struct {
 	InstallSkill          string
 	InstallSkills         []string
 	BuildVersion          string
+	Output                io.Writer
 }
 
 type ProjectTypeOption struct {
@@ -78,6 +81,7 @@ type Installer struct {
 	buildVersion    string
 	apiClient       *api.GitHubAPI
 	versionResolver *version.Resolver
+	out             io.Writer
 }
 
 type PrerequisiteCheck struct {
