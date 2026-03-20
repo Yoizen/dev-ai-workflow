@@ -196,11 +196,10 @@ func (i *Installer) UpdateGlobalAgents() error {
 	agentsDir := filepath.Join(home, ".config", "opencode")
 
 	srcDir := i.firstExistingDir(
-		filepath.Join(i.getRepoRoot(), "ywai", "extensions", "install-steps", "global-agents"),
-		filepath.Join(i.getRepoRoot(), "extensions", "install-steps", "global-agents"),
+		i.ywaiCandidates(false, "extensions/install-steps/global-agents")...,
 	)
 	if srcDir == "" {
-		return fmt.Errorf("global-agents extension not found")
+		return fmt.Errorf("global-agents extension not found in any YWAI location")
 	}
 
 	tplDir := filepath.Join(srcDir, "templates")
@@ -238,11 +237,10 @@ func (i *Installer) UpdateGlobalAgents() error {
 
 func (i *Installer) UpdateEngram() error {
 	extDir := i.firstExistingDir(
-		filepath.Join(i.getRepoRoot(), "ywai", "extensions", "install-steps", "engram-setup"),
-		filepath.Join(i.getRepoRoot(), "extensions", "install-steps", "engram-setup"),
+		i.ywaiCandidates(false, "extensions/install-steps/engram-setup")...,
 	)
 	if extDir == "" {
-		return fmt.Errorf("engram-setup extension not found")
+		return fmt.Errorf("engram-setup extension not found in any YWAI location")
 	}
 
 	return i.executeExtensionScriptWithArgs(extDir, "")
@@ -250,11 +248,10 @@ func (i *Installer) UpdateEngram() error {
 
 func (i *Installer) UpdateContext7() error {
 	extDir := i.firstExistingDir(
-		filepath.Join(i.getRepoRoot(), "ywai", "extensions", "mcps", "context7-mcp"),
-		filepath.Join(i.getRepoRoot(), "extensions", "mcps", "context7-mcp"),
+		i.ywaiCandidates(false, "extensions/mcps/context7-mcp")...,
 	)
 	if extDir == "" {
-		return fmt.Errorf("context7-mcp extension not found")
+		return fmt.Errorf("context7-mcp extension not found in any YWAI location")
 	}
 
 	return i.executeExtensionScriptWithArgs(extDir, "")

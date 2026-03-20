@@ -155,7 +155,15 @@ func (m setupModel) renderGlobalToolsStep() string {
 	}
 
 	if m.globalToolOutput != "" {
-		parts = append(parts, "", boxStyle.Render(m.globalToolOutput))
+		maxW := 50
+		if m.width > 0 {
+			maxW = m.width / 2
+			if maxW < 40 {
+				maxW = 40
+			}
+		}
+		box := boxStyle.Width(maxW).Render(m.globalToolOutput)
+		parts = append(parts, "", box)
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Left, parts...)

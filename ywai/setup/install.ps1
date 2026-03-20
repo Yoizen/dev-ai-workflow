@@ -10,6 +10,7 @@ $ErrorActionPreference = 'Stop'
 $Repo    = 'Yoizen/dev-ai-workflow'
 $BinName = 'ywai.exe'
 $InstallDir = Join-Path $env:LOCALAPPDATA 'ywai'
+$DataDir = Join-Path $env:LOCALAPPDATA 'yoizen\dev-ai-workflow'
 
 # ── Platform ────────────────────────────────────────────────────────
 $arch = if ([Environment]::Is64BitOperatingSystem) {
@@ -17,7 +18,7 @@ $arch = if ([Environment]::Is64BitOperatingSystem) {
 } else { Write-Error '32-bit not supported'; exit 1 }
 $platform = "windows-$arch"
 
-# ── Download ────────────────────────────────────────────────────────
+# ── Download binary ─────────────────────────────────────────────────
 $url = "https://github.com/$Repo/releases/latest/download/setup-wizard-$platform.exe"
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 $tmp = Join-Path $env:TEMP "ywai-$([guid]::NewGuid().ToString('N').Substring(0,8)).exe"
@@ -25,6 +26,28 @@ $tmp = Join-Path $env:TEMP "ywai-$([guid]::NewGuid().ToString('N').Substring(0,8
 Write-Host "Downloading YWAI for $platform..."
 Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing
 Move-Item -Force $tmp (Join-Path $InstallDir $BinName)
+
+# ── Download extensions + skills ────────────────────────────────────
+Write-Host "Downloading extensions and skills..."
+New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
+$zipUrl = "https://github.com/$Repo/archive/refs/heads/main.zip"
+$tmpZip = Join-Path $env:TEMP "ywai-ext-$([guid]::NewGuid().ToString('N').Substring(0,8)).zip"
+Invoke-WebRequest -Uri $zipUrl -OutFile $tmpZip -UseBasicParsing
+
+$tmpExtract = Join-Path $env:TEMP "ywai-ext-$([guid]::NewGuid().ToString('N').Substring(0,8))"
+Expand-Archive -Path $tmpZip -DestinationPath $tmpExtract -Force
+
+$src = Join-Path $tmpExtract 'dev-ai-workflow-main\ywai'
+foreach ($dir in @('extensions', 'skills', 'types', 'config')) {
+    $srcDir = Join-Path $src $dir
+    $dstDir = Join-Path $DataDir 'ywai' $dir
+    if (Test-Path $srcDir) {
+        New-Item -ItemType Directory -Force -Path (Split-Path $dstDir) | Out-Null
+        Copy-Item -Recurse -Force $srcDir $dstDir
+    }
+}
+
+Remove-Item -Recurse -Force $tmpZip, $tmpExtract -ErrorAction SilentlyContinue
 
 # ── PATH (persist) ─────────────────────────────────────────────────
 $currentPath = [Environment]::GetEnvironmentVariable('Path', 'User')
@@ -35,6 +58,7 @@ if ($currentPath -notlike "*$InstallDir*") {
 
 Write-Host ""
 Write-Host "YWAI installed to $InstallDir\$BinName" -ForegroundColor Green
+Write-Host "Extensions at $DataDir\ywai\" -ForegroundColor Green
 Write-Host ""
 
 # ── Launch wizard ───────────────────────────────────────────────────
