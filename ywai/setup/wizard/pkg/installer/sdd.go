@@ -62,16 +62,19 @@ func (i *Installer) installSDD() error {
 }
 
 func (i *Installer) findSkillsSource(repoRoot string) string {
-	locations := []string{
-		filepath.Join(i.getRepoRoot(), "ywai", "skills"),
-		filepath.Join(i.getYWAIDir(), "skills"),
-		filepath.Join(i.getGADir(), "ywai", "skills"),
-		filepath.Join(i.getGADir(), "skills"),
-		filepath.Join(i.getRepoRoot(), "skills"),
-		filepath.Join(repoRoot, "skills"),
+	// Search in all known YWAI locations
+	locations := i.ywaiCandidates(false, "skills")
+	for _, location := range locations {
+		if i.dirExists(location) {
+			return location
+		}
 	}
 
-	for _, location := range locations {
+	// Fallback to direct paths
+	for _, location := range []string{
+		filepath.Join(repoRoot, "ywai", "skills"),
+		filepath.Join(repoRoot, "skills"),
+	} {
 		if i.dirExists(location) {
 			return location
 		}

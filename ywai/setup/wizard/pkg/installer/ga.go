@@ -82,7 +82,12 @@ func (i *Installer) detectInstalledGAVersion(gaDir string) string {
 
 func (i *Installer) installGASystemWide(gaDir string) error {
 	home, _ := os.UserHomeDir()
-	binDir := filepath.Join(home, ".local", "bin")
+	var binDir string
+	if runtime.GOOS == "windows" {
+		binDir = filepath.Join(os.Getenv("LOCALAPPDATA"), "ywai")
+	} else {
+		binDir = filepath.Join(home, ".local", "bin")
+	}
 
 	if err := i.ensureDir(binDir); err != nil {
 		return err
@@ -95,7 +100,7 @@ func (i *Installer) installGASystemWide(gaDir string) error {
 	i.logger.Log("Downloading GA v" + version + " for " + platform + "...")
 
 	assetName := "ga-" + platform
-	if platform == "windows" {
+	if runtime.GOOS == "windows" {
 		assetName += ".exe"
 	}
 
@@ -109,7 +114,7 @@ func (i *Installer) installGASystemWide(gaDir string) error {
 	downloadURL := "https://github.com/Yoizen/dev-ai-workflow/releases/download/" + versionTag + "/" + assetName
 
 	destBin := filepath.Join(binDir, "ga")
-	if platform == "windows" {
+	if runtime.GOOS == "windows" {
 		destBin += ".exe"
 	}
 
@@ -149,9 +154,21 @@ func (i *Installer) getPlatform() string {
 }
 
 func (i *Installer) downloadFile(url, dest string) error {
-	cmd := exec.Command("curl", "-sSL", "-o", dest, url)
-	if err := cmd.Run(); err != nil {
-		return err
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("powershell", "-Command",
+			fmt.Sprintf("(New-Object Net.WebClient).DownloadFile('%s', '%s')", url, dest))
+		if err := cmd.Run(); err != nil {
+			// Fallback to curl if available
+			cmd = exec.Command("curl", "-sSL", "-o", dest, url)
+			if err2 := cmd.Run(); err2 != nil {
+				return fmt.Errorf("download failed: %w", err)
+			}
+		}
+	} else {
+		cmd := exec.Command("curl", "-sSL", "-o", dest, url)
+		if err := cmd.Run(); err != nil {
+			return err
+		}
 	}
 
 	// Check if file is valid (not a 404 HTML page)
@@ -168,6 +185,10 @@ func (i *Installer) downloadFile(url, dest string) error {
 }
 
 func (i *Installer) installGAFromSource(gaDir, binDir string) error {
+	if runtime.GOOS == "windows" {
+		return fmt.Errorf("precompiled binary not available for Windows and Go compiler not found - please download manually from https://github.com/Yoizen/dev-ai-workflow/releases")
+	}
+
 	// Fallback: build from source (only if precompiled not available)
 	sourceDir := i.getGASourceDir(gaDir)
 	if sourceDir == "" {
