@@ -222,7 +222,8 @@
       "install-steps": [
         "github-prompts",
         "engram-setup",
-        "shared-skills"
+        "shared-skills",
+        "global-skills"
       ]
     },
     "copy_shared_skills": false,

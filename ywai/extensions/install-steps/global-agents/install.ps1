@@ -1,5 +1,6 @@
 #requires -version 5.1
 # Global Agents Extension — Windows
+# Instala agents en todas las rutas de Copilot/Claude/Agents en Windows
 param(
     [string]$TargetDir = "."
 )
@@ -11,37 +12,42 @@ if (-not $projectType) { $projectType = 'generic' }
 
 $extDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Join-Path $extDir '..\..\..'
-$skillsSetup = Join-Path $repoRoot 'skills\setup.sh'
-
-# On Windows, run global agents setup via Go wizard's built-in logic
-# The Go installer already handles agent file generation natively
-Write-Host "Configuring global agents for project type: $projectType"
-
-$home = $env:USERPROFILE
 $agentsSource = Join-Path $extDir 'templates'
 
+Write-Host "Configuring global agents for project type: $projectType" -ForegroundColor Cyan
+
+$homeDir = $env:USERPROFILE
+
 if (-not (Test-Path $agentsSource)) {
-    Write-Host "Agent templates not found: $agentsSource"
+    Write-Host "Agent templates not found: $agentsSource" -ForegroundColor Red
     exit 1
 }
 
-# Copy agent templates to OpenCode config
-$opencodeAgentsDir = Join-Path $home '.config\opencode'
-New-Item -ItemType Directory -Force -Path $opencodeAgentsDir | Out-Null
-
-$copied = 0
-Get-ChildItem -Path $agentsSource -Filter '*.md' | ForEach-Object {
-    $dest = Join-Path $opencodeAgentsDir $_.Name
-    Copy-Item -Force $_.FullName $dest
-    $copied++
+$agentLocations = @{
+    "OpenCode" = Join-Path $homeDir ".config\opencode\agents"
+    "Copilot"  = Join-Path $homeDir ".copilot\agents"
+    "Claude"   = Join-Path $homeDir ".claude\agents"
+    "Agents"   = Join-Path $homeDir ".agents\agents"
 }
 
-# Copy to Copilot agents dir
-$copilotAgentsDir = Join-Path $home '.copilot\agents'
-New-Item -ItemType Directory -Force -Path $copilotAgentsDir | Out-Null
-Get-ChildItem -Path $agentsSource -Filter '*.md' | ForEach-Object {
-    $dest = Join-Path $copilotAgentsDir $_.Name
-    Copy-Item -Force $_.FullName $dest
+$copiedTotal = 0
+
+foreach ($platformName in $agentLocations.Keys) {
+    $destDir = $agentLocations[$platformName]
+    New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+
+    Get-ChildItem -Path $agentsSource -Filter '*.md' | ForEach-Object {
+        $dest = Join-Path $destDir $_.Name
+        Copy-Item -Force $_.FullName $dest
+        $copiedTotal++
+        Write-Host "  [$platformName] Installed agent: $($_.Name)" -ForegroundColor Green
+    }
 }
 
-Write-Host "Global agents configured ($copied templates copied)"
+Write-Host ""
+Write-Host "Global agents configured ($copiedTotal templates copied)" -ForegroundColor Green
+Write-Host ""
+Write-Host "Locations:" -ForegroundColor White
+foreach ($platformName in $agentLocations.Keys) {
+    Write-Host "  $platformName : $($agentLocations[$platformName])" -ForegroundColor Gray
+}
