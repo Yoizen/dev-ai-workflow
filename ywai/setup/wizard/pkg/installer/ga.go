@@ -97,7 +97,15 @@ func (i *Installer) installGASystemWide(gaDir string) error {
 	version := i.resolveVersion()
 	platform := i.getPlatform()
 
-	i.logger.Log("Downloading GA v" + version + " for " + platform + "...")
+	displayVersion := version
+	if displayVersion != "" &&
+		!strings.HasPrefix(displayVersion, "v") &&
+		displayVersion != "main" &&
+		displayVersion != "master" {
+		displayVersion = "v" + displayVersion
+	}
+
+	i.logger.Log("Downloading GA " + displayVersion + " for " + platform + "...")
 
 	assetName := "ga-" + platform
 	if runtime.GOOS == "windows" {
@@ -159,29 +167,50 @@ func (i *Installer) downloadFile(url, dest string) error {
 			fmt.Sprintf("(New-Object Net.WebClient).DownloadFile('%s', '%s')", url, dest))
 		if err := cmd.Run(); err != nil {
 			// Fallback to curl if available
-			cmd = exec.Command("curl", "-sSL", "-o", dest, url)
+			cmd = exec.Command("curl", "-fsSL", "-o", dest, url)
 			if err2 := cmd.Run(); err2 != nil {
 				return fmt.Errorf("download failed: %w", err)
 			}
 		}
 	} else {
-		cmd := exec.Command("curl", "-sSL", "-o", dest, url)
+		cmd := exec.Command("curl", "-fsSL", "-o", dest, url)
 		if err := cmd.Run(); err != nil {
 			return err
 		}
 	}
 
-	// Check if file is valid (not a 404 HTML page)
+	// Guard against proxies or HTML error pages that still return a file.
 	data, err := os.ReadFile(dest)
 	if err != nil {
 		return err
 	}
-	if strings.Contains(string(data), "Not Found") || strings.Contains(string(data), "<!DOCTYPE html>") {
+	if looksLikeHTMLDocument(data) {
 		os.Remove(dest)
-		return fmt.Errorf("404 Not Found")
+		return fmt.Errorf("downloaded HTML instead of binary")
 	}
 
 	return nil
+}
+
+func looksLikeHTMLDocument(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+
+	sample := data
+	if len(sample) > 512 {
+		sample = sample[:512]
+	}
+
+	trimmed := strings.TrimSpace(string(sample))
+	if trimmed == "" {
+		return false
+	}
+
+	lower := strings.ToLower(trimmed)
+	return strings.HasPrefix(lower, "<!doctype html") ||
+		strings.HasPrefix(lower, "<html") ||
+		strings.HasPrefix(lower, "<?xml")
 }
 
 func (i *Installer) installGAFromSource(gaDir, binDir string) error {
