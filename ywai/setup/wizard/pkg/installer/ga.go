@@ -232,7 +232,7 @@ func (i *Installer) installGAFromSource(gaDir, binDir string) error {
 	// Try local binary first
 	if !i.fileExists(gaBinary) {
 		i.logger.Log("Building GA from source...")
-		buildCmd := exec.Command("go", "build", "-ldflags=-s -w", "-o", gaBinary, "./cmd/ga")
+		buildCmd := exec.Command("go", "build", "-ldflags="+i.gaBuildLdflags(sourceDir), "-o", gaBinary, "./cmd/ga")
 		buildCmd.Dir = sourceDir
 		if err := buildCmd.Run(); err != nil {
 			return fmt.Errorf("failed to build GA: %w", err)
@@ -249,6 +249,32 @@ func (i *Installer) installGAFromSource(gaDir, binDir string) error {
 	}
 
 	return os.Chmod(destBin, 0755)
+}
+
+func (i *Installer) gaBuildLdflags(sourceDir string) string {
+	versionValue := i.gaBuildVersionValue()
+	flags := []string{
+		"-s",
+		"-w",
+		"-X=github.com/yoizen/ga/internal/version.Version=" + versionValue,
+	}
+
+	if commit := strings.TrimSpace(i.commandOutput("git", "-C", sourceDir, "rev-parse", "--short", "HEAD")); commit != "" && !strings.Contains(strings.ToLower(commit), "fatal") {
+		flags = append(flags, "-X=github.com/yoizen/ga/internal/version.Commit="+commit)
+	}
+
+	return strings.Join(flags, " ")
+}
+
+func (i *Installer) gaBuildVersionValue() string {
+	version := strings.TrimSpace(i.resolveVersion())
+	version = strings.TrimPrefix(version, "v")
+	switch version {
+	case "", "main", "master":
+		return "dev"
+	default:
+		return version
+	}
 }
 
 func (i *Installer) getGASourceDir(gaDir string) string {

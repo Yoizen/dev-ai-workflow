@@ -60,6 +60,8 @@ jobs:
           cd ywai/ga
           mkdir -p dist
           VERSION="${GITHUB_REF_NAME#v}"
+          COMMIT="$(git rev-parse --short HEAD)"
+          BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           for platform in darwin-amd64 darwin-arm64 linux-amd64 linux-arm64 windows-amd64; do
             GOOS="${platform%-*}"
             GOARCH="${platform#*-}"
@@ -69,7 +71,7 @@ jobs:
             fi
             OUTPUT="dist/ga-${platform}${EXT}"
             GOOS="$GOOS" GOARCH="$GOARCH" \
-              go build -ldflags="-s -w -X=github.com/yoizen/ga/internal/version.version=${VERSION}" \
+              go build -ldflags="-s -w -X=github.com/yoizen/ga/internal/version.Version=${VERSION} -X=github.com/yoizen/ga/internal/version.Commit=${COMMIT} -X=github.com/yoizen/ga/internal/version.Date=${BUILD_DATE}" \
               -o "$OUTPUT" ./cmd/ga
           done
           ls -la dist/

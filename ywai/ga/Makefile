@@ -5,7 +5,9 @@ BINARY=ga
 
 # Go settings
 GO=go
-GOFLAGS=-ldflags="-s -w -X=github.com/yoizen/ga/internal/version.commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo dev)"
+COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
+DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+GOFLAGS=-ldflags="-s -w -X=github.com/yoizen/ga/internal/version.Version=$(VERSION) -X=github.com/yoizen/ga/internal/version.Commit=$(COMMIT) -X=github.com/yoizen/ga/internal/version.Date=$(DATE)"
 
 # Version (can be overridden)
 VERSION ?= dev
