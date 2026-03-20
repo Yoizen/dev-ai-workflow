@@ -6,6 +6,7 @@
     irm https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.ps1 | iex
 #>
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 
 $Repo    = 'Yoizen/dev-ai-workflow'
 $BinName = 'ywai.exe'
@@ -24,18 +25,18 @@ New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 $tmp = Join-Path $env:TEMP "ywai-$([guid]::NewGuid().ToString('N').Substring(0,8)).exe"
 
 Write-Host "Downloading YWAI for $platform..."
-Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing
-Move-Item -Force $tmp (Join-Path $InstallDir $BinName)
+Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing | Out-Null
+Move-Item -Force $tmp (Join-Path $InstallDir $BinName) | Out-Null
 
 # ── Download extensions + skills ────────────────────────────────────
 Write-Host "Downloading extensions and skills..."
 New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
 $zipUrl = "https://github.com/$Repo/archive/refs/heads/main.zip"
 $tmpZip = Join-Path $env:TEMP "ywai-ext-$([guid]::NewGuid().ToString('N').Substring(0,8)).zip"
-Invoke-WebRequest -Uri $zipUrl -OutFile $tmpZip -UseBasicParsing
+Invoke-WebRequest -Uri $zipUrl -OutFile $tmpZip -UseBasicParsing | Out-Null
 
 $tmpExtract = Join-Path $env:TEMP "ywai-ext-$([guid]::NewGuid().ToString('N').Substring(0,8))"
-Expand-Archive -Path $tmpZip -DestinationPath $tmpExtract -Force
+Expand-Archive -Path $tmpZip -DestinationPath $tmpExtract -Force | Out-Null
 
 $src = Join-Path $tmpExtract 'dev-ai-workflow-main\ywai'
 foreach ($dir in @('extensions', 'skills', 'types', 'config')) {
@@ -43,11 +44,11 @@ foreach ($dir in @('extensions', 'skills', 'types', 'config')) {
     $dstDir = Join-Path $DataDir 'ywai' $dir
     if (Test-Path $srcDir) {
         New-Item -ItemType Directory -Force -Path (Split-Path $dstDir) | Out-Null
-        Copy-Item -Recurse -Force $srcDir $dstDir
+        Copy-Item -Recurse -Force $srcDir $dstDir | Out-Null
     }
 }
 
-Remove-Item -Recurse -Force $tmpZip, $tmpExtract -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force $tmpZip, $tmpExtract -ErrorAction SilentlyContinue | Out-Null
 
 # ── PATH (persist) ─────────────────────────────────────────────────
 $currentPath = [Environment]::GetEnvironmentVariable('Path', 'User')
