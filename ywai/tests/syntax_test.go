@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -140,6 +141,46 @@ func TestConfigFiles(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestWindowsInstallScriptJoinPath(t *testing.T) {
+	t.Log("▶ Testing Windows installer path joins")
+
+	scriptPath := filepath.Join(getRepoRoot(), "ywai", "setup", "install.ps1")
+	content, err := os.ReadFile(scriptPath)
+	if err != nil {
+		t.Fatalf("Failed to read Windows installer %s: %v", scriptPath, err)
+	}
+
+	script := string(content)
+
+	if regexp.MustCompile(`Join-Path\s+\$DataDir\s+'ywai'\s+\$dir`).MatchString(script) {
+		t.Fatalf("install.ps1 still uses unsupported 3-argument Join-Path for %s", "$DataDir/ywai/$dir")
+	}
+}
+
+func TestInstallerScriptsCopyTemplates(t *testing.T) {
+	t.Log("▶ Testing installer scripts copy templates")
+
+	repoRoot := getRepoRoot()
+
+	linuxInstallerPath := filepath.Join(repoRoot, "ywai", "setup", "install.sh")
+	linuxInstaller, err := os.ReadFile(linuxInstallerPath)
+	if err != nil {
+		t.Fatalf("Failed to read Linux installer %s: %v", linuxInstallerPath, err)
+	}
+	if !strings.Contains(string(linuxInstaller), "dev-ai-workflow-main/ywai/templates") {
+		t.Fatalf("install.sh does not copy templates")
+	}
+
+	windowsInstallerPath := filepath.Join(repoRoot, "ywai", "setup", "install.ps1")
+	windowsInstaller, err := os.ReadFile(windowsInstallerPath)
+	if err != nil {
+		t.Fatalf("Failed to read Windows installer %s: %v", windowsInstallerPath, err)
+	}
+	if !regexp.MustCompile(`foreach\s*\(\$dir\s+in\s+@\('extensions',\s*'skills',\s*'types',\s*'config',\s*'templates'\)\)`).MatchString(string(windowsInstaller)) {
+		t.Fatalf("install.ps1 does not copy templates")
 	}
 }
 

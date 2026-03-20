@@ -25,7 +25,7 @@ mv "$tmp" "${INSTALL_DIR}/${BIN}"
 chmod +x "${INSTALL_DIR}/${BIN}"
 
 # ── Download extensions + skills ────────────────────────────────────
-echo "Downloading extensions and skills..."
+echo "Downloading extensions, skills, and templates..."
 mkdir -p "$DATA_DIR"
 tmpzip="$(mktemp)"
 curl -fsSL "https://github.com/${REPO}/archive/refs/heads/main.tar.gz" -o "$tmpzip"
@@ -34,6 +34,7 @@ tar -xzf "$tmpzip" -C "$DATA_DIR" --strip-components=1 \
   dev-ai-workflow-main/ywai/skills \
   dev-ai-workflow-main/ywai/types \
   dev-ai-workflow-main/ywai/config \
+  dev-ai-workflow-main/ywai/templates \
   2>/dev/null || true
 rm -f "$tmpzip"
 

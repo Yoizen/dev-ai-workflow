@@ -29,7 +29,7 @@ Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing | Out-Null
 Move-Item -Force $tmp (Join-Path $InstallDir $BinName) | Out-Null
 
 # ── Download extensions + skills ────────────────────────────────────
-Write-Host "Downloading extensions and skills..."
+Write-Host "Downloading extensions, skills, and templates..."
 New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
 $zipUrl = "https://github.com/$Repo/archive/refs/heads/main.zip"
 $tmpZip = Join-Path $env:TEMP "ywai-ext-$([guid]::NewGuid().ToString('N').Substring(0,8)).zip"
@@ -39,9 +39,10 @@ $tmpExtract = Join-Path $env:TEMP "ywai-ext-$([guid]::NewGuid().ToString('N').Su
 Expand-Archive -Path $tmpZip -DestinationPath $tmpExtract -Force | Out-Null
 
 $src = Join-Path $tmpExtract 'dev-ai-workflow-main\ywai'
-foreach ($dir in @('extensions', 'skills', 'types', 'config')) {
+$dstRoot = Join-Path $DataDir 'ywai'
+foreach ($dir in @('extensions', 'skills', 'types', 'config', 'templates')) {
     $srcDir = Join-Path $src $dir
-    $dstDir = Join-Path $DataDir 'ywai' $dir
+    $dstDir = Join-Path $dstRoot $dir
     if (Test-Path $srcDir) {
         New-Item -ItemType Directory -Force -Path (Split-Path $dstDir) | Out-Null
         Copy-Item -Recurse -Force $srcDir $dstDir | Out-Null

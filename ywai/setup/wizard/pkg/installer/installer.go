@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -265,6 +266,12 @@ func (i *Installer) commandExists(name string) bool {
 }
 
 func (i *Installer) getGADir() string {
+	if runtime.GOOS == "windows" {
+		if localAppData := strings.TrimSpace(os.Getenv("LOCALAPPDATA")); localAppData != "" {
+			return filepath.Join(localAppData, "yoizen", "dev-ai-workflow")
+		}
+	}
+
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "yoizen", "dev-ai-workflow")
 }

@@ -61,11 +61,14 @@ func (m setupModel) updateGlobalToolsRunning(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, _ = m.spinner.Update(spinner.TickMsg{})
 		return m, func() tea.Msg {
 			var buf strings.Builder
+			// Keep Bubble Tea in control of the screen; installer logs are
+			// captured in the local buffer below instead of writing directly
+			// to the terminal and corrupting the TUI.
 			flags := &installer.Flags{
 				Force:   true,
-				Silent:  false,
+				Silent:  true,
 				DryRun:  false,
-				Channel: "stable",
+				Channel: installer.DEFAULT_CHANNEL,
 			}
 
 			inst := installer.New(flags)
