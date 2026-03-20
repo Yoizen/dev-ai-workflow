@@ -410,6 +410,7 @@ func (i *Installer) selectedExtensionsByType() (map[string]map[string]bool, bool
 
 	if i.flags.InstallGlobal {
 		selected["install-steps"]["global-agents"] = true
+		selected["install-steps"]["global-skills"] = true
 		hasConfig = true
 	}
 

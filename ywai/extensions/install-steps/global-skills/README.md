@@ -1,11 +1,23 @@
 # global-skills
 
-Instala los skills de OpenCode en la ubicación correcta de Windows (`%USERPROFILE%\.config\opencode\skills\`).
+Instala los skills de OpenCode/Copilot/Claude en las ubicaciones correctas de cada plataforma.
 
-## Ubicación en Windows
+## Ubicaciones
 
+### Windows
 ```
-C:\Users\<username>\.config\opencode\skills\<skill-name>\SKILL.md
+C:\Users\<username>\.config\opencode\skills\<skill>\SKILL.md
+C:\Users\<username>\.copilot\skills\<skill>\SKILL.md
+C:\Users\<username>\.claude\skills\<skill>\SKILL.md
+C:\Users\<username>\.agents\skills\<skill>\SKILL.md
+```
+
+### Linux/macOS
+```
+~/.config/opencode/skills/<skill>/SKILL.md
+~/.copilot/skills/<skill>/SKILL.md
+~/.claude/skills/<skill>/SKILL.md
+~/.agents/skills/<skill>/SKILL.md
 ```
 
 ## Skills instalados
@@ -20,3 +32,4 @@ C:\Users\<username>\.config\opencode\skills\<skill-name>\SKILL.md
 - Los skills se copian desde `ywai/skills/`
 - Cada skill debe tener un archivo `SKILL.md` en su directorio
 - Assets y references también se copian si existen
+- No ejecuta scripts de setup - copia directa
