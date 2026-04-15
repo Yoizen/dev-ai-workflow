@@ -180,9 +180,52 @@ func (m setupModel) updateProvider(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.providerIdx++
 			}
 		case "enter":
-			m.step = stepComponents
+			m.step = stepModel
 		case "b":
 			m.step = stepProjectType
+		}
+	}
+	return m, nil
+}
+
+func (m setupModel) updateModel(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.modelCustom {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "enter":
+				m.step = stepComponents
+				m.modelInput.Blur()
+			case "esc":
+				m.modelCustom = false
+				m.modelInput.Blur()
+			}
+		}
+		var cmd tea.Cmd
+		m.modelInput, cmd = m.modelInput.Update(msg)
+		return m, cmd
+	}
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "up", "k":
+			if m.modelPresetIdx > 0 {
+				m.modelPresetIdx--
+			}
+		case "down", "j":
+			if m.modelPresetIdx < len(m.modelPresets)-1 {
+				m.modelPresetIdx++
+			}
+		case "enter":
+			if m.modelPresetIdx == len(m.modelPresets)-1 {
+				m.modelCustom = true
+				m.modelInput.Focus()
+			} else {
+				m.step = stepComponents
+			}
+		case "b":
+			m.step = stepProvider
 		}
 	}
 	return m, nil
@@ -207,7 +250,7 @@ func (m setupModel) updateComponents(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			m.step = stepConfirm
 		case "b":
-			m.step = stepProvider
+			m.step = stepModel
 		}
 	}
 	return m, nil
@@ -287,6 +330,59 @@ func (m setupModel) renderProviderStep() string {
 	)
 }
 
+func (m setupModel) renderModelStep() string {
+	box := activeBoxStyle.Render(m.currentModeLabel() + " • Default Model")
+
+	if m.modelCustom {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			box,
+			"",
+			infoStyle.Render("Enter the model identifier (provider/model):"),
+			"",
+			itemStyle.Render(m.modelInput.View()),
+			"",
+			helpStyle.Render("Press Enter to confirm, Esc to go back to presets"),
+		)
+	}
+
+	var items []string
+	for idx, preset := range m.modelPresets {
+		line := preset
+		if idx == m.modelPresetIdx {
+			items = append(items, selectedItemStyle.Render("▸ "+line))
+		} else {
+			items = append(items, itemStyle.Render("  "+line))
+		}
+	}
+
+	menu := lipgloss.JoinVertical(lipgloss.Left, items...)
+
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		box,
+		"",
+		infoStyle.Render("Select the default AI model for SDD phases:"),
+		"",
+		menu,
+		"",
+		helpStyle.Render("This model will be used for all SDD phases. You can customize per-phase in openspec/config.yaml later."),
+	)
+}
+
+func (m setupModel) getSelectedModel() string {
+	if m.modelCustom && m.modelInput.Value() != "" {
+		return m.modelInput.Value()
+	}
+	if m.modelPresetIdx == 0 {
+		return ""
+	}
+	if m.modelPresetIdx == len(m.modelPresets)-1 {
+		return m.modelInput.Value()
+	}
+	return m.modelPresets[m.modelPresetIdx]
+}
+
 func (m setupModel) renderComponentsStep() string {
 	box := activeBoxStyle.Render(m.currentModeLabel() + " • Components")
 	var items []string
@@ -341,6 +437,10 @@ func (m setupModel) renderConfirmStep() string {
 
 	projectType := m.projectTypeValues[m.projectTypeIdx]
 	provider := m.providerValues[m.providerIdx]
+	model := m.getSelectedModel()
+	if model == "" {
+		model = "(agent default)"
+	}
 
 	lines := []string{
 		infoStyle.Render(fmt.Sprintf("Ready to %s YWAI in this project:", strings.ToLower(m.currentModeLabel()))),
@@ -348,6 +448,7 @@ func (m setupModel) renderConfirmStep() string {
 		"  " + successStyle.Render("▶") + " Path: " + subtitleStyle.Render(path),
 		"  " + successStyle.Render("▶") + " Type: " + subtitleStyle.Render(projectType),
 		"  " + successStyle.Render("▶") + " Provider: " + subtitleStyle.Render(provider),
+		"  " + successStyle.Render("▶") + " Model: " + subtitleStyle.Render(model),
 		"",
 		infoStyle.Render("What will be applied:"),
 	}

@@ -35,6 +35,68 @@ You are the ORCHESTRATOR for Spec-Driven Development. You coordinate the SDD wor
 - `/sdd:verify` - Validate implementation vs specs
 - `/sdd:archive` - Archive completed change
 
+### Model Assignment Per Phase
+
+Read model configuration in this order:
+
+1. **SDD Profiles** (if `.ywai/sdd-profiles.json` or `~/.ywai/sdd-profiles.json` exists):
+   - Read active profile from `active_profile` field
+   - Load profile models from `profiles.{active_profile}.phases`
+
+2. **Default Config** (if no profiles):
+   - Read from `openspec/config.yaml` → `models`
+   - Or from `.ywai/config.json` → `models`
+   - Or from Engram project context
+
+3. **Fallback**: Use agent's default model
+
+**Profile Config Example** (`.ywai/sdd-profiles.json`):
+
+```json
+{
+  "profiles": {
+    "cheap": {
+      "phases": {
+        "default": "anthropic/claude-haiku-3.5-20241022",
+        "sdd-explore": "anthropic/claude-haiku-3.5-20241022",
+        "sdd-design": "anthropic/claude-haiku-3.5-20241022",
+        "sdd-apply": "anthropic/claude-haiku-3.5-20241022"
+      }
+    },
+    "premium": {
+      "phases": {
+        "default": "anthropic/claude-opus-4-20250514",
+        "sdd-explore": "anthropic/claude-opus-4-20250514",
+        "sdd-design": "anthropic/claude-opus-4-20250514",
+        "sdd-apply": "anthropic/claude-opus-4-20250514"
+      }
+    }
+  },
+  "active_profile": "cheap"
+}
+```
+
+When launching a sub-agent:
+1. Check if `.ywai/sdd-profiles.json` or `~/.ywai/sdd-profiles.json` exists
+2. If yes, load the active profile's phases
+3. Check `phases.<skill-name>` in the loaded profile
+4. If set, request that model for the sub-agent
+5. If empty or missing, use `phases.default` or agent's default
+
+This allows:
+- **Profile switching** without editing config files
+- **Powerful models** for design/spec phases (better reasoning)
+- **Fast/cheap models** for implementation (high throughput)
+- **Cost optimization** without sacrificing quality where it matters
+
+**Manage profiles via CLI:**
+```bash
+ywai sdd-profiles list
+ywai sdd-profiles create cheap
+ywai sdd-profiles set cheap sdd-apply openrouter/qwen/qwen3-30b:free
+ywai sdd-profiles activate cheap
+```
+
 ### Workflow Coordination
 
 1. **INIT**: Launch `sdd-init` to bootstrap `.sdd/` structure

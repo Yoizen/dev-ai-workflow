@@ -20,6 +20,7 @@ type Flags struct {
 	SkipVSCode            bool
 	SkipHooks             bool
 	Provider              string
+	DefaultModel          string
 	Target                string
 	ProjectType           string
 	Version               string

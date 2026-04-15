@@ -69,6 +69,19 @@ context: |
   Testing: {detected}
   Style: {detected}
 
+# Model assignment per SDD phase (optional)
+# Use this to assign different AI models to different phases
+# Powerful models for design, fast/cheap models for implementation
+models:
+  default: ""                              # Default model (empty = use agent's default)
+  sdd-explore: "anthropic/claude-sonnet-4" # Powerful for analysis
+  sdd-propose: ""                          # Use default
+  sdd-spec: "anthropic/claude-sonnet-4"    # Powerful for specs
+  sdd-design: "anthropic/claude-sonnet-4"  # Powerful for architecture
+  sdd-tasks: ""                            # Use default
+  sdd-apply: "openrouter/qwen/qwen3-30b"   # Fast/cheap for implementation
+  sdd-verify: ""                           # Use default
+
 rules:
   proposal:
     - Include rollback plan for risky changes

@@ -32,6 +32,10 @@ func (i *Installer) runAll() error {
 		return err
 	}
 
+	if err := i.saveYWAIConfig(); err != nil {
+		i.logger.LogWarning("Failed to save YWAI config: " + err.Error())
+	}
+
 	return nil
 }
 
@@ -64,6 +68,10 @@ func (i *Installer) runSelected() error {
 
 	if err := i.installExtensions(); err != nil {
 		return err
+	}
+
+	if err := i.saveYWAIConfig(); err != nil {
+		i.logger.LogWarning("Failed to save YWAI config: " + err.Error())
 	}
 
 	return nil

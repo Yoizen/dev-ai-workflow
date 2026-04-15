@@ -47,6 +47,8 @@ func (m setupModel) renderBody() string {
 		content = m.renderProjectTypeStep()
 	case stepProvider:
 		content = m.renderProviderStep()
+	case stepModel:
+		content = m.renderModelStep()
 	case stepComponents:
 		content = m.renderComponentsStep()
 	case stepConfirm:
@@ -115,8 +117,8 @@ func (m setupModel) renderStepIndicator() string {
 	}
 
 	// stepWelcome is not part of the wizard steps — offset by 1
-	stepNames := []string{"Path", "Type", "Provider", "Components", "Review"}
-	stepEnums := []interactiveStep{stepPath, stepProjectType, stepProvider, stepComponents, stepConfirm}
+	stepNames := []string{"Path", "Type", "Provider", "Model", "Components", "Review"}
+	stepEnums := []interactiveStep{stepPath, stepProjectType, stepProvider, stepModel, stepComponents, stepConfirm}
 
 	var parts []string
 	for i, s := range stepNames {

@@ -73,6 +73,26 @@ Read skills/{skill-name}/SKILL.md
 | `sdd-verify` | `/sdd-verify` | Validate implementation against specs |
 | `sdd-archive` | `/sdd-archive` | Merge specs and archive completed changes |
 
+### SDD Model Profiles
+
+Assign different AI models to different SDD phases for cost/quality optimization:
+
+```yaml
+# openspec/config.yaml
+models:
+  default: ""                              # Use agent's default
+  sdd-explore: "anthropic/claude-sonnet-4" # Powerful for analysis
+  sdd-design: "anthropic/claude-sonnet-4"  # Powerful for architecture
+  sdd-apply: "openrouter/qwen/qwen3-30b"   # Fast/cheap for implementation
+```
+
+**Benefits:**
+- **Powerful models** for design/spec phases (better reasoning)
+- **Fast/cheap models** for implementation (high throughput)
+- **Cost optimization** without sacrificing quality where it matters
+
+See [docs/sdd-model-profiles.md](../docs/sdd-model-profiles.md) for full documentation.
+
 ## Skill Structure
 
 Each skill follows this layout:

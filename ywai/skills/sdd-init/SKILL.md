@@ -34,6 +34,7 @@ Read the project to understand:
 - Architecture patterns in use
 - Monorepo vs single-project structure (check for workspaces, nx.json, lerna.json, turbo.json)
 - Existing documentation patterns (ADRs, RFCs, CHANGELOG)
+- **YWAI configuration** (check `.ywai/config.json` for provider and model settings)
 
 > **Monorepo detection**: If the project is a monorepo, initialize at the root level.
 > Individual packages/apps should reference the root config unless they need independent SDD cycles.
@@ -81,6 +82,39 @@ openspec/
 ```
 
 Generate `openspec/config.yaml` based on what you detected. See `skills/_shared/openspec-convention.md` for the full config format.
+
+Include the `models:` section for model assignment per phase.
+
+**If `.ywai/config.json` exists**, read the model configuration from it:
+
+```json
+{
+  "provider": "opencode",
+  "default_model": "anthropic/claude-sonnet-4",
+  "models": {
+    "default": "anthropic/claude-sonnet-4",
+    "sdd-explore": "anthropic/claude-sonnet-4",
+    "sdd-spec": "anthropic/claude-sonnet-4",
+    "sdd-design": "anthropic/claude-sonnet-4",
+    "sdd-apply": ""
+  }
+}
+```
+
+Use these values to populate the `models:` section in `openspec/config.yaml`:
+
+```yaml
+# Model assignment per SDD phase (from .ywai/config.json or defaults)
+models:
+  default: "{from config or empty}"
+  sdd-explore: "{from config or empty}"
+  sdd-propose: ""
+  sdd-spec: "{from config or empty}"
+  sdd-design: "{from config or empty}"
+  sdd-tasks: ""
+  sdd-apply: "{from config or empty}"
+  sdd-verify: ""
+```
 
 Keep `context:` concise — no more than 10 lines.
 

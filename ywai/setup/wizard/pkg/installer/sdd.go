@@ -1,10 +1,55 @@
 package installer
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 )
+
+type YWAIConfig struct {
+	Provider     string            `json:"provider,omitempty"`
+	DefaultModel string            `json:"default_model,omitempty"`
+	Models       map[string]string `json:"models,omitempty"`
+}
+
+func (i *Installer) saveYWAIConfig() error {
+	ywaiDir := filepath.Join(i.targetDir, ".ywai")
+	if err := i.ensureDir(ywaiDir); err != nil {
+		return err
+	}
+
+	configPath := filepath.Join(ywaiDir, "config.json")
+
+	config := YWAIConfig{
+		Provider:     i.provider,
+		DefaultModel: i.flags.DefaultModel,
+	}
+
+	if i.flags.DefaultModel != "" {
+		config.Models = map[string]string{
+			"default":     i.flags.DefaultModel,
+			"sdd-explore": i.flags.DefaultModel,
+			"sdd-spec":    i.flags.DefaultModel,
+			"sdd-design":  i.flags.DefaultModel,
+			"sdd-apply":   "",
+		}
+	}
+
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return err
+	}
+
+	if i.flags.DefaultModel != "" {
+		i.logger.LogSuccess("Saved model configuration to .ywai/config.json")
+	}
+	return nil
+}
 
 func (i *Installer) installSDD() error {
 	if i.flags.SkipSDD {

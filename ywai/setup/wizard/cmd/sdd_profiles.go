@@ -92,13 +92,13 @@ func loadSDDProfiles() (*SDDProfilesConfig, error) {
 			Profiles: map[string]SDDProfile{
 				"default": {
 					Phases: map[string]string{
-						"sdd-init":    "anthropic/claude-sonnet-4-20250514",
-						"sdd-explore": "openrouter/qwen/qwen3-30b-a3b:free",
-						"sdd-spec":    "anthropic/claude-sonnet-4-20250514",
+						"sdd-init":    "anthropic/claude-opus-4-20250514",
+						"sdd-explore": "anthropic/claude-opus-4-20250514",
+						"sdd-spec":    "anthropic/claude-opus-4-20250514",
 						"sdd-design":  "anthropic/claude-opus-4-20250514",
 						"sdd-tasks":   "anthropic/claude-sonnet-4-20250514",
-						"sdd-apply":   "openrouter/anthropic/claude-3.5-sonnet",
-						"sdd-verify":  "anthropic/claude-sonnet-4-20250514",
+						"sdd-apply":   "openai/codex-5.3",
+						"sdd-verify":  "anthropic/claude-opus-4-20250514",
 					},
 				},
 			},
@@ -187,13 +187,13 @@ func createSDDProfile(name string) error {
 	// Create new profile with default phases
 	config.Profiles[name] = SDDProfile{
 		Phases: map[string]string{
-			"sdd-init":    "anthropic/claude-sonnet-4-20250514",
-			"sdd-explore": "openrouter/qwen/qwen3-30b-a3b:free",
-			"sdd-spec":    "anthropic/claude-sonnet-4-20250514",
+			"sdd-init":    "anthropic/claude-opus-4-20250514",
+			"sdd-explore": "anthropic/claude-opus-4-20250514",
+			"sdd-spec":    "anthropic/claude-opus-4-20250514",
 			"sdd-design":  "anthropic/claude-opus-4-20250514",
 			"sdd-tasks":   "anthropic/claude-sonnet-4-20250514",
-			"sdd-apply":   "openrouter/anthropic/claude-3.5-sonnet",
-			"sdd-verify":  "anthropic/claude-sonnet-4-20250514",
+			"sdd-apply":   "openai/codex-5.3",
+			"sdd-verify":  "anthropic/claude-opus-4-20250514",
 		},
 	}
 	

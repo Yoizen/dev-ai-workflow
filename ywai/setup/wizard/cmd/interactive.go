@@ -20,6 +20,7 @@ const (
 	stepPath
 	stepProjectType
 	stepProvider
+	stepModel
 	stepComponents
 	stepConfirm
 	stepSkillSelect
@@ -64,6 +65,11 @@ type setupModel struct {
 	projectTypeHints  []string
 	providerValues    []string
 	providerLabels    []string
+
+	modelInput      textinput.Model
+	modelPresets    []string
+	modelPresetIdx  int
+	modelCustom     bool
 
 	projectTypeIdx int
 	providerIdx    int
@@ -176,6 +182,11 @@ func newSetupModel(defaultPath string, baseFlags *installer.Flags) setupModel {
 	promptTi.Width = 50
 	promptTi.Prompt = "  "
 
+	modelTi := textinput.New()
+	modelTi.Placeholder = "anthropic/claude-sonnet-4"
+	modelTi.Width = 50
+	modelTi.Prompt = "  "
+
 	return setupModel{
 		step:      stepWelcome,
 		baseFlags: baseFlags,
@@ -206,6 +217,18 @@ func newSetupModel(defaultPath string, baseFlags *installer.Flags) setupModel {
 			"gemini - Google Gemini",
 			"ollama - Local Ollama",
 		},
+		modelInput: modelTi,
+		modelPresets: []string{
+			"(Use agent default)",
+			"anthropic/claude-opus-4-20250514",
+			"openai/codex-5.3",
+			"anthropic/claude-sonnet-4-20250514",
+			"google/gemini-3-flash",
+			"google/gemini-3-1-pro",
+			"anthropic/claude-haiku-4-5-20250514",
+		},
+		modelPresetIdx: 0,
+		modelCustom:    false,
 		componentNames: []string{
 			"Core runtime: GA / base setup",
 			"SDD Orchestrator",
@@ -297,6 +320,8 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateProjectType(msg)
 	case stepProvider:
 		return m.updateProvider(msg)
+	case stepModel:
+		return m.updateModel(msg)
 	case stepComponents:
 		return m.updateComponents(msg)
 	case stepConfirm:
@@ -333,9 +358,9 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateGlobalTools(msg)
 	case stepGlobalToolsRunning:
 		return m.updateGlobalToolsRunning(msg)
-	default:
-		return m, nil
 	}
+
+	return m, nil
 }
 
 func (m setupModel) View() string {
@@ -454,6 +479,7 @@ func runInteractive(flags *installer.Flags) (bool, error) {
 
 	flags.ProjectType = m.projectTypeValues[m.projectTypeIdx]
 	flags.Provider = m.providerValues[m.providerIdx]
+	flags.DefaultModel = m.getSelectedModel()
 	flags.UpdateAll = m.updateMode
 
 	flags.InstallGA = m.componentValues[0]
