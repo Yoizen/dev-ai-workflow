@@ -212,9 +212,10 @@ func newSetupModel(defaultPath string, baseFlags *installer.Flags) setupModel {
 			"VS Code + Copilot extensions",
 			"Project integrations and extensions",
 			"Global agents / skills",
+			"Hooks (opencode-command-hooks, biome, etc.)",
 			"Dry run (preview only)",
 		},
-		componentValues:    []bool{true, true, true, true, false, false},
+		componentValues:    []bool{true, true, true, true, false, true, false},
 		agentTypeIdx:       0,
 		agentTypeOptions:   []string{"primary", "subagent"},
 		agentNameInput:     nameTi,
@@ -460,7 +461,8 @@ func runInteractive(flags *installer.Flags) (bool, error) {
 	flags.InstallVSCode = m.componentValues[2]
 	flags.InstallExt = m.componentValues[3]
 	flags.InstallGlobal = m.componentValues[4]
-	flags.DryRun = m.componentValues[5]
+	flags.SkipHooks = !m.componentValues[5]
+	flags.DryRun = m.componentValues[6]
 
 	if strings.EqualFold(flags.Provider, "opencode") && !flags.SkipVSCode && !flags.InstallVSCode {
 		flags.InstallVSCode = true

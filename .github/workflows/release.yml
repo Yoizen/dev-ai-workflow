@@ -41,6 +41,20 @@ jobs:
             git diff --staged --quiet || git commit -m "chore: update package.json to ${VERSION}"
           fi
 
+      - name: Update global agents VERSION file
+        run: |
+          # Update ywai/extensions/install-steps/global-agents/templates/VERSION with the tag version
+          if [[ -f "ywai/extensions/install-steps/global-agents/templates/VERSION" ]]; then
+            echo "${GITHUB_REF_NAME}" > ywai/extensions/install-steps/global-agents/templates/VERSION
+            echo "Updated global-agents VERSION to ${GITHUB_REF_NAME}"
+            
+            # Commit the version update
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add ywai/extensions/install-steps/global-agents/templates/VERSION
+            git diff --staged --quiet || git commit -m "chore: update global-agents VERSION to ${GITHUB_REF_NAME}"
+          fi
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:

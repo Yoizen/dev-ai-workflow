@@ -44,14 +44,9 @@ resolve_skills_source() {
 
 SKILLS_SOURCE="$(resolve_skills_source)"
 
-# Source shared UI (colors + print helpers)
-# shellcheck source=../setup/lib/ui.sh
-_UI_PATH="$SCRIPT_DIR/../setup/lib/ui.sh"
-[[ -f "$_UI_PATH" ]] && source "$_UI_PATH" || {
-  # Fallback: define minimal colors when run standalone
-  RED='\033[0;31m' GREEN='\033[0;32m' YELLOW='\033[1;33m'
-  BLUE='\033[0;34m' CYAN='\033[0;36m' BOLD='\033[1m' NC='\033[0m'
-}
+# Define minimal colors when run standalone
+RED='\033[0;31m' GREEN='\033[0;32m' YELLOW='\033[1;33m'
+BLUE='\033[0;34m' CYAN='\033[0;36m' BOLD='\033[1m' NC='\033[0m'
 
 # Selection flags
 SETUP_CLAUDE=false
@@ -63,6 +58,7 @@ SETUP_COPILOT=false
 GLOBAL_ONLY=false
 PROJECT_TYPE="generic"
 GLOBAL_AGENTS_CONFIGURED=false
+SKIP_HOOKS=false
 
 resolve_repo_doc_case_insensitive() {
     local expected_name="$1"
@@ -100,6 +96,7 @@ show_help() {
     echo "  --codex      Configure Codex (OpenAI)"
     echo "  --copilot    Configure GitHub Copilot"
     echo "  --global-only Configure only global user-profile agents (no repo files)"
+    echo "  --skip-hooks Skip hooks installation (opencode-command-hooks, biome, etc.)"
     echo "  --project-type=<type> Project type for global agent generation"
     echo "  --help       Show this help message"
     echo ""
@@ -118,11 +115,8 @@ types_json_for_global_agents() {
     local candidate
     for candidate in \
         "$REPO_ROOT/ywai/types/types.json" \
-        "$REPO_ROOT/ywai/setup/types/types.json" \
         "$REPO_ROOT/types/types.json" \
-        "$REPO_ROOT/setup/types/types.json" \
-        "$SCRIPT_DIR/../types/types.json" \
-        "$SCRIPT_DIR/../setup/types/types.json"; do
+        "$SCRIPT_DIR/../types/types.json"; do
         [[ -f "$candidate" ]] && { echo "$candidate"; return 0; }
     done
     echo ""
@@ -379,10 +373,7 @@ resolve_template_file() {
     for candidate in \
         "$REPO_ROOT/ywai/templates/$template_name" \
         "$REPO_ROOT/templates/$template_name" \
-        "$REPO_ROOT/ywai/setup/lib/templates/$template_name" \
-        "$REPO_ROOT/setup/lib/templates/$template_name" \
-        "$SCRIPT_DIR/../templates/$template_name" \
-        "$SCRIPT_DIR/../setup/lib/templates/$template_name"; do
+        "$SCRIPT_DIR/../templates/$template_name"; do
         [[ -f "$candidate" ]] && { echo "$candidate"; return 0; }
     done
     echo ""
@@ -482,6 +473,22 @@ description: ${agent_name} global agent for ${project_type} projects
 
 EOF
             ;;
+        gemini)
+            cat > "$target_file" << EOF
+---
+description: ${agent_name} global agent for ${project_type} projects
+---
+
+EOF
+            ;;
+        cursor)
+            cat > "$target_file" << EOF
+---
+description: ${agent_name} global agent for ${project_type} projects
+---
+
+EOF
+            ;;
         copilot_agent|*)
             cat > "$target_file" << EOF
 ---
@@ -544,6 +551,8 @@ setup_global_profile_agents() {
     local opencode_agents_dir="$opencode_dir/agent"
     local opencode_agents_alt_dir="$opencode_dir/agents"
     local copilot_agents_dir="$HOME/.copilot/agents"
+    local gemini_agents_dir="$HOME/.gemini/agents"
+    local cursor_agents_dir="$HOME/.cursor/agents"
 
     local vscode_user_dir
     if [[ "$(uname)" == "Darwin" ]]; then
@@ -553,10 +562,10 @@ setup_global_profile_agents() {
     fi
     local vscode_prompts_dir="$vscode_user_dir/prompts"
 
-    rm -rf "$opencode_agents_dir" "$opencode_agents_alt_dir" "$copilot_agents_dir" "$vscode_prompts_dir"
+    rm -rf "$opencode_agents_dir" "$opencode_agents_alt_dir" "$copilot_agents_dir" "$vscode_prompts_dir" "$gemini_agents_dir" "$cursor_agents_dir"
     local legacy_prompt="$vscode_prompts_dir/enterprise-persona.instructions.md"
 
-    mkdir -p "$opencode_agents_dir" "$opencode_agents_alt_dir" "$copilot_agents_dir" "$vscode_prompts_dir"
+    mkdir -p "$opencode_agents_dir" "$opencode_agents_alt_dir" "$copilot_agents_dir" "$vscode_prompts_dir" "$gemini_agents_dir" "$cursor_agents_dir"
 
     local first_prompt=""
     local agent_name
@@ -564,6 +573,8 @@ setup_global_profile_agents() {
         write_global_agent_file "$opencode_agents_dir/${agent_name}.md" "$agent_name" "$project_type" "opencode"
         write_global_agent_file "$opencode_agents_alt_dir/${agent_name}.md" "$agent_name" "$project_type" "opencode"
         write_global_agent_file "$copilot_agents_dir/${agent_name}.md" "$agent_name" "$project_type" "copilot_agent"
+        write_global_agent_file "$gemini_agents_dir/${agent_name}.md" "$agent_name" "$project_type" "gemini"
+        write_global_agent_file "$cursor_agents_dir/${agent_name}.md" "$agent_name" "$project_type" "cursor"
         write_global_agent_file "$vscode_prompts_dir/${agent_name}.instructions.md" "$agent_name" "$project_type" "copilot_prompt"
         [[ -z "$first_prompt" ]] && first_prompt="$vscode_prompts_dir/${agent_name}.instructions.md"
     done
@@ -638,13 +649,8 @@ setup_claude() {
     ln -s "$SKILLS_SOURCE" "$target"
     echo -e "${GREEN}  ✓ .claude/skills -> skills/ (Claude Code/OpenCode)${NC}"
 
-    copy_agents_md "CLAUDE.md"
-    
-    # Copy .gitignore to .claude directory
-    if [ -f "$REPO_ROOT/.gitignore" ]; then
-        cp "$REPO_ROOT/.gitignore" "$REPO_ROOT/.claude/.gitignore"
-        echo -e "${GREEN}  ✓ Copied .gitignore to .claude/${NC}"
-    fi
+    # Note: CLAUDE.md is not copied to repo (it's in .gitignore)
+    # Each developer generates it locally if needed
     
     # Create Claude.md with Claude-specific instructions
     create_claude_md
@@ -663,14 +669,8 @@ setup_cursor() {
     ln -s "$SKILLS_SOURCE" "$target"
     echo -e "${GREEN}  ✓ .cursor/skills -> skills/ (Cursor)${NC}"
 
-    copy_agents_md "CURSOR.md"
-    
-    local root_agents
-    root_agents="$(resolve_repo_doc_case_insensitive "AGENTS.md")"
-    if [ -f "$root_agents" ]; then
-        cp "$root_agents" "$REPO_ROOT/.cursorrules"
-        echo -e "${GREEN}  ✓ AGENTS.MD -> .cursorrules${NC}"
-    fi
+    # Note: CURSOR.md and .cursorrules are not copied to repo (they're in .gitignore)
+    # Each developer generates them locally if needed
 }
 
 setup_opencode() {
@@ -696,34 +696,34 @@ setup_opencode() {
     ln -s "$SKILLS_SOURCE" "$opencode_skills"
     echo -e "${GREEN}  ✓ $opencode_dir/skills -> skills/ (OpenCode)${NC}"
 
-    if [ -f "$REPO_ROOT/setup/types/generic/AGENTS.md" ]; then
-        cp "$REPO_ROOT/setup/types/generic/AGENTS.md" "$opencode_dir/AGENTS.md"
+    if [ -f "$REPO_ROOT/ywai/types/generic/AGENTS.md" ]; then
+        cp "$REPO_ROOT/ywai/types/generic/AGENTS.md" "$opencode_dir/AGENTS.md"
         
         # Append SDD Orchestrator template
-        local orchestrator_tpl="$REPO_ROOT/setup/lib/templates/sdd-orchestrator.md"
+        local orchestrator_tpl="$REPO_ROOT/ywai/templates/sdd-orchestrator.md"
         if [ -f "$orchestrator_tpl" ]; then
             echo "" >> "$opencode_dir/AGENTS.md"
             cat "$orchestrator_tpl" >> "$opencode_dir/AGENTS.md"
         fi
         
         # Append Engram template  
-        local engram_tpl="$REPO_ROOT/setup/lib/templates/engram-protocol.md"
+        local engram_tpl="$REPO_ROOT/ywai/templates/engram-protocol.md"
         if [ -f "$engram_tpl" ]; then
             echo "" >> "$opencode_dir/AGENTS.md"
             cat "$engram_tpl" >> "$opencode_dir/AGENTS.md"
         fi
 
-        echo -e "${GREEN}  ✓ Built setup/types/generic/AGENTS.md to $opencode_dir/AGENTS.md${NC}"
+        echo -e "${GREEN}  ✓ Built ywai/types/generic/AGENTS.md to $opencode_dir/AGENTS.md${NC}"
     fi
 
-    if [ -f "$REPO_ROOT/config/opencode.json" ]; then
-        cp "$REPO_ROOT/config/opencode.json" "$opencode_dir/opencode.json"
-        echo -e "${GREEN}  ✓ Copied config/opencode.json to $opencode_dir${NC}"
+    if [ -f "$REPO_ROOT/ywai/config/opencode.json" ]; then
+        cp "$REPO_ROOT/ywai/config/opencode.json" "$opencode_dir/opencode.json"
+        echo -e "${GREEN}  ✓ Copied ywai/config/opencode.json to $opencode_dir${NC}"
     fi
 
-    if [ -d "$REPO_ROOT/commands" ]; then
-        cp -R "$REPO_ROOT/commands/"* "$opencode_dir/commands/"
-        echo -e "${GREEN}  ✓ Copied commands to $opencode_dir/commands${NC}"
+    if [ -d "$REPO_ROOT/ywai/extensions/install-steps/sdd-commands" ]; then
+        cp -R "$REPO_ROOT/ywai/extensions/install-steps/sdd-commands/"*.md "$opencode_dir/commands/"
+        echo -e "${GREEN}  ✓ Copied commands from ywai/extensions/install-steps/sdd-commands to $opencode_dir/commands${NC}"
     fi
 }
 
@@ -740,13 +740,8 @@ setup_gemini() {
     ln -s "$SKILLS_SOURCE" "$target"
     echo -e "${GREEN}  ✓ .gemini/skills -> skills/${NC}"
 
-    copy_agents_md "GEMINI.md"
-    
-    # Copy .gitignore to .gemini directory
-    if [ -f "$REPO_ROOT/.gitignore" ]; then
-        cp "$REPO_ROOT/.gitignore" "$REPO_ROOT/.gemini/.gitignore"
-        echo -e "${GREEN}  ✓ Copied .gitignore to .gemini/${NC}"
-    fi
+    # Note: GEMINI.md is not copied to repo (it's in .gitignore)
+    # Each developer generates it locally if needed
     
     # Create gemini.md with Gemini-specific instructions
     create_gemini_md
@@ -827,18 +822,18 @@ applyTo: "**"
 ---
 
 EOF
-    if [ -f "$REPO_ROOT/setup/types/generic/AGENTS.md" ]; then
-        cat "$REPO_ROOT/setup/types/generic/AGENTS.md" >> "$vscode_prompts_dir/enterprise-persona.instructions.md"
+    if [ -f "$REPO_ROOT/ywai/types/generic/AGENTS.md" ]; then
+        cat "$REPO_ROOT/ywai/types/generic/AGENTS.md" >> "$vscode_prompts_dir/enterprise-persona.instructions.md"
         
         # Append SDD Orchestrator template
-        local orchestrator_tpl="$REPO_ROOT/setup/lib/templates/sdd-orchestrator.md"
+        local orchestrator_tpl="$REPO_ROOT/ywai/templates/sdd-orchestrator.md"
         if [ -f "$orchestrator_tpl" ]; then
             echo "" >> "$vscode_prompts_dir/enterprise-persona.instructions.md"
             cat "$orchestrator_tpl" >> "$vscode_prompts_dir/enterprise-persona.instructions.md"
         fi
         
         # Append Engram template
-        local engram_tpl="$REPO_ROOT/setup/lib/templates/engram-protocol.md"
+        local engram_tpl="$REPO_ROOT/ywai/templates/engram-protocol.md"
         if [ -f "$engram_tpl" ]; then
             echo "" >> "$vscode_prompts_dir/enterprise-persona.instructions.md"
             cat "$engram_tpl" >> "$vscode_prompts_dir/enterprise-persona.instructions.md"
@@ -960,14 +955,14 @@ copy_agents_md() {
             cp "$agents_file" "$agents_dir/$target_name"
             
             # Append SDD Orchestrator template if exists
-            local orchestrator_tpl="$REPO_ROOT/setup/lib/templates/sdd-orchestrator.md"
+            local orchestrator_tpl="$REPO_ROOT/ywai/templates/sdd-orchestrator.md"
             if [ -f "$orchestrator_tpl" ]; then
                 echo "" >> "$agents_dir/$target_name"
                 cat "$orchestrator_tpl" >> "$agents_dir/$target_name"
             fi
             
             # Append Engram Protocol template if exists
-            local engram_tpl="$REPO_ROOT/setup/lib/templates/engram-protocol.md"
+            local engram_tpl="$REPO_ROOT/ywai/templates/engram-protocol.md"
             if [ -f "$engram_tpl" ]; then
                 echo "" >> "$agents_dir/$target_name"
                 cat "$engram_tpl" >> "$agents_dir/$target_name"
@@ -996,6 +991,7 @@ while [[ $# -gt 0 ]]; do
         --gemini) SETUP_GEMINI=true; shift ;;
         --codex) SETUP_CODEX=true; shift ;;
         --copilot) SETUP_COPILOT=true; shift ;;
+        --skip-hooks) SKIP_HOOKS=true; shift ;;
         --global-only) GLOBAL_ONLY=true; shift ;;
         --project-type=*) PROJECT_TYPE="${1#*=}"; shift ;;
         --help|-h) show_help; exit 0 ;;
@@ -1082,7 +1078,7 @@ fi
 
 echo ""
 if [[ "$GLOBAL_ONLY" == "true" ]]; then
-    echo -e "${GREEN}✅ Successfully configured global OpenCode/Copilot agents!${NC}"
+    echo -e "${GREEN}✅ Successfully configured global OpenCode/Copilot/Gemini/Cursor agents!${NC}"
 else
     echo -e "${GREEN}✅ Successfully configured $SKILL_COUNT AI skills!${NC}"
 fi

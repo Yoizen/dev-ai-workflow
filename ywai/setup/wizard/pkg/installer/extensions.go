@@ -109,6 +109,19 @@ func formatExtensionTypeLabel(extType string) string {
 }
 
 func (i *Installer) installHooks(allowed map[string]bool, hasConfig bool) error {
+	// Skip hooks if flag is set
+	if i.flags.SkipHooks {
+		i.logger.LogInfo("Skipping hooks installation (--skip-hooks)")
+		return nil
+	}
+
+	// Check if hooks are optional in config
+	types := i.loadTypesConfig()
+	if types.BaseConfig.OptionalHooks {
+		i.logger.LogInfo("Hooks are optional, skipping installation (set --install-hooks to install)")
+		return nil
+	}
+
 	extensionsRoot := i.getExtensionsRoot()
 	if extensionsRoot == "" {
 		return nil

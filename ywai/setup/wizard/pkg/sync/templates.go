@@ -67,7 +67,6 @@ func (s *Sync) resolveTemplatePath(relativePath, filename string) string {
 		candidates = []string{
 			filepath.Join(s.repoRoot, relativePath),
 			filepath.Join(s.repoRoot, "ywai", relativePath),
-			filepath.Join(s.repoRoot, "ywai", "setup", relativePath),
 			filepath.Join(s.repoRoot, "types", strings.TrimPrefix(relativePath, "setup/types/")),
 			filepath.Join(s.repoRoot, "ywai", "types", strings.TrimPrefix(relativePath, "setup/types/")),
 		}
@@ -76,7 +75,6 @@ func (s *Sync) resolveTemplatePath(relativePath, filename string) string {
 	candidates = append(candidates,
 		filepath.Join(s.targetDir, relativePath),
 		filepath.Join(s.targetDir, "ywai", relativePath),
-		filepath.Join(s.targetDir, "ywai", "setup", relativePath),
 		filepath.Join(s.targetDir, "types", strings.TrimPrefix(relativePath, "setup/types/")),
 		filepath.Join(s.targetDir, "ywai", "types", strings.TrimPrefix(relativePath, "setup/types/")),
 	)

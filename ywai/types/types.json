@@ -2,9 +2,9 @@
   "types": {
     "nest": {
       "description": "NestJS backend (TypeScript, Clean Architecture)",
-      "agents_md": "setup/types/nest/AGENTS.md",
-      "review_md": "setup/types/nest/REVIEW.md",
-      "lefthook_yml": "setup/types/nest/lefthook.yml",
+      "agents_md": "ywai/types/nest/AGENTS.md",
+      "review_md": "ywai/types/nest/REVIEW.md",
+      "lefthook_yml": "ywai/types/nest/lefthook.yml",
       "global_agents": [
         "sdd-orchestator",
         "nest-engineer",
@@ -30,9 +30,9 @@
     },
     "nest-angular": {
       "description": "NestJS + Angular fullstack (TypeScript, Clean Architecture)",
-      "agents_md": "setup/types/nest-angular/AGENTS.md",
-      "review_md": "setup/types/nest-angular/REVIEW.md",
-      "lefthook_yml": "setup/types/nest-angular/lefthook.yml",
+      "agents_md": "ywai/types/nest-angular/AGENTS.md",
+      "review_md": "ywai/types/nest-angular/REVIEW.md",
+      "lefthook_yml": "ywai/types/nest-angular/lefthook.yml",
       "global_agents": [
         "sdd-orchestator",
         "fe-engineer",
@@ -60,9 +60,9 @@
     },
     "nest-react": {
       "description": "NestJS + React fullstack (TypeScript, Clean Architecture)",
-      "agents_md": "setup/types/nest-react/AGENTS.md",
-      "review_md": "setup/types/nest-react/REVIEW.md",
-      "lefthook_yml": "setup/types/nest-react/lefthook.yml",
+      "agents_md": "ywai/types/nest-react/AGENTS.md",
+      "review_md": "ywai/types/nest-react/REVIEW.md",
+      "lefthook_yml": "ywai/types/nest-react/lefthook.yml",
       "global_agents": [
         "sdd-orchestator",
         "fe-engineer",
@@ -90,9 +90,9 @@
     },
     "python": {
       "description": "Python backend / scripts (FastAPI, Django, scripts)",
-      "agents_md": "setup/types/python/AGENTS.md",
-      "review_md": "setup/types/python/REVIEW.md",
-      "lefthook_yml": "setup/types/python/lefthook.yml",
+      "agents_md": "ywai/types/python/AGENTS.md",
+      "review_md": "ywai/types/python/REVIEW.md",
+      "lefthook_yml": "ywai/types/python/lefthook.yml",
       "global_agents": [
         "sdd-orchestator",
         "devops"
@@ -112,9 +112,9 @@
     },
     "dotnet": {
       "description": ".NET / C# backend (ASP.NET Core, Clean Architecture)",
-      "agents_md": "setup/types/dotnet/AGENTS.md",
-      "review_md": "setup/types/dotnet/REVIEW.md",
-      "lefthook_yml": "setup/types/dotnet/lefthook.yml",
+      "agents_md": "ywai/types/dotnet/AGENTS.md",
+      "review_md": "ywai/types/dotnet/REVIEW.md",
+      "lefthook_yml": "ywai/types/dotnet/lefthook.yml",
       "global_agents": [
         "sdd-orchestator",
         "dotnet-engineer",
@@ -135,9 +135,9 @@
     },
     "qa-playwright": {
       "description": "QA automation with Playwright (E2E, accessibility, visual, CI-driven)",
-      "agents_md": "setup/types/qa-playwright/AGENTS.md",
-      "review_md": "setup/types/qa-playwright/REVIEW.md",
-      "lefthook_yml": "setup/types/qa-playwright/lefthook.yml",
+      "agents_md": "ywai/types/qa-playwright/AGENTS.md",
+      "review_md": "ywai/types/qa-playwright/REVIEW.md",
+      "lefthook_yml": "ywai/types/qa-playwright/lefthook.yml",
       "global_agents": [
         "sdd-orchestator",
         "qa-playwright",
@@ -164,8 +164,8 @@
     },
     "devops": {
       "description": "DevOps / Platform workflows (CI/CD, Docker, Helm, Kubernetes)",
-      "agents_md": "setup/types/devops/AGENTS.md",
-      "review_md": "setup/types/devops/REVIEW.md",
+      "agents_md": "ywai/types/devops/AGENTS.md",
+      "review_md": "ywai/types/devops/REVIEW.md",
       "global_agents": [
         "sdd-orchestator",
         "devops"
@@ -186,9 +186,9 @@
     },
     "generic": {
       "description": "Generic project (language-agnostic defaults)",
-      "agents_md": "setup/types/generic/AGENTS.md",
-      "review_md": "setup/types/generic/REVIEW.md",
-      "lefthook_yml": "setup/types/generic/lefthook.yml",
+      "agents_md": "ywai/types/generic/AGENTS.md",
+      "review_md": "ywai/types/generic/REVIEW.md",
+      "lefthook_yml": "ywai/types/generic/lefthook.yml",
       "global_agents": [
         "sdd-orchestator",
         "devops"
@@ -211,8 +211,8 @@
   "base_config": {
     "description": "Common baseline applied to all project types",
     "append_agents_templates": [
-      "setup/lib/templates/sdd-orchestrator.md",
-      "setup/lib/templates/engram-protocol.md"
+      "ywai/templates/sdd-orchestrator.md",
+      "ywai/templates/engram-protocol.md"
     ],
     "extensions": {
       "hooks": [],
@@ -228,7 +228,8 @@
     },
     "copy_shared_skills": false,
     "copy_commands": true,
-    "init_ga": true
+    "init_ga": true,
+    "optional_hooks": false
   },
   "default": "nest"
 }

@@ -18,12 +18,17 @@ type Flags struct {
 	SkipGA                bool
 	SkipSDD               bool
 	SkipVSCode            bool
+	SkipHooks             bool
 	Provider              string
 	Target                string
 	ProjectType           string
 	Version               string
 	Channel               string
 	UpdateAll             bool
+	SelfUpdate            bool
+	SDDProfiles           bool
+	UpdateGlobalAgents    bool
+	SkipGlobalAgentsUpdate bool
 	Force                 bool
 	Silent                bool
 	DryRun                bool
@@ -68,6 +73,7 @@ type BaseConfig struct {
 	CopySharedSkills      bool                `json:"copy_shared_skills"`
 	CopyCommands          bool                `json:"copy_commands"`
 	InitGA                bool                `json:"init_ga"`
+	OptionalHooks         bool                `json:"optional_hooks"`
 }
 
 type Installer struct {

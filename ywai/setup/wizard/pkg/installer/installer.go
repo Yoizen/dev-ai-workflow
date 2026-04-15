@@ -331,7 +331,7 @@ func (i *Installer) getRepoRoot() string {
 }
 
 func (i *Installer) loadTypesConfig() *TypesConfig {
-	candidates := i.ywaiCandidates(false, "types/types.json", "setup/types/types.json")
+	candidates := i.ywaiCandidates(false, "types/types.json", "ywai/types/types.json")
 	typesPath := i.firstExistingFile(candidates...)
 
 	data, err := os.ReadFile(typesPath)
@@ -439,11 +439,11 @@ func normalizePinnedBuildVersion(raw string) string {
 // installTemplates installs documentation templates
 func (i *Installer) installTemplates() error {
 	// Get templates directory - look in multiple locations
-	templatesDirs := i.ywaiCandidates(false, "templates", "setup/lib/templates")
+	templatesDirs := i.ywaiCandidates(false, "templates", "ywai/templates")
 	if repoRoot := i.getRepoRoot(); repoRoot != "" {
-		templatesDirs = append(templatesDirs, filepath.Join(repoRoot, "lib", "templates"))
+		templatesDirs = append(templatesDirs, filepath.Join(repoRoot, "ywai", "templates"))
 	}
-	templatesDirs = append(templatesDirs, filepath.Join(i.getGADir(), "lib", "templates"), "lib/templates")
+	templatesDirs = append(templatesDirs, filepath.Join(i.getGADir(), "ywai", "templates"), "ywai/templates")
 
 	templatesDir := i.firstExistingDir(templatesDirs...)
 

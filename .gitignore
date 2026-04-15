@@ -77,11 +77,14 @@ tmp/
 temp/
 
 # AI Assistants Configuration Files
+.claude/
+.cursor/
+.gemini/
+.codex/
 CLAUDE.md
 CURSOR.md
 GEMINI.md
 .cursorrules
-.cursor/
 
 # GGA
 .ga/
