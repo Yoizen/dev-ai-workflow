@@ -19,8 +19,13 @@ var buildVersion = "dev"
 func main() {
 	flags := parseFlags()
 
+	// Launch TUI when no arguments and not in non-interactive mode
 	if !flags.NonInteractive && len(os.Args) == 1 {
-		// Interactive mode would go here - for now skip
+		if _, err := runInteractive(flags); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
 	}
 
 	// Handle version flag
