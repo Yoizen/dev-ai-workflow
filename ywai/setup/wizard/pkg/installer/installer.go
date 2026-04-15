@@ -98,6 +98,11 @@ func (i *Installer) Run() error {
 		return i.runInstallSkills()
 	}
 
+	// Prevent installation in test directories
+	if strings.Contains(i.targetDir, "tests") {
+		return fmt.Errorf("installation in test directories is not supported: %s", i.targetDir)
+	}
+
 	if i.flags.DryRun {
 		i.logger.LogWarning("⚠ DRY RUN MODE - no changes will be made")
 		i.logger.Log("")
