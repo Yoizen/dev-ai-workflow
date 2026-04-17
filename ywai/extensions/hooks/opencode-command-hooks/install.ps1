@@ -51,23 +51,37 @@ if (Test-Path (Join-Path $hookSource 'src')) {
 
 Write-Host "Installing plugin dependencies..."
 Push-Location $buildDir
+# PowerShell with $ErrorActionPreference='Stop' raises NativeCommandError
+# whenever a native process (bun, npm, ...) writes ANY text to stderr, even
+# informational output like "Saved lockfile". 2>$null only silences the
+# display, it does not prevent the exception. Temporarily switch to
+# 'Continue' and rely on $LASTEXITCODE for real failures.
+$prevErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 try {
-    bun install --frozen-lockfile 2>$null
-} catch {
-    bun install 2>$null
+    bun install --frozen-lockfile *> $null
+    if ($LASTEXITCODE -ne 0) {
+        bun install *> $null
+    }
+} finally {
+    $ErrorActionPreference = $prevErrorActionPreference
+    Pop-Location
 }
-Pop-Location
 
 Write-Host "Bundling OpenCode command hooks..."
 Push-Location $buildDir
+$prevErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 try {
-    $result = bun build src/index.ts --target=bun --outfile="$pluginFile" --external '@opencode-ai/plugin' --external '@opencode-ai/sdk' 2>&1
+    $result = & bun build src/index.ts --target=bun --outfile="$pluginFile" --external '@opencode-ai/plugin' --external '@opencode-ai/sdk' 2>&1
     if ($LASTEXITCODE -ne 0) {
-        Remove-Item -Recurse -Force $buildDir
         Write-Host "Plugin bundle failed" -ForegroundColor Red
+        if ($result) { Write-Host ($result | Out-String) }
+        Remove-Item -Recurse -Force $buildDir
         exit 1
     }
 } finally {
+    $ErrorActionPreference = $prevErrorActionPreference
     Pop-Location
 }
 Remove-Item -Recurse -Force $buildDir

@@ -336,7 +336,7 @@ func (m setupModel) renderDone() string {
 		if warns := m.renderInstallWarnings(); warns != "" {
 			parts = append(parts, "", warns)
 		}
-		parts = append(parts, "", helpStyle.Render("Press Enter or q to close"))
+		parts = append(parts, "", helpStyle.Render("Enter back to menu • q to quit"))
 
 		return lipgloss.JoinVertical(lipgloss.Center, parts...)
 	}
@@ -380,7 +380,7 @@ func (m setupModel) renderDone() string {
 	if warns := m.renderInstallWarnings(); warns != "" {
 		parts = append(parts, "", warns)
 	}
-	parts = append(parts, "", helpStyle.Render("Press Enter or q to close"))
+	parts = append(parts, "", helpStyle.Render("Enter back to menu • q to quit"))
 
 	return lipgloss.JoinVertical(lipgloss.Center, parts...)
 }

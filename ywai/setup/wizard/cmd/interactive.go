@@ -153,13 +153,18 @@ func newSetupModel(defaultPath string, baseFlags *installer.Flags) setupModel {
 	s.Spinner = spinner.MiniDot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("86"))
 
+	// Use ANSI 256-color palette entries rather than 24-bit hex: many Windows
+	// terminals still ship without truecolor support and rendered the hex
+	// gradients as a barely-visible dim gray bar. The palette entries below
+	// map to the same visual language (cyan->teal for install, purple->pink
+	// for global tools) on both truecolor and 256-color terminals.
 	installBar := progress.New(
-		progress.WithGradient("#00BFA5", "#5CE1E6"),
+		progress.WithScaledGradient("51", "86"),
 		progress.WithoutPercentage(),
 		progress.WithWidth(36),
 	)
 	globalBar := progress.New(
-		progress.WithGradient("#7D56F4", "#FF66C4"),
+		progress.WithScaledGradient("99", "207"),
 		progress.WithoutPercentage(),
 		progress.WithWidth(36),
 	)
@@ -330,8 +335,26 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.step == stepDone {
 			switch msg.String() {
-			case "enter", "q", "esc", "ctrl+c":
+			case "q", "ctrl+c":
+				// Hard quit only on q / ctrl+c.
 				return m, tea.Quit
+			case "enter", "esc":
+				// Return to the welcome menu instead of exiting so users
+				// can chain actions (install -> update global tools ->
+				// manage agents, etc.) without relaunching ywai.
+				m.step = stepWelcome
+				m.done = false
+				m.installErr = nil
+				m.installLogs = nil
+				m.installTail = nil
+				m.installWarnings = nil
+				m.installCurrent = ""
+				m.installProgress = 0
+				m.installTotal = 0
+				m.installSeenStages = map[string]bool{}
+				m.skillInstallMode = false
+				m.updateMode = false
+				return m, tea.ClearScreen
 			}
 			return m, nil
 		}
