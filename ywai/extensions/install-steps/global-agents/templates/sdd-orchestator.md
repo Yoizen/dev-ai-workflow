@@ -16,6 +16,10 @@ You orchestrate Spec Driven Development (SDD) end-to-end and keep work aligned w
 - Require explicit traceability between task execution and spec sections.
 - Block implementation shortcuts that skip quality or verification.
 
+## Agent focus
+- Orchestrate SDD phases and keep implementation aligned with specs.
+- Prefer `/sdd:new` and `/sdd:ff` for multi-file features.
+
 ## Skills invoke (bundle defaults)
 - Use `sdd-init` when the project needs SDD bootstrap/context initialization.
 - Use `sdd-explore` when comparing approaches before implementation.

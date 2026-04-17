@@ -2,9 +2,8 @@ package installer
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
+
+	"github.com/Yoizen/dev-ai-workflow/ywai/setup/wizard/pkg/installer/globalagents"
 )
 
 func (i *Installer) runAll() error {
@@ -200,9 +199,6 @@ func (i *Installer) UpdateSDD() error {
 }
 
 func (i *Installer) UpdateGlobalAgents() error {
-	home, _ := os.UserHomeDir()
-	agentsDir := filepath.Join(home, ".config", "opencode")
-
 	srcDir := i.firstExistingDir(
 		i.ywaiCandidates(false, "extensions/install-steps/global-agents")...,
 	)
@@ -210,40 +206,29 @@ func (i *Installer) UpdateGlobalAgents() error {
 		return fmt.Errorf("global-agents extension not found in any YWAI location")
 	}
 
-	tplDir := filepath.Join(srcDir, "templates")
-	if !i.dirExists(tplDir) {
-		return fmt.Errorf("global agent templates not found")
-	}
+	skillsDir := i.firstExistingDir(i.ywaiCandidates(false, "skills")...)
+	typesJSON := i.firstExistingFile(
+		i.ywaiCandidates(true, "types/types.json")...,
+	)
 
-	// In GlobalOnly mode, no repo writes occur - agents are installed globally
 	if i.flags.GlobalOnly {
 		i.logger.LogInfo("GlobalOnly mode: Installing global agents only")
 	}
 
-	if err := os.MkdirAll(agentsDir, 0755); err != nil {
-		return err
+	gen := globalagents.Generator{
+		ExtensionDir: srcDir,
+		SkillsDir:    skillsDir,
+		TypesJSON:    typesJSON,
+		ProjectType:  i.getEffectiveProjectType(),
+		Logger:       i.logger,
 	}
 
-	entries, err := os.ReadDir(tplDir)
+	installed, err := gen.InstallAll()
 	if err != nil {
 		return err
 	}
-
-	installed := 0
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
-			continue
-		}
-		dest := filepath.Join(agentsDir, e.Name())
-		if err := i.copyFile(filepath.Join(tplDir, e.Name()), dest); err != nil {
-			i.logger.LogWarning(fmt.Sprintf("Failed to copy %s: %v", e.Name(), err))
-			continue
-		}
-		installed++
-	}
-
 	if installed > 0 {
-		i.logger.LogSuccess(fmt.Sprintf("Updated %d global agent(s)", installed))
+		i.logger.LogSuccess(fmt.Sprintf("Updated %d global agent file(s)", installed))
 	}
 	return nil
 }

@@ -27,50 +27,77 @@ Use this skill when:
 
 ## Critical Patterns
 
-### Pattern 1: Source of truth lives in extensions
+### Pattern 1: Source of truth lives in extensions + Go generator
 
-- Global agents must be sourced from:
-  - `ywai/extensions/install-steps/global-agents/templates/`
-  - `ywai/extensions/install-steps/global-agents/bundles.json`
-- Do not use project `AGENTS.md` as global-agent content source.
+- Templates: `ywai/extensions/install-steps/global-agents/templates/<agent>.md`
+- Bundles: `ywai/extensions/install-steps/global-agents/bundles.json`
+- Project-type -> agents: `ywai/types/types.json` (`types.<type>.global_agents`)
+- Generator: `ywai/setup/wizard/pkg/installer/globalagents/` (Go, cross-platform)
+- `setup.sh --global-only`, `setup.ps1 -GlobalOnly`, `extensions/.../install.sh|ps1` all delegate to the Go binary (`ywai --update-global-agents --type=<type>`) and keep shell fallbacks for environments without the binary.
+- Do NOT use project `AGENTS.md` as global-agent content source.
 
-### Pattern 2: Agent ↔ Skills bundle contract
+### Pattern 2: Agent <-> Skills bundle contract
 
-- Every global agent should have an explicit bundle in `bundles.json`.
-- Use `defaults.<agent>` for baseline.
-- Use `by_project_type.<type>.<agent>` only when a type needs a different bundle.
-- Keep skill names aligned to folders under `skills/<name>/SKILL.md`.
+- Every global agent has an entry in `bundles.json:defaults`.
+- `by_project_type.<type>.<agent>` should contain ONLY real overrides (do not duplicate defaults).
+- Skill names must match `skills/<name>/SKILL.md` directories.
 
 ### Pattern 3: Invoke hints come from skill metadata
 
-- `Skills invoke` should be derived from each skill's `metadata.auto_invoke` when available.
-- If unavailable, fallback text should remain generic and safe.
+- `Skills invoke` is derived from each skill's `metadata.auto_invoke` (first 3 patterns, joined with ` | `).
+- When a skill has no `auto_invoke`, a generic "when its domain is required" fallback is emitted.
+- Templates MUST NOT hardcode `## Skills invoke` lists; the generator renders that section.
+
+### Pattern 4: Managed-file policy (preserve user files)
+
+- Only files whose basenames match a template (e.g. `devops.md`, `sdd-orchestator.md`) are owned by the generator.
+- Any other `.md` in the destination directory is considered user-owned and is never removed.
+- This is implemented in `globalagents.Generator.InstallAll` via `managedBasenames` + `removeManagedFiles`.
+
+---
+
+## Destinations
+
+| Target         | Path                                                              |
+|:---------------|:------------------------------------------------------------------|
+| OpenCode       | `$XDG_CONFIG_HOME/opencode/agent/<agent>.md` (singular `agent/`)   |
+| Copilot agent  | `~/.copilot/agents/<agent>.md`                                    |
+| Copilot prompt | `<VSCode User>/prompts/<agent>.instructions.md`                   |
+| Gemini         | `~/.gemini/agents/<agent>.md`                                     |
+| Cursor         | `~/.cursor/agents/<agent>.md`                                     |
+| Claude         | `~/.claude/agents/<agent>.md`                                     |
+
+`<VSCode User>` resolves to `~/Library/Application Support/Code/User` (macOS), `$APPDATA\Code\User` (Windows), or `$XDG_CONFIG_HOME/Code/User` (Linux).
 
 ---
 
 ## Workflow
 
-1. Identify target project type(s) and global agents from `ywai/setup/types/types.json` (`global_agents`).
-2. Create/update agent templates in `templates/`.
-3. Create/update `bundles.json` mappings.
-4. Ensure generator logic in `ywai/skills/setup.sh` renders:
-   - `## Skills bundle (global)`
-   - `## Skills invoke`
-5. Smoke test with global-only mode and inspect generated profile files.
+1. Identify target project types and global agents in `ywai/types/types.json:types.<type>.global_agents`.
+2. Update templates in `ywai/extensions/install-steps/global-agents/templates/`.
+3. Update `bundles.json` (only real overrides in `by_project_type`).
+4. Run the generator:
+   - `ywai --update-global-agents --type=<type>`  (preferred, cross-platform)
+   - `bash ywai/skills/setup.sh --global-only --project-type=<type>`  (bash)
+   - `powershell ywai/skills/setup.ps1 -GlobalOnly -ProjectType <type>`  (Windows)
+5. Inspect a generated file to verify frontmatter, base directives, Skills bundle + invoke, and SDD/DevOps sections.
 
 ---
 
 ## Commands
 
 ```bash
-# Validate setup script syntax
+# Validate shell scripts
 bash -n ywai/skills/setup.sh
+bash -n ywai/extensions/install-steps/global-agents/install.sh
 
-# Smoke test global agent generation (isolated HOME/XDG)
-tmpdir="$(mktemp -d)"; mkdir -p "$tmpdir/home" "$tmpdir/xdg"
-HOME="$tmpdir/home" XDG_CONFIG_HOME="$tmpdir/xdg" bash ywai/skills/setup.sh --global-only --opencode --copilot --project-type=devops
+# Generator unit tests (Go)
+cd ywai/setup/wizard && go test ./pkg/installer/globalagents/...
 
-# Inspect generated global agent
+# Smoke test via the Go binary (writes to user's real HOME; redirect XDG for isolation)
+tmpdir="$(mktemp -d)"
+XDG_CONFIG_HOME="$tmpdir/xdg" HOME="$tmpdir/home" \
+  ywai --update-global-agents --type=devops --silent
 sed -n '1,140p' "$tmpdir/xdg/opencode/agent/devops.md"
 ```
 
@@ -81,4 +108,5 @@ sed -n '1,140p' "$tmpdir/xdg/opencode/agent/devops.md"
 - **Contract**: [references/bundles-contract.md](references/bundles-contract.md)
 - **Templates**: `ywai/extensions/install-steps/global-agents/templates/`
 - **Bundles**: `ywai/extensions/install-steps/global-agents/bundles.json`
-- **Generator**: `ywai/skills/setup.sh`
+- **Generator (canonical)**: `ywai/setup/wizard/pkg/installer/globalagents/`
+- **Generator (bash fallback)**: `ywai/skills/setup.sh` (`setup_global_profile_agents`)

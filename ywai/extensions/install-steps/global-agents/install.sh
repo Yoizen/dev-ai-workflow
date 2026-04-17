@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# Global Agents Extension — Linux/macOS
-# Instala agents en todas las rutas de Copilot/Claude/Agents
+# Global Agents Extension - Linux/macOS
+#
+# Preferred path: delegate to the `ywai` binary which runs the in-process
+# globalagents generator (same code used by the wizard). The fallback copies
+# templates directly but preserves user-owned files (any .md not matching a
+# template basename stays untouched).
+
 set -e
 
 TARGET_DIR="${1:-.}"
 PROJECT_TYPE="${YWAI_PROJECT_TYPE:-generic}"
 EXT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$EXT_DIR/../../.." && pwd)"
 AGENTS_SOURCE="$EXT_DIR/templates"
 VERSION_FILE="$AGENTS_SOURCE/VERSION"
 STATE_DIR="$HOME/.ywai"
@@ -14,33 +18,46 @@ STATE_VERSION_FILE="$STATE_DIR/global-agents-version"
 
 echo "Configuring global agents for project type: $PROJECT_TYPE"
 
-# Read local version
+# --- Try the Go binary first --------------------------------------------------
+if command -v ywai >/dev/null 2>&1; then
+    echo "Delegating to: ywai --update-global-agents --type=$PROJECT_TYPE --silent"
+    if ywai --update-global-agents --type="$PROJECT_TYPE" --silent; then
+        if [[ -f "$VERSION_FILE" ]]; then
+            mkdir -p "$STATE_DIR"
+            tr -d '[:space:]' < "$VERSION_FILE" > "$STATE_VERSION_FILE"
+        fi
+        exit 0
+    fi
+    echo "ywai delegation failed, falling back to shell implementation"
+fi
+
+# --- Fallback: copy templates, preserving user-owned files --------------------
+if [[ ! -d "$AGENTS_SOURCE" ]]; then
+    echo "Agent templates not found: $AGENTS_SOURCE"
+    exit 1
+fi
+
 LOCAL_VERSION=""
 if [[ -f "$VERSION_FILE" ]]; then
-    LOCAL_VERSION="$(cat "$VERSION_FILE" | tr -d '[:space:]')"
+    LOCAL_VERSION="$(tr -d '[:space:]' < "$VERSION_FILE")"
 fi
 
-# Read installed version
 INSTALLED_VERSION=""
 if [[ -f "$STATE_VERSION_FILE" ]]; then
-    INSTALLED_VERSION="$(cat "$STATE_VERSION_FILE" | tr -d '[:space:]')"
+    INSTALLED_VERSION="$(tr -d '[:space:]' < "$STATE_VERSION_FILE")"
 fi
 
-# Check if update is needed
-if [[ -n "$LOCAL_VERSION" && -n "$INSTALLED_VERSION" && "$LOCAL_VERSION" == "$INSTALLED_VERSION" ]]; then
+if [[ -n "$LOCAL_VERSION" && "$LOCAL_VERSION" == "$INSTALLED_VERSION" ]]; then
     echo "Global agents already up to date (version $INSTALLED_VERSION)"
     echo "To force reinstall, remove $STATE_VERSION_FILE"
     exit 0
 fi
 
-if [[ -n "$LOCAL_VERSION" && -n "$INSTALLED_VERSION" && "$LOCAL_VERSION" != "$INSTALLED_VERSION" ]]; then
-    echo "Updating global agents from $INSTALLED_VERSION to $LOCAL_VERSION"
-fi
-
 HOME_DIR="${HOME}"
+XDG_CONFIG="${XDG_CONFIG_HOME:-$HOME_DIR/.config}"
 
 declare -A AGENT_LOCATIONS=(
-    ["OpenCode"]="$HOME_DIR/.config/opencode/agents"
+    ["OpenCode"]="$XDG_CONFIG/opencode/agent"
     ["Copilot"]="$HOME_DIR/.copilot/agents"
     ["Claude"]="$HOME_DIR/.claude/agents"
     ["Agents"]="$HOME_DIR/.agents/agents"
@@ -48,26 +65,28 @@ declare -A AGENT_LOCATIONS=(
     ["Cursor"]="$HOME_DIR/.cursor/agents"
 )
 
-if [[ ! -d "$AGENTS_SOURCE" ]]; then
-    echo "Agent templates not found: $AGENTS_SOURCE"
-    exit 1
-fi
+# Managed basenames: only these are removed/overwritten. User-owned .md files
+# survive re-runs.
+MANAGED_FILES=()
+for agent_file in "$AGENTS_SOURCE"/*.md; do
+    [[ -f "$agent_file" ]] || continue
+    MANAGED_FILES+=("$(basename "$agent_file")")
+done
 
 copied_total=0
-
 for platform_name in "${!AGENT_LOCATIONS[@]}"; do
     dest_dir="${AGENT_LOCATIONS[$platform_name]}"
     mkdir -p "$dest_dir"
-    
-    rm -f "$dest_dir"/*.md
-    
+
+    for managed in "${MANAGED_FILES[@]}"; do
+        rm -f "$dest_dir/$managed"
+    done
+
     for agent_file in "$AGENTS_SOURCE"/*.md; do
-        if [[ -f "$agent_file" ]]; then
-            agent_name=$(basename "$agent_file")
-            cp -f "$agent_file" "$dest_dir/"
-            echo "  [$platform_name] Installed agent: $agent_name"
-            ((copied_total++))
-        fi
+        [[ -f "$agent_file" ]] || continue
+        cp -f "$agent_file" "$dest_dir/"
+        echo "  [$platform_name] Installed agent: $(basename "$agent_file")"
+        copied_total=$((copied_total + 1))
     done
 done
 
@@ -79,7 +98,6 @@ for platform_name in "${!AGENT_LOCATIONS[@]}"; do
     echo "  $platform_name: ${AGENT_LOCATIONS[$platform_name]}"
 done
 
-# Save installed version
 if [[ -n "$LOCAL_VERSION" ]]; then
     mkdir -p "$STATE_DIR"
     echo "$LOCAL_VERSION" > "$STATE_VERSION_FILE"

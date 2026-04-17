@@ -10,6 +10,8 @@ param(
     [switch]$Gemini,
     [switch]$Codex,
     [switch]$Copilot,
+    [switch]$GlobalOnly,
+    [string]$ProjectType = '',
     [switch]$Help
 )
 
@@ -26,7 +28,36 @@ if ($Help) {
     Write-Host "  -Gemini    Configure Gemini CLI"
     Write-Host "  -Codex     Configure Codex"
     Write-Host "  -Copilot   Configure GitHub Copilot"
+    Write-Host "  -GlobalOnly       Configure only global user-profile agents (no repo files)"
+    Write-Host "  -ProjectType T    Project type for global agent generation (nest, dotnet, generic, ...)"
     exit 0
+}
+
+function Invoke-GlobalAgentsGenerator {
+    param([string]$Type, [string]$RepoRoot)
+
+    $pt = $Type
+    if (-not $pt) { $pt = 'generic' }
+
+    # Prefer the Go binary if available: same logic as the wizard.
+    $ywai = Get-Command ywai -ErrorAction SilentlyContinue
+    if ($ywai) {
+        Write-Host "[global-only] Delegating to ywai --update-global-agents --type=$pt" -ForegroundColor Cyan
+        & ywai --update-global-agents --type=$pt --silent
+        if ($LASTEXITCODE -eq 0) { return $true }
+        Write-Warning "ywai delegation failed, falling back to install.ps1"
+    }
+
+    # Fallback: run the extension install script (which also contains a copy
+    # fallback with user-file preservation).
+    $ext = Join-Path $RepoRoot 'ywai\extensions\install-steps\global-agents\install.ps1'
+    if (-not (Test-Path $ext)) {
+        Write-Error "global-agents install.ps1 not found at: $ext"
+        return $false
+    }
+    $env:YWAI_PROJECT_TYPE = $pt
+    & $ext -TargetDir $RepoRoot
+    return ($LASTEXITCODE -eq 0)
 }
 
 $ScriptDir = Split-Path -Parent $PSCommandPath
@@ -216,6 +247,18 @@ function Setup-Copilot {
     Set-SkillsLink -TargetDir $dir
     Write-Ok ".github/skills -> skills/"
     Ensure-VSCodeSettings
+}
+
+if ($GlobalOnly) {
+    Write-Info "Global-only mode: installing global user-profile agents (no repo writes)"
+    $ok = Invoke-GlobalAgentsGenerator -Type $ProjectType -RepoRoot $RepoRoot
+    if ($ok) {
+        Write-Ok "Global agents configured"
+        exit 0
+    } else {
+        Write-Host "[ERROR] Global agents configuration failed" -ForegroundColor Red
+        exit 1
+    }
 }
 
 Write-Info "Configuring AI assistants from skills/setup.ps1"

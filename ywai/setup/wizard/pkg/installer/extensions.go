@@ -344,6 +344,10 @@ func (i *Installer) executeInstallStep(stepName, srcPath string) error {
 	switch stepName {
 	case "biome-baseline":
 		return i.installBiome()
+	case "global-agents":
+		// Delegate to the in-process generator instead of running install.sh
+		// to get consistent behavior across OS and preserve user-owned files.
+		return i.UpdateGlobalAgents()
 	default:
 		return i.executeExtensionScript(srcPath)
 	}

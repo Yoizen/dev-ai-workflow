@@ -544,6 +544,18 @@ setup_global_profile_agents() {
     local project_type
     project_type="$(normalize_project_type "$PROJECT_TYPE")"
 
+    # Prefer the Go generator when available: single source of truth shared
+    # with the wizard and Windows path. Falls back to the bash implementation
+    # below if the binary is missing or the call fails.
+    if command -v ywai >/dev/null 2>&1; then
+        if ywai --update-global-agents --type="$project_type" --silent; then
+            echo -e "${GREEN}  ✓ Global agents configured via ywai (type '$project_type')${NC}"
+            GLOBAL_AGENTS_CONFIGURED=true
+            return 0
+        fi
+        echo -e "${YELLOW}  ! ywai delegation failed, using bash fallback${NC}"
+    fi
+
     local agent_names
     agent_names="$(global_agent_names_for_type "$project_type")"
 
