@@ -124,6 +124,8 @@ type setupModel struct {
 	installTotal      int
 	installSeenStages map[string]bool
 	installErr        error
+	installWarnings   []string
+	installTail       []string
 
 	globalToolNames    []string
 	globalToolValues   []bool
@@ -429,16 +431,30 @@ func (m setupModel) View() string {
 		return m.renderQuitScreen()
 	}
 
+	if m.width == 0 || m.height == 0 {
+		return ""
+	}
+
+	// Installing and Done screens were being returned raw, which rendered
+	// them glued to the top-left of the terminal. Centering them matches
+	// every other step and prevents the "floating success icon in the
+	// corner" confusion reported by users.
 	if m.step == stepInstalling {
-		return m.renderInstalling()
+		return lipgloss.Place(
+			m.width, m.height,
+			lipgloss.Center,
+			lipgloss.Center,
+			m.renderInstalling(),
+		)
 	}
 
 	if m.step == stepDone {
-		return m.renderDone()
-	}
-
-	if m.width == 0 || m.height == 0 {
-		return ""
+		return lipgloss.Place(
+			m.width, m.height,
+			lipgloss.Center,
+			lipgloss.Center,
+			m.renderDone(),
+		)
 	}
 
 	if m.step == stepAgentDone {

@@ -2,6 +2,34 @@ package main
 
 import "testing"
 
+func TestIsInstallWarningLine(t *testing.T) {
+	cases := []struct {
+		line string
+		want bool
+	}{
+		{"Cloning GA repository...", false},
+		{"✓ Installed GA to /usr/local/bin/ga", false},
+		{"DRY RUN: Would update .gitignore", false},
+		{"no errors during install", false},
+		{"completed without errors", false},
+
+		{"warning: Failed to install lefthook hooks", true},
+		{"Error: could not download GA binary", true},
+		{"FATAL: permission denied writing to /etc", true},
+		{"Missing skill directories in source", true},
+		{"unable to resolve version, falling back to main", true},
+		{"installation failed for skill biome", true},
+	}
+
+	for _, c := range cases {
+		t.Run(c.line, func(t *testing.T) {
+			if got := isInstallWarningLine(c.line); got != c.want {
+				t.Errorf("isInstallWarningLine(%q) = %v, want %v", c.line, got, c.want)
+			}
+		})
+	}
+}
+
 // TestBuildProjectInstallFlags_ComponentIndicesStayInSync guards against a
 // previous regression where buildProjectInstallFlags read DryRun from
 // componentValues[5] (the Hooks entry) causing the installer to silently

@@ -25,6 +25,22 @@ type globalToolsLogMsg struct {
 func (m setupModel) updateGlobalTools(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// After a successful run we render the summary view; any key returns
+		// to the welcome menu rather than silently re-running the selection.
+		if m.globalToolDone {
+			switch msg.String() {
+			case "enter", "q", "esc":
+				m.step = stepWelcome
+				m.globalToolDone = false
+				m.globalToolOutput = ""
+				m.globalToolLogs = nil
+				m.globalToolProgress = 0
+				m.globalToolTotal = 0
+				return m, tea.ClearScreen
+			}
+			return m, nil
+		}
+
 		switch msg.String() {
 		case "up", "k":
 			if m.globalToolCursor > 0 {
@@ -186,7 +202,12 @@ func (m setupModel) updateGlobalToolsRunning(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.globalToolOutput += "Done."
 			}
-			return m, barCmd
+			// Force a full screen refresh on the Running -> Done transition.
+			// Some terminals (Warp, certain Windows setups) do not correctly
+			// clear AltScreen when the next frame is shorter, leaving the
+			// progress bar and "Now updating: ..." ghosts painted over the
+			// summary view. tea.ClearScreen works around that deterministically.
+			return m, tea.Batch(barCmd, tea.ClearScreen)
 		}
 
 		return m, tea.Batch(barCmd, func() tea.Msg {
@@ -218,6 +239,15 @@ func (m setupModel) globalToolBarSetPercent() tea.Cmd {
 }
 
 func (m setupModel) renderGlobalToolsStep() string {
+	// After an update run we render a clean summary with just the log box and
+	// a "what to do next" line. Rendering the selection menu again caused
+	// visual confusion: the user had just completed the action and was
+	// presented with the very same checkboxes, stacked on top of ghost output
+	// from the progress bar on some terminals.
+	if m.globalToolDone {
+		return m.renderGlobalToolsSummary()
+	}
+
 	subtitle := subtitleStyle.Render("Select which global tools to update (no repo needed)")
 
 	var items []string
@@ -257,6 +287,48 @@ func (m setupModel) renderGlobalToolsStep() string {
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Left, parts...)
+}
+
+// renderGlobalToolsSummary is the post-run confirmation view. Shown once all
+// selected tools have finished; no interactive menu, no progress bar, just
+// the success icon plus the accumulated log output.
+func (m setupModel) renderGlobalToolsSummary() string {
+	icon := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("84")).
+		Render("✓")
+
+	title := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("86")).
+		Render("Global tools updated")
+
+	parts := []string{
+		icon,
+		"",
+		title,
+		"",
+	}
+
+	if strings.TrimSpace(m.globalToolOutput) != "" {
+		maxW := 60
+		if m.width > 0 {
+			maxW = m.width / 2
+			if maxW < 40 {
+				maxW = 40
+			}
+		}
+		parts = append(parts,
+			boxStyle.Width(maxW).Render(strings.TrimSpace(m.globalToolOutput)),
+			"",
+		)
+	}
+
+	parts = append(parts,
+		helpStyle.Render("Press Enter or q to return to the main menu"),
+	)
+
+	return lipgloss.JoinVertical(lipgloss.Center, parts...)
 }
 
 func (m setupModel) renderGlobalToolsRunningStep() string {

@@ -115,6 +115,8 @@ func (m setupModel) beginProjectInstallation() (tea.Model, tea.Cmd) {
 	m.installTotal = m.installPhaseTotal(flags)
 	m.installSeenStages = map[string]bool{}
 	m.installErr = nil
+	m.installWarnings = nil
+	m.installTail = nil
 	m.err = nil
 	m.done = false
 	m.step = stepInstalling
@@ -156,6 +158,21 @@ func (m setupModel) updateInstallLog(msg installLogMsg) (tea.Model, tea.Cmd) {
 		m.installLogs = append([]string(nil), m.installLogs[len(m.installLogs)-18:]...)
 	}
 
+	// Keep a longer, non-trimmed tail that survives the transition to the
+	// Done screen. This is what the user sees as "context" when something
+	// flashed by too fast to read.
+	m.installTail = append(m.installTail, line)
+	if len(m.installTail) > 40 {
+		m.installTail = append([]string(nil), m.installTail[len(m.installTail)-40:]...)
+	}
+
+	if isInstallWarningLine(line) {
+		m.installWarnings = append(m.installWarnings, strings.TrimSpace(line))
+		if len(m.installWarnings) > 10 {
+			m.installWarnings = append([]string(nil), m.installWarnings[len(m.installWarnings)-10:]...)
+		}
+	}
+
 	if stage := m.detectInstallStage(line); stage != "" {
 		if m.installSeenStages == nil {
 			m.installSeenStages = map[string]bool{}
@@ -170,6 +187,46 @@ func (m setupModel) updateInstallLog(msg installLogMsg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, m.installBarSetPercent()
+}
+
+// isInstallWarningLine reports whether a log line from the installer looks
+// like an error or a warning we should preserve and surface on the Done
+// screen. We deliberately match conservatively to avoid flagging "no errors"
+// lines or the generic "Installing ..." progress messages.
+func isInstallWarningLine(line string) bool {
+	trimmed := strings.TrimSpace(line)
+	if trimmed == "" {
+		return false
+	}
+	lower := strings.ToLower(trimmed)
+
+	// Fast negative: ignore common success/info phrasing even if it contains
+	// the substring "error" (e.g., "no errors", "ignored error").
+	if strings.HasPrefix(lower, "no errors") ||
+		strings.Contains(lower, "without error") {
+		return false
+	}
+
+	markers := []string{
+		"error:",
+		"error ",
+		"failed",
+		"failure",
+		"fatal",
+		"warning:",
+		"warn:",
+		"could not",
+		"unable to",
+		"refused",
+		"denied",
+		"missing",
+	}
+	for _, m := range markers {
+		if strings.Contains(lower, m) {
+			return true
+		}
+	}
+	return false
 }
 
 // installBarSetPercent returns the SetPercent command so the animated gradient
@@ -195,7 +252,11 @@ func (m setupModel) updateInstallFinished(msg installFinishedMsg) (tea.Model, te
 	if msg.err == nil {
 		m.installProgress = m.installTotal
 	}
-	return m, m.installBarSetPercent()
+	// Clear the terminal on the Installing -> Done transition. The install
+	// view is tall (progress bar, log box, status lines) and on several
+	// terminals the shorter Done screen left leftover rows from the previous
+	// frame around the success icon.
+	return m, tea.Batch(m.installBarSetPercent(), tea.ClearScreen)
 }
 
 func (m setupModel) detectInstallStage(line string) string {

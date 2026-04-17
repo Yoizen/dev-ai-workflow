@@ -6,7 +6,9 @@
 # Configuration
 BINARY_NAME=setup-wizard
 VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-LDFLAGS=-ldflags "-X main.version=${VERSION}"
+# The cmd/main.go variable is buildVersion, not version. Using the wrong
+# symbol silently made every release ship with "vdev" in --version output.
+LDFLAGS=-ldflags "-s -w -X main.buildVersion=${VERSION}"
 
 # Platforms
 PLATFORMS=linux-amd64 linux-arm64 darwin-amd64 darwin-arm64 windows-amd64

@@ -322,17 +322,23 @@ func (m setupModel) renderDone() string {
 
 		message := errorStyle.Render(m.installErr.Error())
 
-		return lipgloss.JoinVertical(
-			lipgloss.Center,
+		parts := []string{
 			"",
 			icon,
 			"",
 			title,
 			"",
 			message,
-			"",
-			helpStyle.Render("Press Enter or q to close"),
-		)
+		}
+		if tail := m.renderInstallTail(); tail != "" {
+			parts = append(parts, "", tail)
+		}
+		if warns := m.renderInstallWarnings(); warns != "" {
+			parts = append(parts, "", warns)
+		}
+		parts = append(parts, "", helpStyle.Render("Press Enter or q to close"))
+
+		return lipgloss.JoinVertical(lipgloss.Center, parts...)
 	}
 
 	icon := lipgloss.NewStyle().
@@ -360,17 +366,86 @@ func (m setupModel) renderDone() string {
 		return "YWAI has been installed successfully."
 	}())
 
-	return lipgloss.JoinVertical(
-		lipgloss.Center,
+	parts := []string{
 		"",
 		icon,
 		"",
 		title,
 		"",
 		message,
-		"",
-		helpStyle.Render("Press Enter or q to close"),
-	)
+	}
+	// Surface any warnings we captured even on success — lines like "Failed
+	// to install lefthook hooks" or "could not download GA binary" used to
+	// flash by too fast for users to read before the Done screen wiped them.
+	if warns := m.renderInstallWarnings(); warns != "" {
+		parts = append(parts, "", warns)
+	}
+	parts = append(parts, "", helpStyle.Render("Press Enter or q to close"))
+
+	return lipgloss.JoinVertical(lipgloss.Center, parts...)
+}
+
+// renderInstallWarnings renders the captured warning/error lines as a yellow
+// "Notes" box. Returns empty string when there is nothing to show.
+func (m setupModel) renderInstallWarnings() string {
+	if len(m.installWarnings) == 0 {
+		return ""
+	}
+	title := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("214")).
+		Render("Notes")
+
+	maxW := 70
+	if m.width > 0 {
+		maxW = m.width * 3 / 5
+		if maxW < 40 {
+			maxW = 40
+		}
+	}
+
+	bullet := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render("•")
+	lines := make([]string, 0, len(m.installWarnings))
+	for _, w := range m.installWarnings {
+		lines = append(lines, fmt.Sprintf("%s %s", bullet, w))
+	}
+
+	body := boxStyle.Width(maxW).BorderForeground(lipgloss.Color("214")).
+		Render(strings.Join(lines, "\n"))
+	return lipgloss.JoinVertical(lipgloss.Center, title, body)
+}
+
+// renderInstallTail renders the last few log lines as a dim box so users can
+// see the final context when the installer ended in an error. The buffer is
+// capped and old lines are dropped.
+func (m setupModel) renderInstallTail() string {
+	if len(m.installTail) == 0 {
+		return ""
+	}
+	n := len(m.installTail)
+	start := 0
+	if n > 12 {
+		start = n - 12
+	}
+	slice := m.installTail[start:]
+	if len(slice) == 0 {
+		return ""
+	}
+
+	title := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("244")).
+		Render("Last output")
+
+	maxW := 72
+	if m.width > 0 {
+		maxW = m.width * 3 / 5
+		if maxW < 40 {
+			maxW = 40
+		}
+	}
+	body := boxStyle.Width(maxW).Render(strings.Join(slice, "\n"))
+	return lipgloss.JoinVertical(lipgloss.Center, title, body)
 }
 
 func (m setupModel) renderQuitScreen() string {
