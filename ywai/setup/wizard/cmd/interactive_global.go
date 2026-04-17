@@ -173,6 +173,8 @@ func (m setupModel) updateGlobalToolsRunning(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.globalToolProgress++
 		m.globalToolCurrent = ""
 
+		barCmd := m.globalToolBarSetPercent()
+
 		if len(m.globalToolQueue) == 0 {
 			m.globalToolDone = true
 			m.step = stepGlobalTools
@@ -184,12 +186,12 @@ func (m setupModel) updateGlobalToolsRunning(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.globalToolOutput += "Done."
 			}
-			return m, nil
+			return m, barCmd
 		}
 
-		return m, func() tea.Msg {
+		return m, tea.Batch(barCmd, func() tea.Msg {
 			return globalToolsStartMsg{}
-		}
+		})
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
@@ -197,6 +199,22 @@ func (m setupModel) updateGlobalToolsRunning(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	return m, nil
+}
+
+// globalToolBarSetPercent eases the purple gradient bar toward the current
+// progress ratio across the queued global tools.
+func (m setupModel) globalToolBarSetPercent() tea.Cmd {
+	if m.globalToolTotal <= 0 {
+		return nil
+	}
+	target := float64(m.globalToolProgress) / float64(m.globalToolTotal)
+	if target < 0 {
+		target = 0
+	}
+	if target > 1 {
+		target = 1
+	}
+	return m.globalToolBar.SetPercent(target)
 }
 
 func (m setupModel) renderGlobalToolsStep() string {
@@ -248,8 +266,10 @@ func (m setupModel) renderGlobalToolsRunningStep() string {
 	}
 
 	if m.globalToolTotal > 0 {
+		bar := m.globalToolBar
+		bar.Width = m.globalToolsProgressWidth()
 		parts = append(parts,
-			renderProgressBar(m.globalToolProgress, m.globalToolTotal, m.globalToolsProgressWidth()),
+			bar.View(),
 			"",
 			infoStyle.Render(fmt.Sprintf("%d/%d complete", m.globalToolProgress, m.globalToolTotal)),
 			"",
@@ -257,13 +277,13 @@ func (m setupModel) renderGlobalToolsRunningStep() string {
 	}
 
 	parts = append(parts,
-		m.spinner.View()+" Working...",
+		m.spinner.View()+" "+m.pulseLabel("Working..."),
 	)
 
 	if m.globalToolCurrent != "" {
 		parts = append(parts,
 			"",
-			titleStyle.Render("Now updating: "+m.globalToolCurrent),
+			titleStyle.Render(m.pulseGlyph()+" Now updating: "+m.globalToolCurrent),
 		)
 	}
 

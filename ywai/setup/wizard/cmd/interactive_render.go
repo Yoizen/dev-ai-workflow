@@ -8,18 +8,16 @@ import (
 )
 
 func (m setupModel) renderHeader() string {
-	logo := "██╗   ██╗██╗    ██╗ █████╗ ██╗\n" +
-		"╚██╗ ██╔╝██║    ██║██╔══██╗██║\n" +
-		" ╚████╔╝ ██║ █╗ ██║███████║██║\n" +
-		"  ╚██╔╝  ██║███╗██║██╔══██║██║\n" +
-		"   ██║   ╚███╔███╔╝██║  ██║██║\n" +
-		"   ╚═╝    ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝"
+	logoLines := []string{
+		"██╗   ██╗██╗    ██╗ █████╗ ██╗",
+		"╚██╗ ██╔╝██║    ██║██╔══██╗██║",
+		" ╚████╔╝ ██║ █╗ ██║███████║██║",
+		"  ╚██╔╝  ██║███╗██║██╔══██║██║",
+		"   ██║   ╚███╔███╔╝██║  ██║██║",
+		"   ╚═╝    ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝",
+	}
 
-	styledLogo := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("99")).
-		Bold(true).
-		Render(logo)
-
+	styledLogo := m.renderAnimatedLogo(logoLines)
 	version := subtitleStyle.Render("Setup Wizard  •  AI Development Workflow")
 
 	return lipgloss.JoinVertical(
@@ -213,13 +211,24 @@ func (m setupModel) renderInstalling() string {
 	parts := []string{
 		header,
 		"",
-		m.spinner.View() + " Working...",
+		m.spinner.View() + " " + m.pulseLabel("Working..."),
 	}
 
 	if m.installTotal > 0 {
+		bar := m.installBar
+		if m.width > 0 {
+			w := m.width / 2
+			if w < 24 {
+				w = 24
+			}
+			if w > 60 {
+				w = 60
+			}
+			bar.Width = w
+		}
 		parts = append(parts,
 			"",
-			renderProgressBar(m.installProgress, m.installTotal, m.globalToolsProgressWidth()),
+			bar.View(),
 			"",
 			infoStyle.Render(fmt.Sprintf("%d/%d complete", m.installProgress, m.installTotal)),
 		)
@@ -228,7 +237,7 @@ func (m setupModel) renderInstalling() string {
 	if m.installCurrent != "" {
 		parts = append(parts,
 			"",
-			titleStyle.Render("Current: "+m.installCurrent),
+			titleStyle.Render(m.pulseGlyph()+" Current: "+m.installCurrent),
 		)
 	}
 

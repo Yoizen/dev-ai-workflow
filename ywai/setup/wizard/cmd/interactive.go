@@ -5,8 +5,11 @@ import (
 	"os"
 	"strings"
 
+	"time"
+
 	"github.com/Yoizen/dev-ai-workflow/ywai/setup/wizard/pkg/installer"
 	syncpkg "github.com/Yoizen/dev-ai-workflow/ywai/setup/wizard/pkg/sync"
+	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -52,11 +55,13 @@ type setupModel struct {
 	width  int
 	height int
 
-	spinner  spinner.Model
-	quitting bool
-	cancel   bool
-	done     bool
-	err      error
+	spinner       spinner.Model
+	installBar    progress.Model
+	globalToolBar progress.Model
+	quitting      bool
+	cancel        bool
+	done          bool
+	err           error
 
 	pathInput textinput.Model
 
@@ -143,8 +148,19 @@ func newSetupModel(defaultPath string, baseFlags *installer.Flags) setupModel {
 	ti.Prompt = "  "
 
 	s := spinner.New()
-	s.Spinner = spinner.Dot
+	s.Spinner = spinner.MiniDot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("86"))
+
+	installBar := progress.New(
+		progress.WithGradient("#00BFA5", "#5CE1E6"),
+		progress.WithoutPercentage(),
+		progress.WithWidth(36),
+	)
+	globalBar := progress.New(
+		progress.WithGradient("#7D56F4", "#FF66C4"),
+		progress.WithoutPercentage(),
+		progress.WithWidth(36),
+	)
 
 	typeValues := []string{"generic", "nest", "nest-angular", "nest-react", "python", "dotnet", "devops"}
 	typeLabels := []string{
@@ -201,6 +217,8 @@ func newSetupModel(defaultPath string, baseFlags *installer.Flags) setupModel {
 		},
 		welcomeIdx:        0,
 		spinner:           s,
+		installBar:        installBar,
+		globalToolBar:     globalBar,
 		pathInput:         ti,
 		projectTypeValues: typeValues,
 		projectTypeLabels: typeLabels,
@@ -268,10 +286,20 @@ func newSetupModel(defaultPath string, baseFlags *installer.Flags) setupModel {
 	}
 }
 
+// animationTickMsg drives the header gradient cycle at a soft cadence.
+type animationTickMsg time.Time
+
+func animationTick() tea.Cmd {
+	return tea.Tick(140*time.Millisecond, func(t time.Time) tea.Msg {
+		return animationTickMsg(t)
+	})
+}
+
 func (m setupModel) Init() tea.Cmd {
 	return tea.Batch(
 		textinput.Blink,
 		m.spinner.Tick,
+		animationTick(),
 	)
 }
 
@@ -309,6 +337,26 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
+	case animationTickMsg:
+		if m.step == stepDone {
+			return m, nil
+		}
+		m.animationFrame++
+		return m, animationTick()
+	case progress.FrameMsg:
+		var cmds []tea.Cmd
+		var updated tea.Model
+		updated, cmd := m.installBar.Update(msg)
+		if bar, ok := updated.(progress.Model); ok {
+			m.installBar = bar
+		}
+		cmds = append(cmds, cmd)
+		updated, cmd = m.globalToolBar.Update(msg)
+		if bar, ok := updated.(progress.Model); ok {
+			m.globalToolBar = bar
+		}
+		cmds = append(cmds, cmd)
+		return m, tea.Batch(cmds...)
 	}
 
 	switch m.step {

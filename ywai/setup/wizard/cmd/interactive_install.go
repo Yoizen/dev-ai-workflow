@@ -63,18 +63,31 @@ func (m setupModel) installPhaseTotal(flags installer.Flags) int {
 	total := 0
 
 	if !flags.SkipGA {
-		total++
+		total++ // Installing GA
 	}
 	if flags.InstallSDD && !flags.SkipSDD {
-		total++
+		total++ // Installing SDD
 	}
 	if flags.InstallVSCode && !flags.SkipVSCode {
-		total++
+		total++ // Installing VS Code extensions
 	}
 
 	// OpenCode, project configuration, and extensions are always part of the
 	// main installation flow.
-	total += 3
+	total += 3 // OpenCode CLI + Configuring project + Installing extensions
+
+	// Extra fine-grained stages that fire during extensions installation when
+	// the relevant components are enabled. Tracking them individually keeps
+	// the animated bar moving instead of jumping straight to done.
+	if flags.InstallExt {
+		total += 2 // hooks + install-steps
+		if !flags.SkipHooks {
+			total++ // additional hook-level signal
+		}
+	}
+	if flags.InstallGlobal {
+		total += 2 // global agents + engram
+	}
 
 	if total <= 0 {
 		total = 1
@@ -150,7 +163,23 @@ func (m setupModel) updateInstallLog(msg installLogMsg) (tea.Model, tea.Cmd) {
 		m.installCurrent = stage
 	}
 
-	return m, nil
+	return m, m.installBarSetPercent()
+}
+
+// installBarSetPercent returns the SetPercent command so the animated gradient
+// bar eases toward the target fill ratio after each detected stage.
+func (m setupModel) installBarSetPercent() tea.Cmd {
+	if m.installTotal <= 0 {
+		return nil
+	}
+	target := float64(m.installProgress) / float64(m.installTotal)
+	if target < 0 {
+		target = 0
+	}
+	if target > 1 {
+		target = 1
+	}
+	return m.installBar.SetPercent(target)
 }
 
 func (m setupModel) updateInstallFinished(msg installFinishedMsg) (tea.Model, tea.Cmd) {
@@ -160,33 +189,44 @@ func (m setupModel) updateInstallFinished(msg installFinishedMsg) (tea.Model, te
 	if msg.err == nil {
 		m.installProgress = m.installTotal
 	}
-	return m, nil
+	return m, m.installBarSetPercent()
 }
 
 func (m setupModel) detectInstallStage(line string) string {
 	clean := strings.ToLower(strings.TrimSpace(line))
 
 	switch {
-	case strings.Contains(clean, "ga already installed"):
+	case strings.Contains(clean, "ga already installed"),
+		strings.Contains(clean, "installing ga"):
 		return "Installing GA"
-	case strings.Contains(clean, "installing ga"):
-		return "Installing GA"
-	case strings.Contains(clean, "sdd orchestrator installed"):
+	case strings.Contains(clean, "sdd orchestrator installed"),
+		strings.Contains(clean, "installing sdd"):
 		return "Installing SDD"
-	case strings.Contains(clean, "installing sdd"):
-		return "Installing SDD"
-	case strings.Contains(clean, "vs code cli not available"):
+	case strings.Contains(clean, "vs code cli not available"),
+		strings.Contains(clean, "installing vs code extensions"):
 		return "Installing VS Code extensions"
-	case strings.Contains(clean, "installing vs code extensions"):
-		return "Installing VS Code extensions"
-	case strings.Contains(clean, "opencode cli already installed"):
-		return "Installing OpenCode CLI"
-	case strings.Contains(clean, "opencode cli installed"):
-		return "Installing OpenCode CLI"
-	case strings.Contains(clean, "installing opencode cli"):
+	case strings.Contains(clean, "opencode cli already installed"),
+		strings.Contains(clean, "opencode cli installed"),
+		strings.Contains(clean, "installing opencode cli"):
 		return "Installing OpenCode CLI"
 	case strings.Contains(clean, "configuring project"):
 		return "Configuring project"
+	case strings.Contains(clean, "installing hooks"),
+		strings.Contains(clean, "installed ") && strings.Contains(clean, "hooks"):
+		return "Installing hooks"
+	case strings.Contains(clean, "installing mcps"),
+		strings.Contains(clean, "installed ") && strings.Contains(clean, "mcps"):
+		return "Installing MCP servers"
+	case strings.Contains(clean, "installing install-steps"),
+		strings.Contains(clean, "installed ") && strings.Contains(clean, "install-steps"):
+		return "Installing install-steps"
+	case strings.Contains(clean, "global agent"),
+		strings.Contains(clean, "updated ") && strings.Contains(clean, "global agent"):
+		return "Configuring global agents"
+	case strings.Contains(clean, "engram"):
+		return "Setting up Engram"
+	case strings.Contains(clean, "context7"):
+		return "Configuring Context7 MCP"
 	case strings.Contains(clean, "installing extensions"):
 		return "Installing extensions"
 	default:
