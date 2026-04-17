@@ -197,6 +197,11 @@ func (i *Installer) installHooks(allowed map[string]bool, hasConfig bool) error 
 }
 
 func (i *Installer) installMCPs(allowed map[string]bool, hasConfig bool) error {
+	if i.flags.SkipMCPs {
+		i.logger.LogInfo("Skipping MCPs (--skip-mcps)")
+		return nil
+	}
+
 	extensionsRoot := i.getExtensionsRoot()
 	if extensionsRoot == "" {
 		return nil
@@ -343,7 +348,23 @@ func (i *Installer) installInstallSteps(allowed map[string]bool, hasConfig bool)
 func (i *Installer) executeInstallStep(stepName, srcPath string) error {
 	switch stepName {
 	case "biome-baseline":
+		if i.flags.SkipBiome {
+			i.logger.LogInfo("Skipping biome-baseline (--skip-biome)")
+			return nil
+		}
 		return i.installBiome()
+	case "engram-setup":
+		if i.flags.SkipEngram {
+			i.logger.LogInfo("Skipping engram-setup (--skip-engram)")
+			return nil
+		}
+		return i.executeExtensionScript(srcPath)
+	case "github-prompts", "sdd-commands":
+		if i.flags.SkipCommands {
+			i.logger.LogInfo(fmt.Sprintf("Skipping %s (--skip-commands)", stepName))
+			return nil
+		}
+		return i.executeExtensionScript(srcPath)
 	case "global-agents":
 		// Delegate to the in-process generator instead of running install.sh
 		// to get consistent behavior across OS and preserve user-owned files.

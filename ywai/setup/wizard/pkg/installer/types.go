@@ -19,6 +19,12 @@ type Flags struct {
 	SkipSDD               bool
 	SkipVSCode            bool
 	SkipHooks             bool
+	SkipSkills            bool // Skip local ./skills/ copy and setup
+	SkipCommands          bool // Skip .github/prompts + OpenCode commands sync
+	SkipMCPs              bool // Skip MCP install-steps (context7-mcp, etc.)
+	SkipEngram            bool // Skip engram-setup install-step
+	SkipBiome             bool // Skip biome-baseline install-step (opt-in)
+	SkipDocs              bool // Skip AGENTS.md and REVIEW.md copy
 	Provider              string
 	DefaultModel          string
 	Target                string

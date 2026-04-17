@@ -35,16 +35,51 @@ func (m setupModel) buildProjectInstallFlags() installer.Flags {
 	flags.UpdateAll = m.updateMode
 
 	// componentValues indices MUST stay in sync with componentNames in
-	// newSetupModel:
-	//   0 GA, 1 SDD, 2 VSCode, 3 Extensions, 4 Global, 5 Hooks, 6 DryRun
-	flags.InstallGA = m.componentValues[0]
-	flags.InstallSDD = m.componentValues[1]
-	flags.InstallVSCode = m.componentValues[2]
-	flags.InstallExt = m.componentValues[3]
-	flags.InstallGlobal = m.componentValues[4]
-	flags.SkipHooks = !m.componentValues[5]
-	if len(m.componentValues) > 6 {
-		flags.DryRun = m.componentValues[6]
+	// newSetupModel. Custom mode maps each boolean to a granular flag.
+	//   0 Docs (AGENTS.md / REVIEW.md)
+	//   1 Skills
+	//   2 Commands
+	//   3 MCPs
+	//   4 GA
+	//   5 Engram
+	//   6 Global agents
+	//   7 Hooks
+	//   8 Biome
+	//   9 Dry run
+	if m.installModeIdx == 0 {
+		// "All recommended" short-circuit: apply the happy-path defaults
+		// regardless of whatever the user might have toggled in Custom
+		// before bouncing back.
+		flags.InstallGA = true
+		flags.InstallSDD = true
+		flags.InstallVSCode = true
+		flags.InstallExt = true
+		flags.InstallGlobal = true
+		flags.SkipHooks = false
+		flags.SkipBiome = true // opt-in, not part of "recommended"
+	} else {
+		flags.SkipDocs = !m.componentValues[0]
+		flags.SkipSkills = !m.componentValues[1]
+		flags.SkipCommands = !m.componentValues[2]
+		flags.SkipMCPs = !m.componentValues[3]
+		flags.InstallGA = m.componentValues[4]
+		flags.SkipGA = !m.componentValues[4]
+		flags.SkipEngram = !m.componentValues[5]
+		flags.InstallGlobal = m.componentValues[6]
+		flags.SkipHooks = !m.componentValues[7]
+		flags.SkipBiome = !m.componentValues[8]
+		if len(m.componentValues) > 9 {
+			flags.DryRun = m.componentValues[9]
+		}
+
+		// Project integrations umbrella stays on in Custom mode too so the
+		// hook / MCP / install-step pipeline runs (individual pieces are
+		// gated by the Skip* flags).
+		flags.InstallExt = true
+		// SDD and VS Code default ON in custom too (they are not in the
+		// 9-item list but remain part of the "integration" defaults).
+		flags.InstallSDD = true
+		flags.InstallVSCode = true
 	}
 	flags.Silent = true
 

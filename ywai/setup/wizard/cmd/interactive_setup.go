@@ -12,15 +12,13 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// isComponentLocked reports whether a component cannot be toggled off. With
+// the granular 10-item list nothing is hard-locked anymore — every component
+// is individually togglable. The function is kept as a single point of truth
+// in case we need to reintroduce lock rules in the future (e.g. "require GA
+// when provider is OpenCode").
 func (m setupModel) isComponentLocked(idx int) bool {
-	switch idx {
-	case 0, 3:
-		return true
-	case 2, 4:
-		return strings.EqualFold(m.providerValues[m.providerIdx], "opencode")
-	default:
-		return false
-	}
+	return false
 }
 
 func detectProjectTypeFromPath(target string) string {
@@ -194,7 +192,7 @@ func (m setupModel) updateModel(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyMsg:
 			switch msg.String() {
 			case "enter":
-				m.step = stepComponents
+				m.step = stepInstallMode
 				m.modelInput.Blur()
 			case "esc":
 				m.modelCustom = false
@@ -222,10 +220,44 @@ func (m setupModel) updateModel(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.modelCustom = true
 				m.modelInput.Focus()
 			} else {
-				m.step = stepComponents
+				m.step = stepInstallMode
 			}
 		case "b":
 			m.step = stepProvider
+		}
+	}
+	return m, nil
+}
+
+// updateInstallMode handles the "Install recommended? (Y/n)" screen. Enter on
+// "All recommended" jumps straight to the Review step; Enter on "Custom"
+// opens the 10-item component checklist.
+func (m setupModel) updateInstallMode(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "up", "k":
+			if m.installModeIdx > 0 {
+				m.installModeIdx--
+			}
+		case "down", "j":
+			if m.installModeIdx < len(m.installModeOptions)-1 {
+				m.installModeIdx++
+			}
+		case "y", "Y":
+			m.installModeIdx = 0
+			m.step = stepConfirm
+		case "n", "N":
+			m.installModeIdx = 1
+			m.step = stepComponents
+		case "enter":
+			if m.installModeIdx == 0 {
+				m.step = stepConfirm
+			} else {
+				m.step = stepComponents
+			}
+		case "b":
+			m.step = stepModel
 		}
 	}
 	return m, nil
@@ -247,10 +279,26 @@ func (m setupModel) updateComponents(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if !m.isComponentLocked(m.componentCursor) {
 				m.componentValues[m.componentCursor] = !m.componentValues[m.componentCursor]
 			}
+		case "a":
+			// 'a' = toggle "all on" / "all off" (keeps Biome and DryRun
+			// opt-in even when selecting all).
+			allSet := true
+			for idx, v := range m.componentValues {
+				if !v && !m.isComponentOptional(idx) {
+					allSet = false
+					break
+				}
+			}
+			for idx := range m.componentValues {
+				if m.isComponentOptional(idx) {
+					continue // leave Biome / DryRun untouched
+				}
+				m.componentValues[idx] = !allSet
+			}
 		case "enter":
 			m.step = stepConfirm
 		case "b":
-			m.step = stepModel
+			m.step = stepInstallMode
 		}
 	}
 	return m, nil
@@ -263,10 +311,22 @@ func (m setupModel) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter", "y":
 			return m.beginProjectInstallation()
 		case "n", "b":
-			m.step = stepComponents
+			// Go back to whichever screen the user came from.
+			if m.installModeIdx == 0 {
+				m.step = stepInstallMode
+			} else {
+				m.step = stepComponents
+			}
 		}
 	}
 	return m, nil
+}
+
+// isComponentOptional reports whether a component index represents an opt-in
+// toggle that "select-all" should leave untouched (Biome, Dry run).
+func (m setupModel) isComponentOptional(idx int) bool {
+	// Indices map to componentNames; Biome=8, DryRun=9.
+	return idx == 8 || idx == 9
 }
 
 func (m setupModel) renderPathStep() string {
@@ -383,8 +443,39 @@ func (m setupModel) getSelectedModel() string {
 	return m.modelPresets[m.modelPresetIdx]
 }
 
+// renderInstallModeStep presents the "Install recommended? (Y/n)" radio.
+func (m setupModel) renderInstallModeStep() string {
+	box := activeBoxStyle.Render(m.currentModeLabel() + " • Install Mode")
+
+	var items []string
+	for idx, label := range m.installModeOptions {
+		prefix := "(  )"
+		s := itemStyle
+		if idx == m.installModeIdx {
+			prefix = "( ● )"
+			s = selectedItemStyle
+		}
+		items = append(items, s.Render(fmt.Sprintf("%s %s", prefix, label)))
+	}
+
+	hint := infoStyle.Render(
+		"Press Y (or Enter on 'All recommended') to install every component with sane defaults.\n" +
+			"Press N to pick each component individually (AGENTS.md, Skills, Commands, MCPs, GA,\n" +
+			"Engram, Global agents, Hooks and Biome).",
+	)
+
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		box,
+		"",
+		lipgloss.JoinVertical(lipgloss.Left, items...),
+		"",
+		hint,
+	)
+}
+
 func (m setupModel) renderComponentsStep() string {
-	box := activeBoxStyle.Render(m.currentModeLabel() + " • Components")
+	box := activeBoxStyle.Render(m.currentModeLabel() + " • Components (Custom)")
 	var items []string
 
 	for idx, name := range m.componentNames {
@@ -398,18 +489,8 @@ func (m setupModel) renderComponentsStep() string {
 		if m.componentValues[idx] {
 			prefix = "[✓]"
 		}
-		if m.isComponentLocked(idx) {
-			prefix = "[•]"
-		}
 
 		line := fmt.Sprintf("%s %s", prefix, name)
-		if m.isComponentLocked(idx) {
-			if idx == 0 || idx == 3 {
-				line += helpStyle.Render("  (required)")
-			} else {
-				line += helpStyle.Render("  (required for OpenCode)")
-			}
-		}
 		items = append(items, s.Render(line))
 	}
 
@@ -419,9 +500,9 @@ func (m setupModel) renderComponentsStep() string {
 		lipgloss.Left,
 		box,
 		"",
-		infoStyle.Render("Choose the optional parts of the workflow:"),
+		infoStyle.Render("Toggle every component you want installed:"),
 		"",
-		helpStyle.Render("Items marked as required are managed automatically and cannot be disabled here."),
+		helpStyle.Render("Space to toggle  •  A to select/deselect all  •  Enter to continue  •  B to go back"),
 		"",
 		content,
 	)
@@ -442,6 +523,11 @@ func (m setupModel) renderConfirmStep() string {
 		model = "(agent default)"
 	}
 
+	modeLabel := "All recommended"
+	if m.installModeIdx == 1 {
+		modeLabel = "Custom selection"
+	}
+
 	lines := []string{
 		infoStyle.Render(fmt.Sprintf("Ready to %s YWAI in this project:", strings.ToLower(m.currentModeLabel()))),
 		"",
@@ -449,18 +535,25 @@ func (m setupModel) renderConfirmStep() string {
 		"  " + successStyle.Render("▶") + " Type: " + subtitleStyle.Render(projectType),
 		"  " + successStyle.Render("▶") + " Provider: " + subtitleStyle.Render(provider),
 		"  " + successStyle.Render("▶") + " Model: " + subtitleStyle.Render(model),
+		"  " + successStyle.Render("▶") + " Mode: " + subtitleStyle.Render(modeLabel),
 		"",
 		infoStyle.Render("What will be applied:"),
 	}
 
+	// Show the list of components. In "All recommended" mode we enumerate
+	// the defaults (everything except Biome and DryRun); in "Custom" we
+	// reflect the user's checkbox selection.
 	for idx, name := range m.componentNames {
-		if m.componentValues[idx] || m.isComponentLocked(idx) {
-			status := successStyle.Render("✓")
-			label := name
-			if m.isComponentLocked(idx) {
-				label += " (automatic)"
-			}
-			lines = append(lines, "    "+status+" "+label)
+		enabled := false
+		if m.installModeIdx == 0 {
+			enabled = !m.isComponentOptional(idx)
+		} else {
+			enabled = m.componentValues[idx]
+		}
+		if enabled {
+			lines = append(lines, "    "+successStyle.Render("✓")+" "+name)
+		} else {
+			lines = append(lines, "    "+helpStyle.Render("○ "+name))
 		}
 	}
 

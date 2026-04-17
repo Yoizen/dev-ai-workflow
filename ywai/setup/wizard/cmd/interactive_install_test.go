@@ -30,51 +30,88 @@ func TestIsInstallWarningLine(t *testing.T) {
 	}
 }
 
-// TestBuildProjectInstallFlags_ComponentIndicesStayInSync guards against a
-// previous regression where buildProjectInstallFlags read DryRun from
-// componentValues[5] (the Hooks entry) causing the installer to silently
-// skip all repo writes.
-func TestBuildProjectInstallFlags_ComponentIndicesStayInSync(t *testing.T) {
+// TestBuildProjectInstallFlags_AllRecommended verifies the happy-path mode
+// applies sane defaults regardless of componentValues state.
+func TestBuildProjectInstallFlags_AllRecommended(t *testing.T) {
 	m := newSetupModel(".", nil)
+	m.installModeIdx = 0 // All recommended
 
-	// Default values mirror a brand-new user hitting Enter through the
-	// wizard: GA, SDD, VSCode, Ext, (not global), hooks, (not dry run).
 	got := m.buildProjectInstallFlags()
 
-	if got.DryRun {
-		t.Errorf("DryRun must default to false when componentValues[6]=false; index drift detected")
-	}
-	if got.SkipHooks {
-		t.Errorf("SkipHooks must default to false when componentValues[5]=true")
-	}
 	if !got.InstallGA {
-		t.Errorf("InstallGA must follow componentValues[0]")
+		t.Errorf("All recommended must enable InstallGA")
 	}
 	if !got.InstallSDD {
-		t.Errorf("InstallSDD must follow componentValues[1]")
-	}
-	if !got.InstallVSCode {
-		t.Errorf("InstallVSCode must follow componentValues[2]")
+		t.Errorf("All recommended must enable InstallSDD")
 	}
 	if !got.InstallExt {
-		t.Errorf("InstallExt must follow componentValues[3]")
+		t.Errorf("All recommended must enable InstallExt (umbrella)")
 	}
-
-	// Flip dry-run via the correct index and ensure it takes effect.
-	m.componentValues[6] = true
-	got = m.buildProjectInstallFlags()
-	if !got.DryRun {
-		t.Errorf("DryRun must become true when componentValues[6]=true")
+	if got.SkipHooks {
+		t.Errorf("All recommended must not skip hooks")
 	}
-
-	// Flip hooks off and ensure SkipHooks is set.
-	m.componentValues[5] = false
-	m.componentValues[6] = false
-	got = m.buildProjectInstallFlags()
-	if !got.SkipHooks {
-		t.Errorf("SkipHooks must become true when componentValues[5]=false")
+	if !got.SkipBiome {
+		t.Errorf("Biome is opt-in and must be skipped under All recommended")
 	}
 	if got.DryRun {
-		t.Errorf("DryRun must remain false when only hooks was flipped")
+		t.Errorf("All recommended must not enable DryRun")
+	}
+}
+
+// TestBuildProjectInstallFlags_CustomMode exercises the 10-item index
+// mapping in Custom mode and prevents index-drift regressions like the
+// previous DryRun-at-index-5 bug.
+func TestBuildProjectInstallFlags_CustomMode(t *testing.T) {
+	m := newSetupModel(".", nil)
+	m.installModeIdx = 1 // Custom
+
+	// Defaults of the 10-item checklist: Docs, Skills, Commands, MCPs, GA,
+	// Engram, Global, Hooks = ON; Biome, DryRun = OFF.
+	got := m.buildProjectInstallFlags()
+
+	if got.SkipDocs {
+		t.Errorf("SkipDocs must be false when componentValues[0]=true")
+	}
+	if got.SkipSkills {
+		t.Errorf("SkipSkills must be false when componentValues[1]=true")
+	}
+	if got.SkipCommands {
+		t.Errorf("SkipCommands must be false when componentValues[2]=true")
+	}
+	if got.SkipMCPs {
+		t.Errorf("SkipMCPs must be false when componentValues[3]=true")
+	}
+	if got.SkipGA || !got.InstallGA {
+		t.Errorf("GA must be enabled when componentValues[4]=true")
+	}
+	if got.SkipEngram {
+		t.Errorf("SkipEngram must be false when componentValues[5]=true")
+	}
+	if !got.InstallGlobal {
+		t.Errorf("InstallGlobal must be true when componentValues[6]=true")
+	}
+	if got.SkipHooks {
+		t.Errorf("SkipHooks must be false when componentValues[7]=true")
+	}
+	if !got.SkipBiome {
+		t.Errorf("SkipBiome must be true when componentValues[8]=false (default)")
+	}
+	if got.DryRun {
+		t.Errorf("DryRun must be false when componentValues[9]=false (default)")
+	}
+
+	// Flip Biome ON, DryRun ON, Docs OFF and verify propagation.
+	m.componentValues[0] = false // Docs off
+	m.componentValues[8] = true  // Biome on
+	m.componentValues[9] = true  // DryRun on
+	got = m.buildProjectInstallFlags()
+	if !got.SkipDocs {
+		t.Errorf("SkipDocs must follow componentValues[0]=false")
+	}
+	if got.SkipBiome {
+		t.Errorf("SkipBiome must follow componentValues[8]=true (enabled)")
+	}
+	if !got.DryRun {
+		t.Errorf("DryRun must follow componentValues[9]=true")
 	}
 }

@@ -54,6 +54,8 @@ func (m setupModel) renderBody() string {
 		content = m.renderProviderStep()
 	case stepModel:
 		content = m.renderModelStep()
+	case stepInstallMode:
+		content = m.renderInstallModeStep()
 	case stepComponents:
 		content = m.renderComponentsStep()
 	case stepConfirm:
@@ -148,9 +150,13 @@ func (m setupModel) renderStepIndicator() string {
 		return strings.Join(parts, infoStyle.Render("  ·  "))
 	}
 
-	// stepWelcome is not part of the wizard steps — offset by 1
-	stepNames := []string{"Path", "Type", "Provider", "Model", "Components", "Review"}
-	stepEnums := []interactiveStep{stepPath, stepProjectType, stepProvider, stepModel, stepComponents, stepConfirm}
+	// stepWelcome is not part of the wizard steps — offset by 1.
+	// In "All recommended" mode the Components step is skipped; we still
+	// render it in the indicator (greyed out as "Components") so the visual
+	// doesn't collapse unexpectedly, but using the install-mode branch makes
+	// jumping from Mode -> Confirm transparent.
+	stepNames := []string{"Path", "Type", "Provider", "Model", "Mode", "Components", "Review"}
+	stepEnums := []interactiveStep{stepPath, stepProjectType, stepProvider, stepModel, stepInstallMode, stepComponents, stepConfirm}
 
 	var parts []string
 	for i, s := range stepNames {
@@ -194,8 +200,10 @@ func (m setupModel) renderFooter() string {
 		keys = []string{"Enter", "next", "ctrl+f", "browse", "ctrl+b", "back", "ctrl+q", "quit"}
 	case stepProjectType, stepProvider:
 		keys = []string{"↑↓", "move", "Enter", "next", "b", "back", "q", "quit"}
+	case stepInstallMode:
+		keys = []string{"↑↓", "move", "Y/N", "quick", "Enter", "next", "b", "back", "q", "quit"}
 	case stepComponents:
-		keys = []string{"↑↓", "move", "Space", "toggle", "Enter", "next", "b", "back", "q", "quit"}
+		keys = []string{"↑↓", "move", "Space", "toggle", "a", "all", "Enter", "next", "b", "back", "q", "quit"}
 	case stepConfirm:
 		keys = []string{"Enter", "confirm", "n/b", "back", "q", "quit"}
 	case stepSkillSelect:

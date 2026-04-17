@@ -24,6 +24,7 @@ const (
 	stepProjectType
 	stepProvider
 	stepModel
+	stepInstallMode // Ask "Install recommended, or customize?"
 	stepComponents
 	stepConfirm
 	stepSkillSelect
@@ -82,6 +83,10 @@ type setupModel struct {
 	componentNames  []string
 	componentValues []bool
 	componentCursor int
+
+	// installModeIdx: 0 = All recommended, 1 = Custom (show componentsStep).
+	installModeIdx     int
+	installModeOptions []string
 
 	welcomeIdx     int
 	welcomeOptions []string
@@ -254,16 +259,27 @@ func newSetupModel(defaultPath string, baseFlags *installer.Flags) setupModel {
 		},
 		modelPresetIdx: 0,
 		modelCustom:    false,
+		// Custom mode components (order and defaults must stay in sync with
+		// componentKeys below and with buildProjectInstallFlags).
 		componentNames: []string{
-			"Core runtime: GA / base setup",
-			"SDD Orchestrator",
-			"VS Code + Copilot extensions",
-			"Project integrations and extensions",
-			"Global agents / skills",
-			"Hooks (opencode-command-hooks, biome, etc.)",
-			"Dry run (preview only)",
+			"AGENTS.md / REVIEW.md",                  // 0 -> SkipDocs=!v
+			"Skills (local ./skills/)",               // 1 -> SkipSkills=!v
+			"Commands (.github/prompts, OpenCode)",   // 2 -> SkipCommands=!v
+			"MCPs (Context7)",                        // 3 -> SkipMCPs=!v
+			"GA (Guardian Agent)",                    // 4 -> SkipGA=!v
+			"Engram (project memory)",                // 5 -> SkipEngram=!v
+			"Global agents (~/.claude, ~/.copilot)",  // 6 -> InstallGlobal=v
+			"Hooks (opencode-command-hooks)",         // 7 -> SkipHooks=!v
+			"Biome formatter/linter (opt-in)",        // 8 -> SkipBiome=!v
+			"Dry run (preview only)",                 // 9 -> DryRun=v
 		},
-		componentValues:    []bool{true, true, true, true, false, true, false},
+		// Defaults: everything on except Biome (opt-in) and DryRun.
+		componentValues:    []bool{true, true, true, true, true, true, true, true, false, false},
+		installModeIdx:     0,
+		installModeOptions: []string{
+			"All recommended (install everything)",
+			"Custom (pick components)",
+		},
 		agentTypeIdx:       0,
 		agentTypeOptions:   []string{"primary", "subagent"},
 		agentNameInput:     nameTi,
@@ -408,6 +424,8 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateProvider(msg)
 	case stepModel:
 		return m.updateModel(msg)
+	case stepInstallMode:
+		return m.updateInstallMode(msg)
 	case stepComponents:
 		return m.updateComponents(msg)
 	case stepConfirm:

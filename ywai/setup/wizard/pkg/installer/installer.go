@@ -31,9 +31,14 @@ func New(flags *Flags) *Installer {
 
 	logger := ui.NewLogger(flags.Silent, output)
 
-	// ALWAYS install GA, Context7-MCP, and Engram - no matter what
-	// These are the base components that should always be present
-	flags.InstallGA = true
+	// GA and Extensions are on by default but can be individually disabled by
+	// the user (via --skip-ga, --skip-mcps, --skip-engram, etc.). The wizard's
+	// Custom mode uses these skip flags to honor granular choices; the
+	// non-interactive CLI path retains the previous "all recommended" default
+	// unless the user explicitly opts out.
+	if !flags.SkipGA {
+		flags.InstallGA = true
+	}
 	flags.InstallExt = true
 
 	// OpenCode and GitHub Copilot go together by default.

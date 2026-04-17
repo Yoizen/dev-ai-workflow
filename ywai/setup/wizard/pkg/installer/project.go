@@ -22,20 +22,26 @@ func (i *Installer) configureProject() error {
 		return err
 	}
 
-	if err := i.installTypeSkills(); err != nil {
-		i.logger.LogWarning("Failed to install type skills")
+	if i.flags.SkipSkills {
+		i.logger.LogInfo("Skipping local skills (--skip-skills)")
+	} else {
+		if err := i.installTypeSkills(); err != nil {
+			i.logger.LogWarning("Failed to install type skills")
+		}
+		if err := i.copySharedSkills(); err != nil {
+			i.logger.LogWarning("Failed to copy shared skills")
+		}
+		if err := i.runLocalSkillsSetup(); err != nil {
+			i.logger.LogWarning("Failed to run local skills setup")
+		}
 	}
 
-	if err := i.copySharedSkills(); err != nil {
-		i.logger.LogWarning("Failed to copy shared skills")
-	}
-
-	if err := i.runLocalSkillsSetup(); err != nil {
-		i.logger.LogWarning("Failed to run local skills setup")
-	}
-
-	if err := i.copyCommands(); err != nil {
-		i.logger.LogWarning("Failed to copy commands")
+	if i.flags.SkipCommands {
+		i.logger.LogInfo("Skipping commands sync (--skip-commands)")
+	} else {
+		if err := i.copyCommands(); err != nil {
+			i.logger.LogWarning("Failed to copy commands")
+		}
 	}
 
 	if err := i.updateGitignore(); err != nil {
@@ -82,6 +88,10 @@ func (i *Installer) applyProjectType() error {
 
 	typeConfig := types.Types[pt]
 
+	if i.flags.SkipDocs {
+		i.logger.LogInfo("Skipping AGENTS.md / REVIEW.md (--skip-docs)")
+	}
+
 	docs := []struct {
 		relPath  string
 		destName string
@@ -91,6 +101,9 @@ func (i *Installer) applyProjectType() error {
 	}
 
 	for _, doc := range docs {
+		if i.flags.SkipDocs {
+			break
+		}
 		sourcePath := i.firstExistingFile(i.ywaiCandidates(false, i.typeDocCandidatePaths(pt, doc.destName, doc.relPath)...)...)
 		destPath := filepath.Join(i.targetDir, doc.destName)
 
