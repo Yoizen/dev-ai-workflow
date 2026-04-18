@@ -353,6 +353,14 @@ func (i *Installer) executeInstallStep(stepName, srcPath string) error {
 			return nil
 		}
 		return i.installBiome()
+	case "plannotator-setup":
+		// Global-scope install-step: installs plannotator CLI and configures
+		// detected agent tools (Gemini ~/.gemini, Claude, Copilot, Pi).
+		// In GlobalOnly mode, pass /tmp so the script skips opencode.json edits.
+		if i.flags.GlobalOnly {
+			return i.executeExtensionScriptWithArgs(srcPath, "/tmp")
+		}
+		return i.executeExtensionScript(srcPath)
 	case "engram-setup":
 		if i.flags.SkipEngram {
 			i.logger.LogInfo("Skipping engram-setup (--skip-engram)")
@@ -458,6 +466,11 @@ func (i *Installer) selectedExtensionsByType() (map[string]map[string]bool, bool
 		if i.presetAllowsGlobalSkills() {
 			selected["install-steps"]["global-skills"] = true
 		}
+		hasConfig = true
+	}
+
+	if i.flags.InstallPlannotator {
+		selected["install-steps"]["plannotator-setup"] = true
 		hasConfig = true
 	}
 

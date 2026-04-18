@@ -41,8 +41,9 @@ func (m setupModel) updateWelcome(msg tea.Msg) (tea.Model, tea.Cmd) {
 					"Global agents & skills",
 					"Engram CLI",
 					"Context7 MCP",
+					"Plannotator (plan/diff review)",
 				}
-				m.globalToolValues = []bool{true, true, true, true, true}
+				m.globalToolValues = []bool{true, true, true, true, true, false}
 				m.globalToolCursor = 0
 				m.globalToolDone = false
 				m.step = stepGlobalTools

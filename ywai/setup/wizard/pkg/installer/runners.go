@@ -276,6 +276,21 @@ func (i *Installer) UpdateEngram() error {
 	return i.executeExtensionScriptWithArgs(extDir, "")
 }
 
+func (i *Installer) UpdatePlannotator() error {
+	extDir := i.firstExistingDir(
+		i.ywaiCandidates(false, "extensions/install-steps/plannotator-setup")...,
+	)
+	if extDir == "" {
+		return fmt.Errorf("plannotator-setup extension not found in any YWAI location")
+	}
+
+	// In GlobalOnly mode, pass /tmp to prevent repo writes (opencode.json edits).
+	if i.flags.GlobalOnly {
+		return i.executeExtensionScriptWithArgs(extDir, "/tmp")
+	}
+	return i.executeExtensionScriptWithArgs(extDir, "")
+}
+
 func (i *Installer) UpdateContext7() error {
 	extDir := i.firstExistingDir(
 		i.ywaiCandidates(false, "extensions/mcps/context7-mcp")...,

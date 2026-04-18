@@ -159,6 +159,8 @@ func (m setupModel) updateGlobalToolsRunning(msg tea.Msg) (tea.Model, tea.Cmd) {
 				err = inst.UpdateEngram()
 			case 4: // Context7
 				err = inst.UpdateContext7()
+			case 5: // Plannotator
+				err = inst.UpdatePlannotator()
 			default:
 				err = fmt.Errorf("unknown global tool index: %d", nextIndex)
 			}

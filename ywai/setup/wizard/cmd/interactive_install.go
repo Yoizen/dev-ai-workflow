@@ -69,7 +69,10 @@ func (m setupModel) buildProjectInstallFlags() installer.Flags {
 		flags.SkipHooks = !m.componentValues[7]
 		flags.SkipBiome = !m.componentValues[8]
 		if len(m.componentValues) > 9 {
-			flags.DryRun = m.componentValues[9]
+			flags.InstallPlannotator = m.componentValues[9]
+		}
+		if len(m.componentValues) > 10 {
+			flags.DryRun = m.componentValues[10]
 		}
 
 		// Project integrations umbrella stays on in Custom mode too so the
