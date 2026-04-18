@@ -158,7 +158,7 @@ Write-Log "Running metronous install to configure OpenCode and register service"
 Write-Warn "This step requires an elevated (Administrator) terminal to register the Windows service."
 
 try {
-    & $metronousCmd install 2>&1 | ForEach-Object { Write-Log $_ }
+    & $metronousCmd install --yes 2>&1 | ForEach-Object { Write-Log $_ }
     Write-Log "OpenCode configured with metronous"
     $configured = 1
 } catch {
