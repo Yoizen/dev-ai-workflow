@@ -24,7 +24,7 @@ func (i *Installer) updateGitignore() error {
 	patterns := []string{
 		"# Dependencies", "node_modules/", "",
 		"# Environment", ".env", ".env.local", ".env.*.local", "",
-		"# AI Assistants", "CLAUDE.md", "CURSOR.md", "GEMINI.md", ".cursorrules", ".ga", ".gga", ".claude/", "",
+		"# AI Assistants", "CLAUDE.md", "CURSOR.md", "GEMINI.md", ".cursorrules", ".ga", ".gga", ".claude/", ".ywai/", "",
 		"# OpenCode", ".opencode/plugins/**/node_modules/", ".opencode/plugins/**/dist/", ".opencode/**/cache/", "",
 		"# System", ".DS_Store", "Thumbs.db", "",
 		"# Logs", "*.log", "logs/", "",

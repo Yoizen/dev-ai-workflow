@@ -70,6 +70,7 @@ A complete Go reimplementation of the bash-based setup wizard for the dev-ai-wor
 - Biome configuration and installation
 - Update all components
 - Dry-run mode with detailed preview
+- Preset-based installation (minimal/standard/full) orthogonal to project type
 
 ## Package Structure
 

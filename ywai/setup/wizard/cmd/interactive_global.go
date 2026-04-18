@@ -248,7 +248,7 @@ func (m setupModel) renderGlobalToolsStep() string {
 		return m.renderGlobalToolsSummary()
 	}
 
-	subtitle := subtitleStyle.Render("Select which global tools to update (no repo needed)")
+	subtitle := bodyStyle.Render("Select which global tools to update (no repo needed)")
 
 	var items []string
 	for idx, name := range m.globalToolNames {
@@ -269,7 +269,7 @@ func (m setupModel) renderGlobalToolsStep() string {
 	parts := []string{
 		subtitle,
 		"",
-		infoStyle.Render("Space toggle | a select all | Enter confirm | q back"),
+		captionStyle.Render("Space toggle | a select all | Enter confirm | q back"),
 		"",
 		menu,
 	}
@@ -295,12 +295,12 @@ func (m setupModel) renderGlobalToolsStep() string {
 func (m setupModel) renderGlobalToolsSummary() string {
 	icon := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("84")).
+		Foreground(successColor).
 		Render("✓")
 
 	title := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("86")).
+		Foreground(successColor).
 		Render("Global tools updated")
 
 	parts := []string{
@@ -325,7 +325,7 @@ func (m setupModel) renderGlobalToolsSummary() string {
 	}
 
 	parts = append(parts,
-		helpStyle.Render("Press Enter or q to return to the main menu"),
+		captionStyle.Render("Press Enter or q to return to the main menu"),
 	)
 
 	return lipgloss.JoinVertical(lipgloss.Center, parts...)
@@ -333,7 +333,7 @@ func (m setupModel) renderGlobalToolsSummary() string {
 
 func (m setupModel) renderGlobalToolsRunningStep() string {
 	parts := []string{
-		subtitleStyle.Render("Updating global tools..."),
+		h2Style.Render("Updating global tools..."),
 		"",
 	}
 
@@ -343,7 +343,7 @@ func (m setupModel) renderGlobalToolsRunningStep() string {
 		parts = append(parts,
 			bar.View(),
 			"",
-			infoStyle.Render(fmt.Sprintf("%d/%d complete", m.globalToolProgress, m.globalToolTotal)),
+			bodyStyle.Render(fmt.Sprintf("%d/%d complete", m.globalToolProgress, m.globalToolTotal)),
 			"",
 		)
 	}
@@ -355,7 +355,7 @@ func (m setupModel) renderGlobalToolsRunningStep() string {
 	if m.globalToolCurrent != "" {
 		parts = append(parts,
 			"",
-			titleStyle.Render(m.pulseGlyph()+" Now updating: "+m.globalToolCurrent),
+			h3Style.Render(m.pulseGlyph()+" Now updating: "+m.globalToolCurrent),
 		)
 	}
 
@@ -375,7 +375,7 @@ func (m setupModel) renderGlobalToolsRunningStep() string {
 
 	parts = append(parts,
 		"",
-		helpStyle.Render("Each tool updates in sequence, so the bar reflects real completed work."),
+		captionStyle.Render("Each tool updates in sequence, so the bar reflects real completed work."),
 	)
 
 	return lipgloss.JoinVertical(

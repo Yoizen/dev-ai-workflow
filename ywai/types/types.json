@@ -223,6 +223,7 @@
       ],
       "install-steps": [
         "github-prompts",
+        "global-agents",
         "engram-setup",
         "shared-skills",
         "global-skills"

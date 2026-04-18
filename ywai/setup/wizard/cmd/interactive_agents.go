@@ -673,15 +673,15 @@ func (m setupModel) renderAgentTypeStep() string {
 	box := activeBoxStyle.Render("Agent Type")
 
 	options := []string{
-		"primary  - Main agent (switch with Tab)",
-		"subagent - Specialized agent (invoke with @)",
+		"🎯 primary  - Main agent (switch with Tab)",
+		"🤖 subagent - Specialized agent (invoke with @)",
 	}
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		box,
 		"",
-		infoStyle.Render("Select agent type:"),
+		bodyStyle.Render("Select agent type:"),
 		"",
 		m.renderList(options, m.agentTypeIdx),
 	)
@@ -696,9 +696,9 @@ func (m setupModel) renderAgentNameStep() string {
 		lipgloss.Left,
 		box,
 		"",
-		lipgloss.NewStyle().Foreground(lipgloss.Color("250")).PaddingLeft(2).Render("Enter agent name:"),
+		bodyStyle.Render("Enter agent name:"),
 		"",
-		itemStyle.Render(inputView),
+		itemStyle.Render("📝 " + inputView),
 	)
 }
 
@@ -711,9 +711,9 @@ func (m setupModel) renderAgentDescriptionStep() string {
 		lipgloss.Left,
 		box,
 		"",
-		lipgloss.NewStyle().Foreground(lipgloss.Color("250")).PaddingLeft(2).Render("Brief description of what this agent does:"),
+		bodyStyle.Render("Brief description of what this agent does:"),
 		"",
-		itemStyle.Render(inputView),
+		itemStyle.Render("📝 " + inputView),
 	)
 }
 
@@ -726,9 +726,9 @@ func (m setupModel) renderAgentPromptStep() string {
 		lipgloss.Left,
 		box,
 		"",
-		lipgloss.NewStyle().Foreground(lipgloss.Color("250")).PaddingLeft(2).Render("System prompt (role and behavior):"),
+		bodyStyle.Render("System prompt (role and behavior):"),
 		"",
-		itemStyle.Render(inputView),
+		itemStyle.Render("📝 " + inputView),
 	)
 }
 
@@ -758,7 +758,7 @@ func (m setupModel) renderAgentToolsStep() string {
 		lipgloss.Left,
 		box,
 		"",
-		infoStyle.Render("Select tools (space to toggle):"),
+		bodyStyle.Render("Select tools (space to toggle):"),
 		"",
 		content,
 	)
@@ -780,23 +780,23 @@ func (m setupModel) renderAgentConfirmStep() string {
 	agentType := m.agentTypeOptions[m.agentTypeIdx]
 
 	lines := []string{
-		infoStyle.Render("Ready to create agent:"),
+		h2Style.Render("Ready to create agent:"),
 		"",
-		"  " + successStyle.Render("▶") + " Name: " + subtitleStyle.Render(name),
-		"  " + successStyle.Render("▶") + " Type: " + subtitleStyle.Render(agentType),
-		"  " + successStyle.Render("▶") + " Description: " + subtitleStyle.Render(description),
+		"  " + successStyle.Render("✓") + " Name: " + bodyStyle.Render(name),
+		"  " + successStyle.Render("✓") + " Type: " + bodyStyle.Render(agentType),
+		"  " + successStyle.Render("✓") + " Description: " + bodyStyle.Render(description),
 		"",
-		infoStyle.Render("Tools enabled:"),
+		h3Style.Render("Tools enabled:"),
 	}
 
 	for idx, tool := range m.agentToolNames {
 		if m.agentToolValues[idx] {
-			lines = append(lines, "    "+successStyle.Render("✓")+" "+tool)
+			lines = append(lines, "    "+successStyle.Render("✓")+" "+bodyStyle.Render(tool))
 		}
 	}
 
 	lines = append(lines, "")
-	lines = append(lines, infoStyle.Render("Press ")+titleStyle.Render("Enter")+" to create, "+titleStyle.Render("b/n")+" to go back")
+	lines = append(lines, captionStyle.Render("Press ")+titleStyle.Render("Enter")+" to create, "+titleStyle.Render("b/n")+" to go back")
 
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
 
@@ -812,12 +812,12 @@ func (m setupModel) renderAgentDone() string {
 	if m.agentError != nil {
 		icon := lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("167")).
+			Foreground(errorColor).
 			Render("✗")
 
 		title := lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("167")).
+			Foreground(errorColor).
 			Render("Creation Failed")
 
 		message := errorStyle.Render(m.agentError.Error())
@@ -835,16 +835,16 @@ func (m setupModel) renderAgentDone() string {
 
 	icon := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("84")).
+		Foreground(successColor).
 		Render("✓")
 
 	title := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("86")).
+		Foreground(successColor).
 		Render("Agent Created!")
 
 	name := strings.TrimSpace(m.agentNameInput.Value())
-	message := infoStyle.Render(fmt.Sprintf("Agent '%s' has been created for:", name))
+	message := bodyStyle.Render(fmt.Sprintf("Agent '%s' has been created for:", name))
 
 	locations := []string{
 		successStyle.Render("✓") + " OpenCode",

@@ -20,6 +20,7 @@ var (
 	prMode        bool
 	diffOnly      bool
 	commitMsgFile string
+	phase         string
 )
 
 var runCmd = &cobra.Command{
@@ -33,7 +34,7 @@ Supports multiple modes: staged (default), CI, and PR mode.`,
 		if len(args) > 0 && commitMsgFile == "" {
 			commitMsgFile = args[0]
 		}
-		return runReview(noCache, ciMode, prMode, diffOnly, commitMsgFile)
+		return runReview(noCache, ciMode, prMode, diffOnly, commitMsgFile, phase)
 	},
 }
 
@@ -43,11 +44,12 @@ func init() {
 	runCmd.Flags().BoolVar(&prMode, "pr-mode", false, "PR mode: review all files changed in the full PR")
 	runCmd.Flags().BoolVar(&diffOnly, "diff-only", false, "With --pr-mode: send only diffs (faster, cheaper)")
 	runCmd.Flags().StringVar(&commitMsgFile, "commit-msg-file", "", "Path to commit message file (for commit-msg hook)")
+	runCmd.Flags().StringVar(&phase, "phase", "", "SDD phase for model resolution (e.g., sdd-apply, sdd-design). Reads from .ywai/sdd-models.json")
 	_ = runCmd.Flags().MarkHidden("commit-msg-file")
 	rootCmd.AddCommand(runCmd)
 }
 
-func runReview(noCache, ciMode, prMode, diffOnly bool, commitMsgFile string) error {
+func runReview(noCache, ciMode, prMode, diffOnly bool, commitMsgFile string, phase string) error {
 	ui.PrintBanner("dev")
 
 	cfg, err := config.Load()
@@ -218,7 +220,9 @@ func runReview(noCache, ciMode, prMode, diffOnly bool, commitMsgFile string) err
 
 	provider, err := providers.NewProvider(&providers.Config{
 		Provider: cfg.Provider,
+		Model:    "",
 		Timeout:  cfg.Timeout,
+		Phase:    phase,
 	})
 	if err != nil {
 		ui.Error("Failed to create provider: %v", err)

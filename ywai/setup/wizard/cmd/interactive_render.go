@@ -18,7 +18,7 @@ func (m setupModel) renderHeader() string {
 	}
 
 	styledLogo := m.renderAnimatedLogo(logoLines)
-	version := subtitleStyle.Render("Setup Wizard  •  AI Development Workflow")
+	version := bodyStyle.Render("Setup Wizard  •  AI Development Workflow")
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -50,6 +50,8 @@ func (m setupModel) renderBody() string {
 		content = m.renderPathStep()
 	case stepProjectType:
 		content = m.renderProjectTypeStep()
+	case stepPreset:
+		content = m.renderPresetStep()
 	case stepProvider:
 		content = m.renderProviderStep()
 	case stepModel:
@@ -137,17 +139,18 @@ func (m setupModel) renderStepIndicator() string {
 		for i, s := range stepNames {
 			idx := stepEnums[i]
 			var item string
+			number := "①②③"[i : i+3]
 			switch {
 			case idx < m.step:
-				item = successStyle.Render("● " + s)
+				item = successStyle.Render(number + " " + s)
 			case idx == m.step:
-				item = titleStyle.Render("▶ " + s)
+				item = titleStyle.Render(number + " " + s)
 			default:
-				item = infoStyle.Render("○ " + s)
+				item = infoStyle.Render(number + " " + s)
 			}
 			parts = append(parts, item)
 		}
-		return strings.Join(parts, infoStyle.Render("  ·  "))
+		return strings.Join(parts, captionStyle.Render("  →  "))
 	}
 
 	// stepWelcome is not part of the wizard steps — offset by 1.
@@ -162,18 +165,19 @@ func (m setupModel) renderStepIndicator() string {
 	for i, s := range stepNames {
 		idx := stepEnums[i]
 		var item string
+		number := "①②③④⑤⑥⑦"[i : i+3]
 		switch {
 		case idx < m.step:
-			item = successStyle.Render("● " + s)
+			item = successStyle.Render(number + " " + s)
 		case idx == m.step:
-			item = titleStyle.Render("▶ " + s)
+			item = titleStyle.Render(number + " " + s)
 		default:
-			item = infoStyle.Render("○ " + s)
+			item = infoStyle.Render(number + " " + s)
 		}
 		parts = append(parts, item)
 	}
 
-	return strings.Join(parts, infoStyle.Render("  ·  "))
+	return strings.Join(parts, captionStyle.Render("  →  "))
 }
 
 func (m setupModel) renderList(items []string, selected int) string {
@@ -197,57 +201,57 @@ func (m setupModel) renderFooter() string {
 
 	switch m.step {
 	case stepPath:
-		keys = []string{"Enter", "next", "ctrl+f", "browse", "ctrl+b", "back", "ctrl+q", "quit"}
+		keys = []string{"⏎", "next", "ctrl+f", "browse", "ctrl+b", "back", "ctrl+q", "quit"}
 	case stepProjectType, stepProvider:
-		keys = []string{"↑↓", "move", "Enter", "next", "b", "back", "q", "quit"}
+		keys = []string{"↑↓", "move", "⏎", "next", "b", "back", "q", "quit"}
 	case stepInstallMode:
-		keys = []string{"↑↓", "move", "Y/N", "quick", "Enter", "next", "b", "back", "q", "quit"}
+		keys = []string{"↑↓", "move", "Y/N", "quick", "⏎", "next", "b", "back", "q", "quit"}
 	case stepComponents:
-		keys = []string{"↑↓", "move", "Space", "toggle", "a", "all", "Enter", "next", "b", "back", "q", "quit"}
+		keys = []string{"↑↓", "move", "Space", "toggle", "a", "all", "⏎", "next", "b", "back", "q", "quit"}
 	case stepConfirm:
-		keys = []string{"Enter", "confirm", "n/b", "back", "q", "quit"}
+		keys = []string{"⏎", "confirm", "n/b", "back", "q", "quit"}
 	case stepSkillSelect:
-		keys = []string{"↑↓", "move", "Space", "toggle", "a", "all", "n", "none", "Enter", "next", "b", "back"}
+		keys = []string{"↑↓", "move", "Space", "toggle", "a", "all", "n", "none", "⏎", "next", "b", "back"}
 	case stepSkillConfirm:
-		keys = []string{"Enter", "confirm", "n/b", "back", "q", "quit"}
+		keys = []string{"⏎", "confirm", "n/b", "back", "q", "quit"}
 	case stepAgentType:
-		keys = []string{"↑↓", "move", "Enter", "select", "q/esc", "cancel"}
+		keys = []string{"↑↓", "move", "⏎", "select", "q/esc", "cancel"}
 	case stepAgentName, stepAgentDescription, stepAgentPrompt:
-		keys = []string{"Enter", "next", "b", "back", "q/esc", "cancel"}
+		keys = []string{"⏎", "next", "b", "back", "q/esc", "cancel"}
 	case stepAgentTools:
-		keys = []string{"↑↓", "move", "Space", "toggle", "Enter", "next", "b", "back", "q/esc", "cancel"}
+		keys = []string{"↑↓", "move", "Space", "toggle", "⏎", "next", "b", "back", "q/esc", "cancel"}
 	case stepAgentConfirm:
-		keys = []string{"Enter/y", "create", "n/b", "back", "q/esc", "cancel"}
+		keys = []string{"⏎/y", "create", "n/b", "back", "q/esc", "cancel"}
 	case stepAgentList:
-		keys = []string{"↑↓", "move", "Enter", "menu", "q", "back"}
+		keys = []string{"↑↓", "move", "⏎", "menu", "q", "back"}
 	case stepAgentMenu:
-		keys = []string{"↑↓", "move", "Enter", "select", "q", "back"}
+		keys = []string{"↑↓", "move", "⏎", "select", "q", "back"}
 	case stepAgentView:
-		keys = []string{"Enter/q", "back"}
+		keys = []string{"⏎/q", "back"}
 	case stepAgentEdit:
 		keys = []string{"Tab", "field", "type", "edit", "←→/Space", "tools", "Ctrl+S", "save", "Esc", "cancel"}
 	case stepAgentDeleteConfirm:
 		keys = []string{"y", "confirm", "n", "cancel"}
 	case stepFileBrowser:
-		keys = []string{"↑↓", "move", "Enter", "select", "ctrl+l", "open", "ctrl+b", "up", "ctrl+q", "back"}
+		keys = []string{"↑↓", "move", "⏎", "select", "ctrl+l", "open", "ctrl+b", "up", "ctrl+q", "back"}
 	}
 
 	var helpParts []string
 	for i := 0; i < len(keys); i += 2 {
 		keyStr := keys[i]
 		action := keys[i+1]
-		helpParts = append(helpParts, helpStyle.Render(keyStr)+subtitleStyle.Render(" "+action))
+		helpParts = append(helpParts, monoStyle.Render(keyStr)+captionStyle.Render(" "+action))
 	}
 
 	return lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241")).
+		Foreground(textMuted).
 		Render("  " + strings.Join(helpParts, " • "))
 }
 
 func (m setupModel) renderInstalling() string {
 	header := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("86")).
+		Foreground(secondaryColor).
 		Render(fmt.Sprintf("%s YWAI...", m.currentProgressVerb()))
 
 	parts := []string{
@@ -272,14 +276,14 @@ func (m setupModel) renderInstalling() string {
 			"",
 			bar.View(),
 			"",
-			infoStyle.Render(fmt.Sprintf("%d/%d complete", m.installProgress, m.installTotal)),
+			bodyStyle.Render(fmt.Sprintf("%d/%d complete", m.installProgress, m.installTotal)),
 		)
 	}
 
 	if m.installCurrent != "" {
 		parts = append(parts,
 			"",
-			titleStyle.Render(m.pulseGlyph()+" Current: "+m.installCurrent),
+			h2Style.Render(m.pulseGlyph()+" Current: "+m.installCurrent),
 		)
 	}
 
@@ -302,9 +306,9 @@ func (m setupModel) renderInstalling() string {
 		"",
 		lipgloss.JoinVertical(lipgloss.Left, parts...),
 		"",
-		infoStyle.Render(fmt.Sprintf("Please wait while YWAI %s your environment...", strings.ToLower(m.currentActionVerb())+"s")),
+		bodyStyle.Render(fmt.Sprintf("Please wait while YWAI %s your environment...", strings.ToLower(m.currentActionVerb())+"s")),
 		"",
-		helpStyle.Render("This can take a moment depending on downloads and local tools."),
+		captionStyle.Render("This can take a moment depending on downloads and local tools."),
 	)
 }
 
@@ -312,12 +316,12 @@ func (m setupModel) renderDone() string {
 	if m.installErr != nil {
 		icon := lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("167")).
+			Foreground(errorColor).
 			Render("✗")
 
 		title := lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("167")).
+			Foreground(errorColor).
 			Render(func() string {
 				if m.skillInstallMode {
 					return "Skill Installation Failed"
@@ -344,19 +348,19 @@ func (m setupModel) renderDone() string {
 		if warns := m.renderInstallWarnings(); warns != "" {
 			parts = append(parts, "", warns)
 		}
-		parts = append(parts, "", helpStyle.Render("Enter back to menu • q to quit"))
+		parts = append(parts, "", captionStyle.Render("Enter back to menu • q to quit"))
 
 		return lipgloss.JoinVertical(lipgloss.Center, parts...)
 	}
 
 	icon := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("84")).
+		Foreground(successColor).
 		Render("✓")
 
 	title := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("86")).
+		Foreground(successColor).
 		Render(func() string {
 			if m.updateMode {
 				return "Update Complete!"
@@ -364,7 +368,7 @@ func (m setupModel) renderDone() string {
 			return "Setup Complete!"
 		}())
 
-	message := infoStyle.Render(func() string {
+	message := bodyStyle.Render(func() string {
 		if m.skillInstallMode {
 			return "Selected skills have been installed successfully."
 		}
@@ -388,7 +392,7 @@ func (m setupModel) renderDone() string {
 	if warns := m.renderInstallWarnings(); warns != "" {
 		parts = append(parts, "", warns)
 	}
-	parts = append(parts, "", helpStyle.Render("Enter back to menu • q to quit"))
+	parts = append(parts, "", captionStyle.Render("Enter back to menu • q to quit"))
 
 	return lipgloss.JoinVertical(lipgloss.Center, parts...)
 }

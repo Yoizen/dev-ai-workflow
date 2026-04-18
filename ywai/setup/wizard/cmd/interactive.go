@@ -22,6 +22,7 @@ const (
 	stepWelcome interactiveStep = iota
 	stepPath
 	stepProjectType
+	stepPreset
 	stepProvider
 	stepModel
 	stepInstallMode // Ask "Install recommended, or customize?"
@@ -69,6 +70,10 @@ type setupModel struct {
 	projectTypeValues []string
 	projectTypeLabels []string
 	projectTypeHints  []string
+	presetValues      []string
+	presetLabels      []string
+	presetHints       []string
+	presetIdx         int
 	providerValues    []string
 	providerLabels    []string
 
@@ -235,6 +240,18 @@ func newSetupModel(defaultPath string, baseFlags *installer.Flags) setupModel {
 		projectTypeValues: typeValues,
 		projectTypeLabels: typeLabels,
 		projectTypeHints:  typeHints,
+		presetValues:      []string{"standard", "minimal", "full"},
+		presetLabels: []string{
+			"standard (default) - Full bundle with GA, MCPs, global agents",
+			"minimal          - SDD skills only (no GA, no MCPs, no global agents)",
+			"full             - standard + engram + all hooks",
+		},
+		presetHints: []string{
+			"Recommended: includes everything for a complete setup",
+			"Lightweight: only SDD workflow and git-commit skill",
+			"Maximum: includes all optional components",
+		},
+		presetIdx: 0,
 		providerValues: []string{
 			"opencode",
 			"claude",
@@ -420,6 +437,8 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updatePath(msg)
 	case stepProjectType:
 		return m.updateProjectType(msg)
+	case stepPreset:
+		return m.updatePreset(msg)
 	case stepProvider:
 		return m.updateProvider(msg)
 	case stepModel:
@@ -596,17 +615,22 @@ func runInteractive(flags *installer.Flags) (bool, error) {
 	}
 
 	flags.ProjectType = m.projectTypeValues[m.projectTypeIdx]
+	flags.Preset = m.presetValues[m.presetIdx]
 	flags.Provider = m.providerValues[m.providerIdx]
 	flags.DefaultModel = m.getSelectedModel()
 	flags.UpdateAll = m.updateMode
 
-	flags.InstallGA = m.componentValues[0]
-	flags.InstallSDD = m.componentValues[1]
-	flags.InstallVSCode = m.componentValues[2]
-	flags.InstallExt = m.componentValues[3]
-	flags.InstallGlobal = m.componentValues[4]
-	flags.SkipHooks = !m.componentValues[5]
-	flags.DryRun = m.componentValues[6]
+	// Map component values to flags (inverse for Skip* flags)
+	flags.SkipDocs = !m.componentValues[0]              // AGENTS.md / REVIEW.md
+	flags.SkipSkills = !m.componentValues[1]           // Skills (local ./skills/)
+	flags.SkipCommands = !m.componentValues[2]         // Commands (.github/prompts, OpenCode)
+	flags.SkipMCPs = !m.componentValues[3]             // MCPs (Context7)
+	flags.SkipGA = !m.componentValues[4]              // GA (Guardian Agent)
+	flags.SkipEngram = !m.componentValues[5]          // Engram (project memory)
+	flags.InstallGlobal = m.componentValues[6]        // Global agents
+	flags.SkipHooks = !m.componentValues[7]           // Hooks
+	flags.SkipBiome = !m.componentValues[8]           // Biome
+	flags.DryRun = m.componentValues[9]               // Dry run
 
 	if strings.EqualFold(flags.Provider, "opencode") && !flags.SkipVSCode && !flags.InstallVSCode {
 		flags.InstallVSCode = true

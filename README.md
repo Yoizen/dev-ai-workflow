@@ -264,13 +264,13 @@ Copilot: SDD inicializado para este repositorio.
 
 > sdd:new login-con-google
 Copilot: Creando propuesta 'login-con-google'...
-         → .sdd/changes/login-con-google/proposal.md
+         → sdd/changes/login-con-google/proposal.md
 
 > sdd:ff login-con-google
 Copilot: Fast-forward: generando spec, diseño y tareas...
-         → .sdd/changes/login-con-google/specs/auth/spec.md
-         → .sdd/changes/login-con-google/design.md
-         → .sdd/changes/login-con-google/tasks.md
+         → sdd/changes/login-con-google/specs/auth/spec.md
+         → sdd/changes/login-con-google/design.md
+         → sdd/changes/login-con-google/tasks.md
 
 > /sdd-apply
 Copilot: Implementando tarea 1.1: Agregar botón de login...

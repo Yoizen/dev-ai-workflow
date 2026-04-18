@@ -2,7 +2,6 @@ package installer
 
 import (
 	"io"
-
 	"github.com/Yoizen/dev-ai-workflow/ywai/setup/wizard/pkg/installer/api"
 	"github.com/Yoizen/dev-ai-workflow/ywai/setup/wizard/pkg/installer/version"
 	"github.com/Yoizen/dev-ai-workflow/ywai/setup/wizard/pkg/ui"
@@ -52,6 +51,13 @@ type Flags struct {
 	InstallSkills         []string
 	BuildVersion          string
 	Output                io.Writer
+}
+
+// NewFlags creates a new Flags struct with defaults
+func NewFlags() *Flags {
+	return &Flags{
+		Preset: "standard", // Default to standard preset
+	}
 }
 
 type ProjectTypeOption struct {

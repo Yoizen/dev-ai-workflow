@@ -92,6 +92,9 @@ GEMINI.md
 .gga/
 .gga
 
+# YWAI generated artifacts
+ywai/.ywai/
+
 # OpenCode
 .opencode/plugins/**/node_modules/
 .opencode/plugins/**/dist/

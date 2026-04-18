@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -23,6 +24,107 @@ type Config struct {
 	Provider string
 	Model    string
 	Timeout  int
+	Phase    string // SDD phase for model resolution
+}
+
+// SDDModelConfig represents the structure of .ywai/sdd-models.json
+type SDDModelConfig struct {
+	Description     string                 `json:"description"`
+	DefaultProvider string                 `json:"default_provider"`
+	Phases          map[string]PhaseConfig `json:"phases"`
+	OverridesEnv    string                 `json:"overrides_env"`
+}
+
+// PhaseConfig represents model configuration for a specific SDD phase
+type PhaseConfig struct {
+	Model  string `json:"model"`
+	Reason string `json:"reason"`
+}
+
+// findRepoRoot walks up directories to find .git directory
+func findRepoRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("git root not found")
+		}
+		dir = parent
+	}
+}
+
+// LoadSDDModels loads .ywai/sdd-models.json from the current directory or repo root
+func LoadSDDModels() (*SDDModelConfig, error) {
+	// Try current directory first
+	data, err := os.ReadFile(".ywai/sdd-models.json")
+	if err == nil {
+		return parseSDDModels(data)
+	}
+
+	// Try repo root
+	repoRoot, err := findRepoRoot()
+	if err == nil {
+		data, err = os.ReadFile(filepath.Join(repoRoot, ".ywai", "sdd-models.json"))
+		if err == nil {
+			return parseSDDModels(data)
+		}
+	}
+
+	// File not found is not an error - caller should fall back to default
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	return nil, fmt.Errorf("failed to read .ywai/sdd-models.json: %v", err)
+}
+
+func parseSDDModels(data []byte) (*SDDModelConfig, error) {
+	var config SDDModelConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, fmt.Errorf("failed to parse .ywai/sdd-models.json: %v", err)
+	}
+	return &config, nil
+}
+
+// ResolveModelForPhase resolves the appropriate model for a given SDD phase
+// Returns empty string if no config file exists (caller should fall back to default)
+func ResolveModelForPhase(phase string) (string, error) {
+	config, err := LoadSDDModels()
+	if err != nil {
+		return "", err
+	}
+
+	// No config file exists - caller should use default
+	if config == nil {
+		return "", nil
+	}
+
+	// Check environment override first
+	if config.OverridesEnv != "" {
+		if override := os.Getenv(config.OverridesEnv); override != "" {
+			return override, nil
+		}
+	}
+
+	// Look for phase-specific model
+	if phaseConfig, ok := config.Phases[phase]; ok {
+		return phaseConfig.Model, nil
+	}
+
+	// Fall back to default
+	if defaultConfig, ok := config.Phases["default"]; ok {
+		return defaultConfig.Model, nil
+	}
+
+	// No phase-specific or default model - caller should use provider default
+	return "", nil
 }
 
 // ValidateConfig validates the provider configuration
@@ -43,40 +145,71 @@ func NewProvider(cfg *Config) (Provider, error) {
 	if err := ValidateConfig(cfg); err != nil {
 		return nil, fmt.Errorf("invalid config: %v", err)
 	}
-	
+
+	// Resolve model from phase if specified
+	model := cfg.Model
+	if cfg.Phase != "" {
+		phaseModel, err := ResolveModelForPhase(cfg.Phase)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve model for phase %s: %v", cfg.Phase, err)
+		}
+		if phaseModel != "" {
+			model = phaseModel
+			// Log to stderr to avoid polluting stdout which is parsed for review results
+			fmt.Fprintf(os.Stderr, "Using model %s for phase %s\n", model, cfg.Phase)
+		}
+	}
+
 	baseProvider := strings.Split(cfg.Provider, ":")[0]
 
 	switch baseProvider {
 	case "claude":
+		// Claude provider doesn't accept custom model in current implementation
 		return &ClaudeProvider{timeout: cfg.Timeout}, nil
 	case "gemini":
+		// Gemini provider doesn't accept custom model in current implementation
 		return &GeminiProvider{timeout: cfg.Timeout}, nil
 	case "codex":
+		// Codex provider doesn't accept custom model in current implementation
 		return &CodexProvider{timeout: cfg.Timeout}, nil
 	case "opencode":
-		model := strings.TrimPrefix(cfg.Provider, "opencode:")
-		if model == cfg.Provider {
-			model = ""
+		if model == "" {
+			model = strings.TrimPrefix(cfg.Provider, "opencode:")
+			if model == cfg.Provider {
+				model = ""
+			}
 		}
 		return &OpenCodeProvider{model: model, timeout: cfg.Timeout}, nil
 	case "ollama":
-		model := strings.TrimPrefix(cfg.Provider, "ollama:")
-		if model == cfg.Provider {
-			model = "llama3.2"  // Default fallback
+		ollamaModel := strings.TrimPrefix(cfg.Provider, "ollama:")
+		if ollamaModel == cfg.Provider {
+			ollamaModel = "llama3.2" // Default fallback
 		}
-		return &OllamaProvider{model: model, timeout: cfg.Timeout}, nil
+		// Use phase-resolved model if provided, otherwise use provider string
+		if model != "" {
+			ollamaModel = model
+		}
+		return &OllamaProvider{model: ollamaModel, timeout: cfg.Timeout}, nil
 	case "lmstudio":
-		model := strings.TrimPrefix(cfg.Provider, "lmstudio:")
-		if model == cfg.Provider {
-			model = ""
+		lmstudioModel := strings.TrimPrefix(cfg.Provider, "lmstudio:")
+		if lmstudioModel == cfg.Provider {
+			lmstudioModel = ""
 		}
-		return &LMStudioProvider{model: model, timeout: cfg.Timeout}, nil
+		// Use phase-resolved model if provided, otherwise use provider string
+		if model != "" {
+			lmstudioModel = model
+		}
+		return &LMStudioProvider{model: lmstudioModel, timeout: cfg.Timeout}, nil
 	case "github":
-		model := strings.TrimPrefix(cfg.Provider, "github:")
-		if model == cfg.Provider {
+		githubModel := strings.TrimPrefix(cfg.Provider, "github:")
+		if githubModel == cfg.Provider {
 			return nil, fmt.Errorf("github provider requires a model: github:gpt-4o")
 		}
-		return &GitHubProvider{model: model, timeout: cfg.Timeout}, nil
+		// Use phase-resolved model if provided, otherwise use provider string
+		if model != "" {
+			githubModel = model
+		}
+		return &GitHubProvider{model: githubModel, timeout: cfg.Timeout}, nil
 	default:
 		return nil, fmt.Errorf("unknown provider: %s", baseProvider)
 	}

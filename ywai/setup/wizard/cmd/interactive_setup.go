@@ -156,10 +156,31 @@ func (m setupModel) updateProjectType(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.projectTypeIdx++
 			}
 		case "enter":
-			m.step = stepProvider
+			m.step = stepPreset
 		case "b":
 			m.step = stepPath
 			m.pathInput.Focus()
+		}
+	}
+	return m, nil
+}
+
+func (m setupModel) updatePreset(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "up", "k":
+			if m.presetIdx > 0 {
+				m.presetIdx--
+			}
+		case "down", "j":
+			if m.presetIdx < len(m.presetValues)-1 {
+				m.presetIdx++
+			}
+		case "enter":
+			m.step = stepProvider
+		case "b":
+			m.step = stepProjectType
 		}
 	}
 	return m, nil
@@ -180,7 +201,7 @@ func (m setupModel) updateProvider(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			m.step = stepModel
 		case "b":
-			m.step = stepProjectType
+			m.step = stepPreset
 		}
 	}
 	return m, nil
@@ -337,11 +358,17 @@ func (m setupModel) renderPathStep() string {
 		inputView = inputView + "\n" + errorStyle.Render("⚠ "+m.err.Error())
 	}
 
+	path := strings.TrimSpace(m.pathInput.Value())
+	validationIndicator := ""
+	if path != "" && m.err == nil {
+		validationIndicator = successStyle.Render("✓ Valid path")
+	}
+
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		box,
 		"",
-		lipgloss.NewStyle().Foreground(lipgloss.Color("250")).PaddingLeft(2).Render(
+		bodyStyle.Render(
 			func() string {
 				if m.skillInstallMode {
 					return "Choose the repository where you want to install missing skills:"
@@ -350,9 +377,11 @@ func (m setupModel) renderPathStep() string {
 			}(),
 		),
 		"",
-		helpStyle.Render("Tip: press ctrl+f to browse folders"),
+		captionStyle.Render("Tip: press ctrl+f to browse folders"),
 		"",
-		itemStyle.Render(inputView),
+		itemStyle.Render("📁 " + inputView),
+		"",
+		validationIndicator,
 	)
 }
 
@@ -360,33 +389,85 @@ func (m setupModel) renderProjectTypeStep() string {
 	box := activeBoxStyle.Render(m.currentModeLabel() + " • Project Type")
 	path := strings.TrimSpace(m.pathInput.Value())
 	detected := detectProjectTypeFromPath(path)
-	hint := infoStyle.Render("Pick the closest match for this repository.")
+	hint := bodyStyle.Render("Pick the closest match for this repository.")
 	if detected != "" {
-		hint = infoStyle.Render("Detected from files: ") + titleStyle.Render(detected)
+		hint = bodyStyle.Render("Detected from files: ") + titleStyle.Render(detected)
 	}
+
+	// Add icons to project type labels
+	iconLabels := make([]string, len(m.projectTypeLabels))
+	for i, label := range m.projectTypeLabels {
+		icon := "📁"
+		switch m.projectTypeValues[i] {
+		case "nest", "nest-angular", "nest-react":
+			icon = "🟢"
+		case "python":
+			icon = "🐍"
+		case "dotnet":
+			icon = "🔷"
+		case "devops":
+			icon = "⚙️"
+		default:
+			icon = "📁"
+		}
+		iconLabels[i] = icon + " " + label
+	}
+
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		box,
 		"",
 		hint,
 		"",
-		m.renderList(m.projectTypeLabels, m.projectTypeIdx),
+		m.renderList(iconLabels, m.projectTypeIdx),
 		"",
-		helpStyle.Render(m.projectTypeHints[m.projectTypeIdx]),
+		captionStyle.Render(m.projectTypeHints[m.projectTypeIdx]),
+	)
+}
+
+func (m setupModel) renderPresetStep() string {
+	box := activeBoxStyle.Render(m.currentModeLabel() + " • Preset")
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		box,
+		"",
+		bodyStyle.Render("Select the preset for this installation:"),
+		"",
+		m.renderList(m.presetLabels, m.presetIdx),
+		"",
+		captionStyle.Render(m.presetHints[m.presetIdx]),
 	)
 }
 
 func (m setupModel) renderProviderStep() string {
 	box := activeBoxStyle.Render(m.currentModeLabel() + " • AI Provider")
+
+	// Add icons to provider labels
+	iconLabels := make([]string, len(m.providerLabels))
+	for i, label := range m.providerLabels {
+		icon := "🤖"
+		switch m.providerValues[i] {
+		case "opencode":
+			icon = "⚡"
+		case "claude":
+			icon = "🧠"
+		case "gemini":
+			icon = "✨"
+		case "ollama":
+			icon = "🦙"
+		}
+		iconLabels[i] = icon + " " + label
+	}
+
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		box,
 		"",
-		infoStyle.Render("Select the main AI client your team will use:"),
+		bodyStyle.Render("Select the main AI client your team will use:"),
 		"",
-		m.renderList(m.providerLabels, m.providerIdx),
+		m.renderList(iconLabels, m.providerIdx),
 		"",
-		helpStyle.Render("OpenCode is the default and enables the most integrated workflow."),
+		captionStyle.Render("OpenCode is the default and enables the most integrated workflow."),
 	)
 }
 
@@ -398,11 +479,9 @@ func (m setupModel) renderModelStep() string {
 			lipgloss.Left,
 			box,
 			"",
-			infoStyle.Render("Enter the model identifier (provider/model):"),
+			bodyStyle.Render("Enter custom model name:"),
 			"",
-			itemStyle.Render(m.modelInput.View()),
-			"",
-			helpStyle.Render("Press Enter to confirm, Esc to go back to presets"),
+			itemStyle.Render("🤖 " + m.modelInput.View()),
 		)
 	}
 
@@ -416,82 +495,84 @@ func (m setupModel) renderModelStep() string {
 		}
 	}
 
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		box,
+		"",
+		bodyStyle.Render("Select default model for this project:"),
+		"",
+		lipgloss.JoinVertical(lipgloss.Left, items...),
+		"",
+		captionStyle.Render("Press Enter to select, or type a custom model name"),
+	)
+}
+
+func (m setupModel) renderInstallModeStep() string {
+	box := activeBoxStyle.Render(m.currentModeLabel() + " • Components Mode")
+
+	var items []string
+	for idx, label := range m.installModeLabels {
+		prefix := "  "
+		style := itemStyle
+		if idx == m.installModeIdx {
+			prefix = "▸ "
+			style = selectedItemStyle
+		}
+		items = append(items, style.Render(prefix+label))
+	}
+
 	menu := lipgloss.JoinVertical(lipgloss.Left, items...)
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		box,
 		"",
-		infoStyle.Render("Select the default AI model for SDD phases:"),
+		bodyStyle.Render("Choose how to select components:"),
 		"",
 		menu,
 		"",
-		helpStyle.Render("This model will be used for all SDD phases. You can customize per-phase in sdd/config.yaml later."),
-	)
-}
-
-func (m setupModel) getSelectedModel() string {
-	if m.modelCustom && m.modelInput.Value() != "" {
-		return m.modelInput.Value()
-	}
-	if m.modelPresetIdx == 0 {
-		return ""
-	}
-	if m.modelPresetIdx == len(m.modelPresets)-1 {
-		return m.modelInput.Value()
-	}
-	return m.modelPresets[m.modelPresetIdx]
-}
-
-// renderInstallModeStep presents the "Install recommended? (Y/n)" radio.
-func (m setupModel) renderInstallModeStep() string {
-	box := activeBoxStyle.Render(m.currentModeLabel() + " • Install Mode")
-
-	var items []string
-	for idx, label := range m.installModeOptions {
-		prefix := "(  )"
-		s := itemStyle
-		if idx == m.installModeIdx {
-			prefix = "( ● )"
-			s = selectedItemStyle
-		}
-		items = append(items, s.Render(fmt.Sprintf("%s %s", prefix, label)))
-	}
-
-	hint := infoStyle.Render(
-		"Press Y (or Enter on 'All recommended') to install every component with sane defaults.\n" +
-			"Press N to pick each component individually (AGENTS.md, Skills, Commands, MCPs, GA,\n" +
-			"Engram, Global agents, Hooks and Biome).",
-	)
-
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		box,
-		"",
-		lipgloss.JoinVertical(lipgloss.Left, items...),
-		"",
-		hint,
+		captionStyle.Render("Y = All recommended  •  N = Custom selection"),
 	)
 }
 
 func (m setupModel) renderComponentsStep() string {
 	box := activeBoxStyle.Render(m.currentModeLabel() + " • Components (Custom)")
+
+	// Group components by category
+	categories := map[string][]int{
+		"Core Components": {0, 1, 2},          // AGENTS.md, Skills, Commands
+		"Integrations": {3, 4, 5, 6},           // MCPs, GA, Engram, Global agents
+		"Optional": {7, 8, 9},                 // Hooks, Biome, Dry run
+	}
+
 	var items []string
+	categoryOrder := []string{"Core Components", "Integrations", "Optional"}
 
-	for idx, name := range m.componentNames {
-		prefix := "[ ]"
-		s := itemStyle
-
-		if idx == m.componentCursor {
-			s = selectedItemStyle
+	for _, category := range categoryOrder {
+		indices := categories[category]
+		if len(indices) == 0 {
+			continue
 		}
 
-		if m.componentValues[idx] {
-			prefix = "[✓]"
-		}
+		// Add category header
+		items = append(items, "", h3Style.Render(category))
 
-		line := fmt.Sprintf("%s %s", prefix, name)
-		items = append(items, s.Render(line))
+		// Add items in this category
+		for _, idx := range indices {
+			prefix := "[ ]"
+			s := itemStyle
+
+			if idx == m.componentCursor {
+				s = selectedItemStyle
+			}
+
+			if m.componentValues[idx] {
+				prefix = "[✓]"
+			}
+
+			line := fmt.Sprintf("%s %s", prefix, m.componentNames[idx])
+			items = append(items, s.Render(line))
+		}
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, items...)
@@ -500,9 +581,9 @@ func (m setupModel) renderComponentsStep() string {
 		lipgloss.Left,
 		box,
 		"",
-		infoStyle.Render("Toggle every component you want installed:"),
+		bodyStyle.Render("Toggle every component you want installed:"),
 		"",
-		helpStyle.Render("Space to toggle  •  A to select/deselect all  •  Enter to continue  •  B to go back"),
+		captionStyle.Render("Space to toggle  •  A to select/deselect all  •  Enter to continue  •  B to go back"),
 		"",
 		content,
 	)
@@ -517,6 +598,7 @@ func (m setupModel) renderConfirmStep() string {
 	}
 
 	projectType := m.projectTypeValues[m.projectTypeIdx]
+	preset := m.presetValues[m.presetIdx]
 	provider := m.providerValues[m.providerIdx]
 	model := m.getSelectedModel()
 	if model == "" {
@@ -528,16 +610,26 @@ func (m setupModel) renderConfirmStep() string {
 		modeLabel = "Custom selection"
 	}
 
+	// Summary card with key info
+	summaryLines := []string{
+		h3Style.Render("Configuration Summary"),
+		"",
+		"  " + successStyle.Render("✓") + " Path: " + bodyStyle.Render(path),
+		"  " + successStyle.Render("✓") + " Type: " + bodyStyle.Render(projectType),
+		"  " + successStyle.Render("✓") + " Preset: " + bodyStyle.Render(preset),
+		"  " + successStyle.Render("✓") + " Provider: " + bodyStyle.Render(provider),
+		"  " + successStyle.Render("✓") + " Model: " + bodyStyle.Render(model),
+		"  " + successStyle.Render("✓") + " Mode: " + bodyStyle.Render(modeLabel),
+	}
+	summaryCard := cardStyle.Render(lipgloss.JoinVertical(lipgloss.Left, summaryLines...))
+
 	lines := []string{
-		infoStyle.Render(fmt.Sprintf("Ready to %s YWAI in this project:", strings.ToLower(m.currentModeLabel()))),
+		h2Style.Render(fmt.Sprintf("Ready to %s YWAI in this project:", strings.ToLower(m.currentModeLabel()))),
 		"",
-		"  " + successStyle.Render("▶") + " Path: " + subtitleStyle.Render(path),
-		"  " + successStyle.Render("▶") + " Type: " + subtitleStyle.Render(projectType),
-		"  " + successStyle.Render("▶") + " Provider: " + subtitleStyle.Render(provider),
-		"  " + successStyle.Render("▶") + " Model: " + subtitleStyle.Render(model),
-		"  " + successStyle.Render("▶") + " Mode: " + subtitleStyle.Render(modeLabel),
+		summaryCard,
 		"",
-		infoStyle.Render("What will be applied:"),
+		h3Style.Render("Components to install:"),
+		"",
 	}
 
 	// Show the list of components. In "All recommended" mode we enumerate
@@ -551,18 +643,18 @@ func (m setupModel) renderConfirmStep() string {
 			enabled = m.componentValues[idx]
 		}
 		if enabled {
-			lines = append(lines, "    "+successStyle.Render("✓")+" "+name)
+			lines = append(lines, "    "+successStyle.Render("✓")+" "+bodyStyle.Render(name))
 		} else {
-			lines = append(lines, "    "+helpStyle.Render("○ "+name))
+			lines = append(lines, "    "+captionStyle.Render("○ "+name))
 		}
 	}
 
 	lines = append(lines, "")
 	if m.updateMode {
-		lines = append(lines, helpStyle.Render("Update mode refreshes managed files, skills, extensions, and GA/runtime setup."))
+		lines = append(lines, captionStyle.Render("Update mode refreshes managed files, skills, extensions, and GA/runtime setup."))
 		lines = append(lines, "")
 	}
-	lines = append(lines, infoStyle.Render("Press ")+titleStyle.Render("Enter")+" to continue, "+titleStyle.Render("b/n")+" to go back")
+	lines = append(lines, captionStyle.Render("Press ")+titleStyle.Render("Enter")+" to continue, "+titleStyle.Render("b/n")+" to go back")
 
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
 

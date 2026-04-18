@@ -66,7 +66,7 @@ func (m setupModel) renderSkillSelectStep() string {
 			"",
 			successStyle.Render("This repository already has all installable YWAI skills."),
 			"",
-			helpStyle.Render("Press b to go back and choose another path."),
+			captionStyle.Render("Press b to go back and choose another path."),
 		)
 	}
 
@@ -85,18 +85,18 @@ func (m setupModel) renderSkillSelectStep() string {
 			desc = "No description"
 		}
 		items = append(items, style.Render(fmt.Sprintf("%s %s", prefix, skill.Name)))
-		items = append(items, helpStyle.Render("    "+desc))
+		items = append(items, captionStyle.Render("    "+desc))
 	}
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		box,
 		"",
-		infoStyle.Render("Select the missing skills you want to install in this repository:"),
+		bodyStyle.Render("Select the missing skills you want to install in this repository:"),
 		"",
 		lipgloss.JoinVertical(lipgloss.Left, items...),
 		"",
-		helpStyle.Render("Space toggle • a select all • n clear all"),
+		captionStyle.Render("Space toggle • a select all • n clear all"),
 	)
 }
 
@@ -110,22 +110,22 @@ func (m setupModel) renderSkillConfirmStep() string {
 	}
 
 	lines := []string{
-		infoStyle.Render("Repository:"),
-		"  " + subtitleStyle.Render(strings.TrimSpace(m.pathInput.Value())),
+		h3Style.Render("Repository:"),
+		"  " + bodyStyle.Render(strings.TrimSpace(m.pathInput.Value())),
 		"",
-		infoStyle.Render("Skills to install:"),
+		h3Style.Render("Skills to install:"),
 	}
 	if len(selected) == 0 {
 		lines = append(lines, "  "+errorStyle.Render("No skills selected"))
-		lines = append(lines, "", helpStyle.Render("Press b to go back and choose at least one skill."))
+		lines = append(lines, "", captionStyle.Render("Press b to go back and choose at least one skill."))
 	} else {
 		for _, skill := range selected {
-			lines = append(lines, "  "+successStyle.Render("✓")+" "+skill)
+			lines = append(lines, "  "+successStyle.Render("✓")+" "+bodyStyle.Render(skill))
 		}
-		lines = append(lines, "", helpStyle.Render("YWAI will copy the selected skills, run skills/setup.sh, and try to sync AGENTS.md metadata."))
+		lines = append(lines, "", captionStyle.Render("YWAI will copy the selected skills, run skills/setup.sh, and try to sync AGENTS.md metadata."))
 	}
 
-	lines = append(lines, "", infoStyle.Render("Press ")+titleStyle.Render("Enter")+" to continue, "+titleStyle.Render("b/n")+" to go back")
+	lines = append(lines, "", captionStyle.Render("Press ")+titleStyle.Render("Enter")+" to continue, "+titleStyle.Render("b/n")+" to go back")
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,

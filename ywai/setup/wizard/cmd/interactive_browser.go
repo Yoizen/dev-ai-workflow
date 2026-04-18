@@ -80,7 +80,7 @@ func (m setupModel) renderFileBrowserStep() string {
 	box := activeBoxStyle.Render("File Browser")
 
 	// Current path
-	pathLine := infoStyle.Render("Current: " + m.fileBrowserDir)
+	pathLine := bodyStyle.Render("Current: " + monoStyle.Render(m.fileBrowserDir))
 
 	if len(m.fileBrowserEntries) == 0 {
 		return lipgloss.JoinVertical(
@@ -89,9 +89,9 @@ func (m setupModel) renderFileBrowserStep() string {
 			"",
 			pathLine,
 			"",
-			infoStyle.Render("No directories or .md files found."),
+			bodyStyle.Render("No directories or .md files found."),
 			"",
-			helpStyle.Render("Press q to go back"),
+			captionStyle.Render("Press q to go back"),
 		)
 	}
 
@@ -123,10 +123,10 @@ func (m setupModel) renderFileBrowserStep() string {
 		"",
 		pathLine,
 		"",
-		infoStyle.Render("Enter selects the highlighted item. Use Ctrl+L to open a folder."),
+		bodyStyle.Render("Enter selects the highlighted item. Use Ctrl+L to open a folder."),
 		"",
 		content,
 		"",
-		helpStyle.Render("Tip: press esc to go back without changing the path."),
+		captionStyle.Render("Tip: press esc to go back without changing the path."),
 	)
 }
