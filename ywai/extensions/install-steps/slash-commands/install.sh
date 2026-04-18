@@ -7,7 +7,7 @@ SOURCE_DIR="$EXT_DIR"
 TARGET_PROMPTS_DIR="$TARGET_DIR/.github/prompts"
 LEGACY_PROMPTS_DIR="$TARGET_DIR/prompts"
 TARGET_OPENCODE_SKILLS_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode/skills"
-TARGET_OPENCODE_COMMANDS_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode/commands"
+TARGET_OPENCODE_COMMANDS_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode/command"
 TARGET_COPILOT_AGENTS_DIR="$HOME/.copilot/agents"
 
 if [[ ! -d "$SOURCE_DIR" ]]; then
@@ -58,4 +58,4 @@ for file in "$SOURCE_DIR"/*.md; do
   fi
 done
 
-echo "Installed slash commands to .github/prompts ($TARGET_PROMPTS_DIR), OpenCode skills ($TARGET_OPENCODE_SKILLS_DIR), OpenCode commands ($TARGET_OPENCODE_COMMANDS_DIR), and Copilot agents ($TARGET_COPILOT_AGENTS_DIR)"
+echo "Installed slash commands to .github/prompts, OpenCode skills, OpenCode command/, and Copilot agents"

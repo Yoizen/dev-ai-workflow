@@ -12,9 +12,9 @@ $targetPromptsDir = Join-Path $TargetDir '.github\prompts'
 $legacyPromptsDir = Join-Path $TargetDir 'prompts'
 
 $xdgConfig = $env:XDG_CONFIG_HOME
-if (-not $xdgConfig) { $xdgConfig = Join-Path $env:LOCALAPPDATA '' }
+if (-not $xdgConfig) { $xdgConfig = Join-Path $env:USERPROFILE '.config' }
 $targetOpenCodeSkillsDir = Join-Path $xdgConfig 'opencode\skills'
-$targetOpenCodeCommandsDir = Join-Path $xdgConfig 'opencode\commands'
+$targetOpenCodeCommandsDir = Join-Path $xdgConfig 'opencode\command'
 $targetCopilotAgentsDir = Join-Path $env:USERPROFILE '.copilot\agents'
 
 New-Item -ItemType Directory -Force -Path $targetPromptsDir | Out-Null
@@ -67,4 +67,4 @@ Get-ChildItem -Path $sourceDir -Filter '*.md' | ForEach-Object {
     }
 }
 
-Write-Host "Installed slash commands to .github\prompts, OpenCode skills, OpenCode commands, and Copilot agents"
+Write-Host "Installed slash commands to .github\prompts, OpenCode skills, OpenCode command/, and Copilot agents"
