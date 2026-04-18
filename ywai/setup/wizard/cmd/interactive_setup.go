@@ -511,7 +511,7 @@ func (m setupModel) renderInstallModeStep() string {
 	box := activeBoxStyle.Render(m.currentModeLabel() + " • Components Mode")
 
 	var items []string
-	for idx, label := range m.installModeLabels {
+	for idx, label := range m.installModeOptions {
 		prefix := "  "
 		style := itemStyle
 		if idx == m.installModeIdx {
@@ -600,7 +600,12 @@ func (m setupModel) renderConfirmStep() string {
 	projectType := m.projectTypeValues[m.projectTypeIdx]
 	preset := m.presetValues[m.presetIdx]
 	provider := m.providerValues[m.providerIdx]
-	model := m.getSelectedModel()
+	model := ""
+	if m.modelCustom {
+		model = strings.TrimSpace(m.modelInput.Value())
+	} else if m.modelPresetIdx > 0 {
+		model = m.modelPresets[m.modelPresetIdx]
+	}
 	if model == "" {
 		model = "(agent default)"
 	}

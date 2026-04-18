@@ -617,7 +617,13 @@ func runInteractive(flags *installer.Flags) (bool, error) {
 	flags.ProjectType = m.projectTypeValues[m.projectTypeIdx]
 	flags.Preset = m.presetValues[m.presetIdx]
 	flags.Provider = m.providerValues[m.providerIdx]
-	flags.DefaultModel = m.getSelectedModel()
+	var selectedModel string
+	if m.modelCustom {
+		selectedModel = strings.TrimSpace(m.modelInput.Value())
+	} else if m.modelPresetIdx > 0 {
+		selectedModel = m.modelPresets[m.modelPresetIdx]
+	}
+	flags.DefaultModel = selectedModel
 	flags.UpdateAll = m.updateMode
 
 	// Map component values to flags (inverse for Skip* flags)
