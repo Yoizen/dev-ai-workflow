@@ -10,9 +10,9 @@ $ErrorActionPreference = 'Stop'
 function Write-Log($msg)  { Write-Host "[sdd-engram-plugin] $msg" }
 function Write-Warn($msg) { Write-Host "[sdd-engram-plugin] WARN: $msg" -ForegroundColor Yellow }
 
-$TuiJson = Join-Path $HOME '.config' 'opencode' 'tui.json'
+$TuiJson = Join-Path (Join-Path (Join-Path $HOME '.config') 'opencode') 'tui.json'
 $PluginEntry = 'opencode-sdd-engram-manage'
-$ProfilesDir = Join-Path $HOME '.config' 'opencode' 'profiles'
+$ProfilesDir = Join-Path (Join-Path (Join-Path $HOME '.config') 'opencode') 'profiles'
 $ScriptDir = $PSScriptRoot
 $ExampleProfilesDir = Join-Path $ScriptDir 'profiles'
 
@@ -42,7 +42,7 @@ if (Test-Path $ExampleProfilesDir) {
 # Ensure tui.json exists
 # ---------------------------------------------------------------------------
 if (-not (Test-Path $TuiJson)) {
-  Write-Log "Creating $TuiJson with plugin entry"
+  Write-Log "Creating ${TuiJson} with plugin entry"
   $TuiDir = Split-Path $TuiJson -Parent
   if (-not (Test-Path $TuiDir)) {
     New-Item -ItemType Directory -Path $TuiDir -Force | Out-Null
@@ -51,7 +51,7 @@ if (-not (Test-Path $TuiJson)) {
     '$schema' = 'https://opencode.ai/tui.json'
     plugin = @($PluginEntry)
   } | ConvertTo-Json -Depth 20 | Set-Content -Path $TuiJson -Encoding UTF8
-  Write-Log "Created $TuiJson with $PluginEntry"
+  Write-Log "Created ${TuiJson} with $PluginEntry"
   exit 0
 }
 
@@ -68,16 +68,17 @@ try {
 
   $plugins = @($cfg.plugin)
   if ($plugins -contains $PluginEntry) {
-    Write-Log "Plugin already present in $TuiJson"
+    Write-Log "Plugin already present in ${TuiJson}"
   } else {
     $plugins += $PluginEntry
     $cfg.plugin = $plugins
     ($cfg | ConvertTo-Json -Depth 20) | Set-Content -Path $TuiJson -Encoding UTF8
-    Write-Log "Added $PluginEntry to plugin[] in $TuiJson"
+    Write-Log "Added $PluginEntry to plugin[] in ${TuiJson}"
   }
 } catch {
-  Write-Warn "Could not edit $TuiJson: $($_.Exception.Message)"
-  Write-Warn "Manually add '$PluginEntry' to the plugin[] array in $TuiJson"
+  $errorMsg = $_.Exception.Message
+  Write-Warn "Could not edit ${TuiJson}: $errorMsg"
+  Write-Warn "Manually add '$PluginEntry' to the plugin[] array in ${TuiJson}"
 }
 
 Write-Log "Done"
