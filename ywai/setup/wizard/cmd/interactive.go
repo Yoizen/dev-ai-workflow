@@ -24,7 +24,6 @@ const (
 	stepProjectType
 	stepPreset
 	stepProvider
-	stepModel
 	stepInstallMode // Ask "Install recommended, or customize?"
 	stepComponents
 	stepConfirm
@@ -76,11 +75,6 @@ type setupModel struct {
 	presetIdx         int
 	providerValues    []string
 	providerLabels    []string
-
-	modelInput      textinput.Model
-	modelPresets    []string
-	modelPresetIdx  int
-	modelCustom     bool
 
 	projectTypeIdx int
 	providerIdx    int
@@ -215,11 +209,6 @@ func newSetupModel(defaultPath string, baseFlags *installer.Flags) setupModel {
 	promptTi.Width = 50
 	promptTi.Prompt = "  "
 
-	modelTi := textinput.New()
-	modelTi.Placeholder = "anthropic/claude-sonnet-4"
-	modelTi.Width = 50
-	modelTi.Prompt = "  "
-
 	return setupModel{
 		step:      stepWelcome,
 		baseFlags: baseFlags,
@@ -264,18 +253,6 @@ func newSetupModel(defaultPath string, baseFlags *installer.Flags) setupModel {
 			"gemini - Google Gemini",
 			"ollama - Local Ollama",
 		},
-		modelInput: modelTi,
-		modelPresets: []string{
-			"(Use agent default)",
-			"anthropic/claude-opus-4-20250514",
-			"openai/codex-5.3",
-			"anthropic/claude-sonnet-4-20250514",
-			"google/gemini-3-flash",
-			"google/gemini-3-1-pro",
-			"anthropic/claude-haiku-4-5-20250514",
-		},
-		modelPresetIdx: 0,
-		modelCustom:    false,
 		// Custom mode components (order and defaults must stay in sync with
 		// componentKeys below and with buildProjectInstallFlags).
 		componentNames: []string{
@@ -443,8 +420,6 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updatePreset(msg)
 	case stepProvider:
 		return m.updateProvider(msg)
-	case stepModel:
-		return m.updateModel(msg)
 	case stepInstallMode:
 		return m.updateInstallMode(msg)
 	case stepComponents:
@@ -619,13 +594,6 @@ func runInteractive(flags *installer.Flags) (bool, error) {
 	flags.ProjectType = m.projectTypeValues[m.projectTypeIdx]
 	flags.Preset = m.presetValues[m.presetIdx]
 	flags.Provider = m.providerValues[m.providerIdx]
-	var selectedModel string
-	if m.modelCustom {
-		selectedModel = strings.TrimSpace(m.modelInput.Value())
-	} else if m.modelPresetIdx > 0 {
-		selectedModel = m.modelPresets[m.modelPresetIdx]
-	}
-	flags.DefaultModel = selectedModel
 	flags.UpdateAll = m.updateMode
 
 	// Map component values to flags (inverse for Skip* flags)

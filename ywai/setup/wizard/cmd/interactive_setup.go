@@ -199,52 +199,9 @@ func (m setupModel) updateProvider(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.providerIdx++
 			}
 		case "enter":
-			m.step = stepModel
+			m.step = stepInstallMode
 		case "b":
 			m.step = stepPreset
-		}
-	}
-	return m, nil
-}
-
-func (m setupModel) updateModel(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if m.modelCustom {
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch msg.String() {
-			case "enter":
-				m.step = stepInstallMode
-				m.modelInput.Blur()
-			case "esc":
-				m.modelCustom = false
-				m.modelInput.Blur()
-			}
-		}
-		var cmd tea.Cmd
-		m.modelInput, cmd = m.modelInput.Update(msg)
-		return m, cmd
-	}
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "up", "k":
-			if m.modelPresetIdx > 0 {
-				m.modelPresetIdx--
-			}
-		case "down", "j":
-			if m.modelPresetIdx < len(m.modelPresets)-1 {
-				m.modelPresetIdx++
-			}
-		case "enter":
-			if m.modelPresetIdx == len(m.modelPresets)-1 {
-				m.modelCustom = true
-				m.modelInput.Focus()
-			} else {
-				m.step = stepInstallMode
-			}
-		case "b":
-			m.step = stepProvider
 		}
 	}
 	return m, nil
@@ -278,7 +235,7 @@ func (m setupModel) updateInstallMode(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.step = stepComponents
 			}
 		case "b":
-			m.step = stepModel
+			m.step = stepProvider
 		}
 	}
 	return m, nil
@@ -435,42 +392,6 @@ func (m setupModel) renderProviderStep() string {
 	)
 }
 
-func (m setupModel) renderModelStep() string {
-	box := activeBoxStyle.Render(m.currentModeLabel() + " • Default Model")
-
-	if m.modelCustom {
-		return lipgloss.JoinVertical(
-			lipgloss.Left,
-			box,
-			"",
-			bodyStyle.Render("Enter custom model name:"),
-			"",
-			itemStyle.Render(m.modelInput.View()),
-		)
-	}
-
-	var items []string
-	for idx, preset := range m.modelPresets {
-		line := preset
-		if idx == m.modelPresetIdx {
-			items = append(items, selectedItemStyle.Render("> "+line))
-		} else {
-			items = append(items, itemStyle.Render("  "+line))
-		}
-	}
-
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		box,
-		"",
-		bodyStyle.Render("Select default model for this project:"),
-		"",
-		lipgloss.JoinVertical(lipgloss.Left, items...),
-		"",
-		captionStyle.Render("Press Enter to select, or type a custom model name"),
-	)
-}
-
 func (m setupModel) renderInstallModeStep() string {
 	box := activeBoxStyle.Render(m.currentModeLabel() + " • Components Mode")
 
@@ -564,16 +485,6 @@ func (m setupModel) renderConfirmStep() string {
 	projectType := m.projectTypeValues[m.projectTypeIdx]
 	preset := m.presetValues[m.presetIdx]
 	provider := m.providerValues[m.providerIdx]
-	model := ""
-	if m.modelCustom {
-		model = strings.TrimSpace(m.modelInput.Value())
-	} else if m.modelPresetIdx > 0 {
-		model = m.modelPresets[m.modelPresetIdx]
-	}
-	if model == "" {
-		model = "(agent default)"
-	}
-
 	modeLabel := "All recommended"
 	if m.installModeIdx == 1 {
 		modeLabel = "Custom selection"
@@ -587,7 +498,6 @@ func (m setupModel) renderConfirmStep() string {
 		"  " + successStyle.Render("[x]") + " Type: " + bodyStyle.Render(projectType),
 		"  " + successStyle.Render("[x]") + " Preset: " + bodyStyle.Render(preset),
 		"  " + successStyle.Render("[x]") + " Provider: " + bodyStyle.Render(provider),
-		"  " + successStyle.Render("[x]") + " Model: " + bodyStyle.Render(model),
 		"  " + successStyle.Render("[x]") + " Mode: " + bodyStyle.Render(modeLabel),
 	}
 	summaryCard := cardStyle.Render(lipgloss.JoinVertical(lipgloss.Left, summaryLines...))

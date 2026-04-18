@@ -54,8 +54,6 @@ func (m setupModel) renderBody() string {
 		content = m.renderPresetStep()
 	case stepProvider:
 		content = m.renderProviderStep()
-	case stepModel:
-		content = m.renderModelStep()
 	case stepInstallMode:
 		content = m.renderInstallModeStep()
 	case stepComponents:
@@ -158,8 +156,8 @@ func (m setupModel) renderStepIndicator() string {
 	// render it in the indicator (greyed out as "Components") so the visual
 	// doesn't collapse unexpectedly, but using the install-mode branch makes
 	// jumping from Mode -> Confirm transparent.
-	stepNames := []string{"Path", "Type", "Provider", "Model", "Mode", "Components", "Review"}
-	stepEnums := []interactiveStep{stepPath, stepProjectType, stepProvider, stepModel, stepInstallMode, stepComponents, stepConfirm}
+	stepNames := []string{"Path", "Type", "Provider", "Mode", "Components", "Review"}
+	stepEnums := []interactiveStep{stepPath, stepProjectType, stepProvider, stepInstallMode, stepComponents, stepConfirm}
 
 	var parts []string
 	for i, s := range stepNames {

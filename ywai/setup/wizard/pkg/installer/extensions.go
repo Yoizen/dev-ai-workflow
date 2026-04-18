@@ -354,16 +354,18 @@ func (i *Installer) executeInstallStep(stepName, srcPath string) error {
 		}
 		return i.installBiome()
 	case "plannotator-setup":
-		// Global-scope install-step: installs plannotator CLI and configures
-		// detected agent tools (Gemini ~/.gemini, Claude, Copilot, Pi).
-		// In GlobalOnly mode, pass /tmp so the script skips opencode.json edits.
-		if i.flags.GlobalOnly {
-			return i.executeExtensionScriptWithArgs(srcPath, "/tmp")
+		// Global-only: runs only from the Update Global Tools menu.
+		if !i.flags.GlobalOnly {
+			i.logger.LogInfo("Skipping plannotator-setup (global-only)")
+			return nil
 		}
-		return i.executeExtensionScript(srcPath)
+		return i.executeExtensionScriptWithArgs(srcPath, "/tmp")
 	case "metronous-setup":
-		// Global-scope install-step: installs metronous CLI and configures
-		// OpenCode telemetry (opt-in). Skips if InstallMetronous flag is false.
+		// Global-only: runs only from the Update Global Tools menu.
+		if !i.flags.GlobalOnly {
+			i.logger.LogInfo("Skipping metronous-setup (global-only)")
+			return nil
+		}
 		if !i.flags.InstallMetronous {
 			i.logger.LogInfo("Skipping metronous-setup (opt-in, not enabled)")
 			return nil
@@ -376,8 +378,9 @@ func (i *Installer) executeInstallStep(stepName, srcPath string) error {
 		}
 		return i.executeExtensionScript(srcPath)
 	case "sdd-engram-plugin":
-		if i.flags.SkipSddEngramPlugin {
-			i.logger.LogInfo("Skipping sdd-engram-plugin (--skip-sdd-engram-plugin)")
+		// Global-only: runs only from the Update Global Tools menu.
+		if !i.flags.GlobalOnly {
+			i.logger.LogInfo("Skipping sdd-engram-plugin (global-only)")
 			return nil
 		}
 		return i.executeExtensionScript(srcPath)
