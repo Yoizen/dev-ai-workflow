@@ -29,31 +29,42 @@ if (Has-Cmd 'plannotator') {
 # ---------------------------------------------------------------------------
 # 2. Configure OpenCode (if opencode.json exists in target)
 # ---------------------------------------------------------------------------
-$OpenCodeJson = Join-Path $TargetDir 'opencode.json'
-if (Test-Path $OpenCodeJson) {
+function Update-OpenCodePlugin {
+    param([string]$JsonPath)
     try {
-        $raw = Get-Content $OpenCodeJson -Raw
+        $raw = Get-Content $JsonPath -Raw
         $cfg = $raw | ConvertFrom-Json
-
         if (-not $cfg.plugin) {
             $cfg | Add-Member -NotePropertyName plugin -NotePropertyValue @() -Force
         }
-
         $entry = '@plannotator/opencode@latest'
         $plugins = @($cfg.plugin)
         if ($plugins -contains $entry) {
-            Write-Log "OpenCode: plannotator plugin already configured"
+            Write-Log "OpenCode: plannotator plugin already configured in $JsonPath"
         } else {
             $plugins += $entry
             $cfg.plugin = $plugins
-            ($cfg | ConvertTo-Json -Depth 20) | Set-Content -Path $OpenCodeJson -Encoding UTF8
-            Write-Log "OpenCode: added $entry to plugin[]"
+            ($cfg | ConvertTo-Json -Depth 20) | Set-Content -Path $JsonPath -Encoding UTF8
+            Write-Log "OpenCode: added $entry to plugin[] in $JsonPath"
         }
     } catch {
-        Write-Warn "OpenCode: could not update opencode.json: $($_.Exception.Message)"
+        Write-Warn "OpenCode: could not update $JsonPath: $($_.Exception.Message)"
     }
-} else {
-    Write-Log "OpenCode: no opencode.json in $TargetDir (skipping)"
+}
+
+$OpenCodeJson = Join-Path $TargetDir 'opencode.json'
+$GlobalOpenCodeJson = Join-Path $HOME '.config' 'opencode' 'opencode.json'
+
+if (Test-Path $OpenCodeJson) {
+    Update-OpenCodePlugin -JsonPath $OpenCodeJson
+}
+
+if (Test-Path $GlobalOpenCodeJson) {
+    Update-OpenCodePlugin -JsonPath $GlobalOpenCodeJson
+}
+
+if (-not (Test-Path $OpenCodeJson) -and -not (Test-Path $GlobalOpenCodeJson)) {
+    Write-Log "OpenCode: no opencode.json found (skipping)"
 }
 
 # ---------------------------------------------------------------------------

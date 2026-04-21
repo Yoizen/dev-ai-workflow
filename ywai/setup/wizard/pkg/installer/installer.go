@@ -327,6 +327,29 @@ func (i *Installer) getGADir() string {
 	return filepath.Join(home, ".local", "share", "yoizen", "dev-ai-workflow")
 }
 
+func (i *Installer) getOpenCodeGlobalConfigDir() string {
+	if runtime.GOOS == "windows" {
+		if localAppData := strings.TrimSpace(os.Getenv("LOCALAPPDATA")); localAppData != "" {
+			d := filepath.Join(localAppData, "opencode")
+			if i.dirExists(filepath.Join(d, "opencode.json")) {
+				return d
+			}
+		}
+		if appData := strings.TrimSpace(os.Getenv("APPDATA")); appData != "" {
+			d := filepath.Join(appData, "opencode")
+			if i.dirExists(filepath.Join(d, "opencode.json")) {
+				return d
+			}
+		}
+	}
+	home, _ := os.UserHomeDir()
+	d := filepath.Join(home, ".config", "opencode")
+	if i.fileExists(filepath.Join(d, "opencode.json")) {
+		return d
+	}
+	return ""
+}
+
 func (i *Installer) getSkillsDir() string {
 	return filepath.Join(i.targetDir, "skills")
 }

@@ -284,9 +284,14 @@ func (i *Installer) UpdatePlannotator() error {
 		return fmt.Errorf("plannotator-setup extension not found in any YWAI location")
 	}
 
-	// In GlobalOnly mode, pass /tmp to prevent repo writes (opencode.json edits).
 	if i.flags.GlobalOnly {
-		return i.executeExtensionScriptWithArgs(extDir, "/tmp")
+		origTarget := i.targetDir
+		if dir := i.getOpenCodeGlobalConfigDir(); dir != "" {
+			i.targetDir = dir
+		}
+		err := i.executeExtensionScriptWithArgs(extDir, "")
+		i.targetDir = origTarget
+		return err
 	}
 	return i.executeExtensionScriptWithArgs(extDir, "")
 }

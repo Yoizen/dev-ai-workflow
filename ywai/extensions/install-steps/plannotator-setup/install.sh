@@ -31,13 +31,18 @@ fi
 # ---------------------------------------------------------------------------
 # 2. Configure OpenCode (if opencode.json exists in target)
 # ---------------------------------------------------------------------------
-OPENCODE_JSON="$TARGET_DIR/opencode.json"
-if [[ -f "$OPENCODE_JSON" ]]; then
-  if grep -q '@plannotator/opencode' "$OPENCODE_JSON"; then
-    log "OpenCode: plannotator plugin already configured"
-  elif have node; then
-    log "OpenCode: adding @plannotator/opencode@latest to $OPENCODE_JSON"
-    node - "$OPENCODE_JSON" <<'NODE'
+update_opencode_json() {
+  local json_path="$1"
+  if grep -q '@plannotator/opencode' "$json_path"; then
+    log "OpenCode: plannotator plugin already configured in $json_path"
+    return 0
+  fi
+  if ! have node; then
+    warn "OpenCode: node not available — add '@plannotator/opencode@latest' to plugin[] manually in $json_path"
+    return 1
+  fi
+  log "OpenCode: adding @plannotator/opencode@latest to $json_path"
+  node - "$json_path" <<'NODE'
 const fs = require('fs');
 const path = process.argv[2];
 const raw = fs.readFileSync(path, 'utf8');
@@ -56,11 +61,21 @@ if (!cfg.plugin.includes(entry)) {
   console.log('Already present');
 }
 NODE
-  else
-    warn "OpenCode: node not available — add '@plannotator/opencode@latest' to plugin[] manually"
-  fi
-else
-  log "OpenCode: no opencode.json in $TARGET_DIR (skipping)"
+}
+
+OPENCODE_JSON="$TARGET_DIR/opencode.json"
+GLOBAL_OPENCODE_JSON="$HOME/.config/opencode/opencode.json"
+
+if [[ -f "$OPENCODE_JSON" ]]; then
+  update_opencode_json "$OPENCODE_JSON"
+fi
+
+if [[ -f "$GLOBAL_OPENCODE_JSON" ]]; then
+  update_opencode_json "$GLOBAL_OPENCODE_JSON"
+fi
+
+if [[ ! -f "$OPENCODE_JSON" ]] && [[ ! -f "$GLOBAL_OPENCODE_JSON" ]]; then
+  log "OpenCode: no opencode.json found (skipping)"
 fi
 
 # ---------------------------------------------------------------------------
