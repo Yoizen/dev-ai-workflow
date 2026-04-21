@@ -25,12 +25,32 @@ jobs:
           VERSION="${{ github.event.release.tag_name }}"
           VERSION="${VERSION#v}"
           mkdir -p ~/.local/bin
-          
+
+          # Retry with backoff: the Release workflow (push on tag) uploads
+          # these binaries. If this workflow fires before uploads finish
+          # (race condition on manually-created releases), wait and retry
+          # instead of failing immediately.
+          download_with_retry() {
+            local url="$1"
+            local out="$2"
+            local max_attempts=12
+            local delay=10
+            for attempt in $(seq 1 "$max_attempts"); do
+              if curl -fsSL -o "$out" "$url"; then
+                return 0
+              fi
+              echo "  attempt ${attempt}/${max_attempts} failed, retrying in ${delay}s..."
+              sleep "$delay"
+            done
+            echo "ERROR: gave up after ${max_attempts} attempts on ${url}"
+            return 1
+          }
+
           # Download all platform binaries
           for asset in ga-darwin-amd64 ga-darwin-arm64 ga-linux-amd64 ga-linux-arm64 ga-windows-amd64.exe; do
             URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/${asset}"
             echo "Downloading ${asset}..."
-            curl -fsSL -o "$HOME/.local/bin/${asset}" "$URL"
+            download_with_retry "$URL" "$HOME/.local/bin/${asset}"
           done
           
           # Rename for convenience
@@ -68,7 +88,14 @@ jobs:
         run: |
           VERSION="${{ github.event.release.tag_name }}"
           VERSION="${VERSION#v}"
-          curl -fsSL -o ga "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/ga-linux-amd64"
+          URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/ga-linux-amd64"
+          for attempt in $(seq 1 12); do
+            if curl -fsSL -o ga "$URL"; then
+              break
+            fi
+            echo "  attempt ${attempt}/12 failed, retrying in 10s..."
+            sleep 10
+          done
           chmod +x ga
 
       - name: Test GA
