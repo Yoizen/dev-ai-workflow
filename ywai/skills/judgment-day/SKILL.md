@@ -36,7 +36,7 @@ allowed-tools: [Read, Edit, Write, Glob, Grep, Bash, Task]
 
 Follow the **Skill Resolver Protocol** (`_shared/skill-resolver.md`) before launching ANY sub-agent:
 
-1. Obtain the skill registry: search engram (`mem_search(query: "skill-registry", project: "{project}")`) → fallback to `.ywai/skill-registry.md` from the project root → skip if none
+1. Obtain the skill registry: search engram (`mem_search(query: "skill-registry", project: "{project}")`) → fallback to `skill-registry.md` from the skills folder → skip if none
 2. Identify the target files/scope — what code will the judges review?
 3. Match relevant skills from the registry's **Compact Rules** by:
    - **Code context**: file extensions/paths of the target (e.g., `.go` → go-testing; `.tsx` → react-19, typescript)

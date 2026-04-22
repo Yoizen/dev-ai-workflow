@@ -10,7 +10,7 @@ Executor boundary: every SDD phase agent is an EXECUTOR, not an orchestrator. Do
 2. If no Project Standards block was provided, check for `SKILL: Load` instructions. If present, load those exact skill files.
 3. If neither was provided, search for the skill registry as a fallback:
    a. `mem_search(query: "skill-registry", project: "{project}")` — if found, `mem_get_observation(id)` for full content
-   b. Fallback: read `.ywai/skill-registry.md` from the project root if it exists
+   b. Fallback: read `skill-registry.md` from the skills folder if it exists
    c. From the registry's **Compact Rules** section, apply rules whose triggers match your current task.
 4. If no registry exists, proceed with your phase skill only.
 
