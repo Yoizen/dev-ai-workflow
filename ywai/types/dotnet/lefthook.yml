@@ -1,9 +1,0 @@
-pre-commit:
-  parallel: true
-  commands:
-    dotnet-build:
-      run: |
-        if command -v dotnet >/dev/null 2>&1; then
-          dotnet build --nologo
-        fi
-      stage_fixed: false

@@ -1,8 +1,0 @@
-{
-  "servers": {
-    "engram": {
-      "command": "engram",
-      "args": ["mcp"]
-    }
-  }
-}

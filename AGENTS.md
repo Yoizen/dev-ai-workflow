@@ -1,29 +1,60 @@
-# AI Development Workflow - Project Index
+# AI Development Workflow - Extension Pack
 
 ## Overview
 
-This repository contains AI-assisted development workflows and agent skills for software engineering.
+This repository is a **skill extension layer** on top of [gentle-ai](https://github.com/Gentleman-Programming/gentle-ai). It provides additional technology-specific and meta-skills that are not included in the Gentleman Stack.
 
-| Directory | Description |
-|:---|:---|
-| `ywai/` | AI development workflow with SDD Orchestrator (Spec Driven Development) |
-| `.agents/skills` | Global agent skills (skill-creator) |
+**Base layer** (install via gentle-ai):
+- SDD Orchestrator (9-phase workflow)
+- Engram (persistent memory MCP server)
+- Context7 (live framework docs MCP server)
+- Foundation skills (go-testing, branch-pr, issue-creation, judgment-day)
+- Persona, Permissions, GGA
+
+**This repo adds:**
+- Technology skills (React 19, Tailwind 4, Angular, .NET, DevOps, Playwright, Biome, TypeScript)
+- Meta-skills (skill-creator, golang-code-style, gentleman-bubbletea)
 
 ---
 
 ## Quick Start
 
-### Install AI Workflow (recommended)
+### 1. Install gentle-ai (base layer)
 
 ```bash
-# macOS / Linux
-curl -sSL https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/setup.sh | bash -s -- --all --type=nest
+# Requires Go
 
-# Windows
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Yoizen/dev-ai-workflow/main/ywai/setup/quick-setup.ps1))) -All -Type nest
+go install github.com/Gentleman-Programming/gentle-ai@latest
+
+# Run installer for your agent
+gentle-ai install --agent opencode --preset ecosystem-only
 ```
 
-See [ywai/README.md](ywai/README.md) for full installation options.
+Supported agents: `claude-code`, `opencode`, `gemini-cli`, `cursor`, `vscode-copilot`, `codex`, `windsurf`, `antigravity`.
+
+### 2. Link extra skills from this repo
+
+```powershell
+# Windows
+.\setup.ps1
+
+# macOS / Linux
+./setup.sh
+```
+
+This auto-detects installed agents and symlinks `skills/*` into each agent's skills directory (e.g., `~/.config/opencode/skills/`, `~/.windsurf/skills/`, `~/.claude/skills/`).
+
+### 3. Initialize a project (AGENTS.md + REVIEW.md)
+
+```powershell
+# Windows
+.\setup.ps1 -Init nest
+
+# macOS / Linux
+./setup.sh --init react
+```
+
+Available types: `generic`, `nest`, `react`, `dotnet`, `devops`.
 
 ---
 
@@ -31,53 +62,41 @@ See [ywai/README.md](ywai/README.md) for full installation options.
 
 ```
 dev-ai-workflow/
-├── ywai/                         # Main AI workflow
-│   ├── README.md                 # User documentation
-│   ├── skills/                   # AI agent skills
-│   │   ├── sdd-*/                # SDD Orchestrator skills
-│   │   ├── git-commit/
-│   │   ├── biome/
-│   │   ├── react-19/
-│   │   ├── typescript/
-│   │   ├── angular/
-│   │   ├── dotnet/
-│   │   ├── python/
-│   │   └── skill-creator/
-│   ├── setup/                     # Auto-setup scripts
-│   │   ├── types/                # Project type configs
-│   │   │   ├── generic/
-│   │   │   ├── nest/
-│   │   │   ├── python/
-│   │   │   └── dotnet/
-│   │   └── setup.sh
-│   ├── commands/                 # Slash command docs
-│   └── hooks/                    # Git hooks
+├── skills/              # Extra skills not in gentle-ai
+│   ├── angular/         # Angular (core, forms, performance, architecture)
+│   ├── biome/           # Biome linter/formatter
+│   ├── devops/          # Azure Pipelines, Helm, K8s
+│   ├── dotnet/          # .NET / C#
+│   ├── git-commit/      # Conventional commits
+│   ├── playwright/      # E2E testing
+│   ├── react-19/        # React 19 patterns
+│   ├── tailwind-4/      # Tailwind CSS 4
+│   ├── typescript/      # TypeScript best practices
+│   ├── skill-creator/   # Create new agent skills
+│   └── yz-ui/           # UI component library
 │
-└── .agents/                      # Global agent config
-    └── skills/
-        ├── extension-creator/
-        └── skill-creator/
+├── .agents/
+│   └── skills/          # Global meta-skills
+│       ├── agents-md/
+│       ├── gentleman-bubbletea/
+│       ├── golang-code-style/
+│       └── skill-creator/
+│
+├── project-types/       # Project-type templates (AGENTS.md + REVIEW.md)
+│   ├── generic/
+│   ├── nest/
+│   ├── react/
+│   ├── dotnet/
+│   └── devops/
+├── setup.ps1            # Windows setup script
+├── setup.sh             # macOS/Linux setup script
+├── AGENTS.md            # This file
+└── README.md            # User documentation
 ```
 
 ---
 
 ## Available Skills
-
-### SDD Orchestrator (Spec Driven Development)
-
-| Skill | Purpose |
-|:---|:---|
-| `sdd-init` | Bootstrap `.sdd/` structure |
-| `sdd-explore` | Explore ideas before committing |
-| `sdd-propose` | Create change proposal |
-| `sdd-spec` | Write specifications |
-| `sdd-design` | Technical design document |
-| `sdd-tasks` | Break change into tasks |
-| `sdd-apply` | Implement tasks |
-| `sdd-verify` | Validate implementation vs specs |
-| `sdd-archive` | Archive completed change |
-| `sdd-onboard` | Guided end-to-end SDD walkthrough on a real codebase |
-| `judgment-day` | Parallel adversarial review with two blind judges + fix/re-judge loop |
 
 ### Technology Skills
 
@@ -89,46 +108,31 @@ dev-ai-workflow/
 | `biome` | Biome (linter/formatter) |
 | `angular/*` | Angular (core, forms, performance, architecture) |
 | `dotnet` | .NET / C# |
-| `python` | Python |
-| `devops` | Azure Pipelines, Helm charts, Kubernetes deployments |
+| `devops` | Azure Pipelines, Helm charts, Kubernetes |
+| `playwright` | E2E testing (browser APIs, frameworks, CI/CD) |
+| `git-commit` | Conventional commits |
 
 ### Meta Skills
 
 | Skill | Purpose |
 |:---|:---|
 | `skill-creator` | Create new AI agent skills |
-| `extension-creator` | Create and wire new setup extensions |
-| `global-agents` | Create/update global agents templates, bundles, and skills invoke sync |
-| `skill-sync` | Sync skill metadata with AGENTS.md |
-| `git-commit` | Conventional commits |
+| `golang-code-style` | Go code style, formatting, and conventions |
+| `gentleman-bubbletea` | Bubbletea TUI patterns for Gentleman.Dots installer |
 
 ---
 
-## Usage
+## SDD Usage (delegated to gentle-ai)
 
-### Agent Mode (simple tasks)
-
-```text
-> Agrega validación de email en el form de registro
-```
-
-### SDD Mode (complex features)
+Complex features use the Spec-Driven Development workflow provided by gentle-ai:
 
 ```bash
 sdd:new feature-name     # Create proposal
 sdd:ff feature-name      # Fast-forward: spec + design + tasks
 /sdd-apply               # Implement tasks
-git commit               # Auto-review with GA
+/sdd-verify              # Validate implementation
+/sdd:archive             # Archive when done
 ```
-
----
-
-## Documentation
-
-- **User Guide**: [ywai/README.md](ywai/README.md)
-- **SDD Commands**: [ywai/commands/](ywai/commands/)
-- **Skills Reference**: [ywai/skills/](ywai/skills/)
-- **Project Types**: [ywai/setup/types/](ywai/setup/types/)
 
 ---
 
@@ -136,3 +140,4 @@ git commit               # Auto-review with GA
 
 - Issues: https://github.com/Yoizen/dev-ai-workflow/issues
 - Repository: https://github.com/Yoizen/dev-ai-workflow
+- Upstream: https://github.com/Gentleman-Programming/gentle-ai
