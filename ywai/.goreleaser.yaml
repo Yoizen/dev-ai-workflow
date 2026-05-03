@@ -51,7 +51,7 @@ changelog:
 release:
   github:
     owner: Yoizen
-    name: ywai
+    name: dev-ai-workflow
   draft: false
   prerelease: auto
   mode: replace

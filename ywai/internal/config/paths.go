@@ -96,13 +96,17 @@ func findUp(start, target string) string {
 	}
 }
 
-func isOurRepo(dir string) bool {
+func IsOurRepoByPath(dir string) bool {
 	for _, marker := range []string{"_shared", "react-19", "angular"} {
 		if _, err := os.Stat(filepath.Join(dir, SkillsDirName, marker)); err == nil {
 			return true
 		}
 	}
 	return false
+}
+
+func isOurRepo(dir string) bool {
+	return IsOurRepoByPath(dir)
 }
 
 func dataDirPopulated() (bool, error) {

@@ -41,17 +41,23 @@ var installCmd = &cobra.Command{
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Upgrade gentle-ai + sync + re-link skills",
+	Short: "Upgrade ywai + gentle-ai + sync + re-seed + re-link skills",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("=== ywai update ===")
 
-		fmt.Println("\n[1/3] Upgrading gentle-ai...")
+		fmt.Println("\n[1/5] Self-updating ywai...")
+		selfUpdate()
+
+		fmt.Println("\n[2/5] Upgrading gentle-ai...")
 		gentlai.Upgrade()
 
-		fmt.Println("\n[2/3] Syncing ecosystem...")
+		fmt.Println("\n[3/5] Syncing ecosystem...")
 		gentlai.Sync()
 
-		fmt.Println("\n[3/3] Re-linking extra skills...")
+		fmt.Println("\n[4/5] Re-seeding data cache...")
+		reseedData()
+
+		fmt.Println("\n[5/5] Re-linking extra skills...")
 		agents := agent.Detect()
 		if len(agents) == 0 {
 			fmt.Fprintln(os.Stderr, "Error: no supported agents detected.")
