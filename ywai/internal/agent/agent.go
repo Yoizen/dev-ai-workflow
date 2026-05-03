@@ -76,6 +76,41 @@ var KnownAgents = []struct {
 			return filepath.Join(homeDir(), ".codex", "skills")
 		},
 	},
+	{
+		Name:   "kilocode",
+		Binary: "kilo",
+		SkillsPath: func() string {
+			return filepath.Join(homeDir(), ".config", "kilo", "skills")
+		},
+	},
+	{
+		Name:   "kimi",
+		Binary: "kimi",
+		SkillsPath: func() string {
+			return filepath.Join(homeDir(), ".config", "agents", "skills")
+		},
+	},
+	{
+		Name:   "qwen-code",
+		Binary: "qwen",
+		SkillsPath: func() string {
+			return filepath.Join(homeDir(), ".qwen", "skills")
+		},
+	},
+	{
+		Name:   "antigravity",
+		Binary: "",
+		SkillsPath: func() string {
+			return filepath.Join(homeDir(), ".gemini", "antigravity", "skills")
+		},
+	},
+	{
+		Name:   "kiro-ide",
+		Binary: "kiro",
+		SkillsPath: func() string {
+			return filepath.Join(homeDir(), ".kiro", "skills")
+		},
+	},
 }
 
 func homeDir() string {
@@ -114,6 +149,16 @@ func findBinary(name string) string {
 func Detect() []Agent {
 	var found []Agent
 	for _, ka := range KnownAgents {
+		if ka.Binary == "" {
+			if detectByConfigDir(ka.Name, ka.SkillsPath()) {
+				found = append(found, Agent{
+					Name:      ka.Name,
+					SkillsDir: ka.SkillsPath(),
+				})
+			}
+			continue
+		}
+
 		path := findBinary(ka.Binary)
 		if path == "" {
 			continue
@@ -136,6 +181,21 @@ func Detect() []Agent {
 	return found
 }
 
+func detectByConfigDir(name, skillsDir string) bool {
+	if _, err := os.Stat(skillsDir); err == nil {
+		return true
+	}
+
+	parentDir := filepath.Dir(skillsDir)
+	agentMarker := filepath.Join(parentDir, "AGENTS.md")
+	if _, err := os.Stat(agentMarker); err != nil {
+		return false
+	}
+
+	createSkillsDir(skillsDir)
+	return true
+}
+
 func FindByName(name string) (*Agent, error) {
 	for _, a := range Detect() {
 		if a.Name == name {
@@ -146,5 +206,9 @@ func FindByName(name string) (*Agent, error) {
 }
 
 func AvailableNames() []string {
-	return []string{"opencode", "claude-code", "cursor", "windsurf", "gemini-cli", "vscode-copilot", "codex"}
+	return []string{
+		"opencode", "claude-code", "cursor", "windsurf",
+		"gemini-cli", "vscode-copilot", "codex",
+		"kilocode", "kimi", "qwen-code", "antigravity", "kiro-ide",
+	}
 }

@@ -40,6 +40,22 @@ func TestAgentErrorHandling(t *testing.T) {
 	defer os.Setenv("PATH", oldPath)
 
 	out, err := runYwaiAllowFail(t, bin, "install", "--dry-run")
+
+	configDirAgents := []string{"antigravity"}
+	hasConfigDirAgent := false
+	for _, name := range configDirAgents {
+		if strings.Contains(out, name) {
+			hasConfigDirAgent = true
+		}
+	}
+
+	if hasConfigDirAgent {
+		if strings.Contains(out, "no supported agents detected") {
+			t.Error("should not show 'no agents detected' when config-dir agents are present")
+		}
+		return
+	}
+
 	if err == nil {
 		t.Error("expected error with empty PATH")
 	}
