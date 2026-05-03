@@ -530,12 +530,18 @@ func (m *Model) startInstall() tea.Cmd {
 }
 
 func (m *Model) runInstall() (string, error) {
+	// Find ywai binary in PATH
+	ywaiBin, err := exec.LookPath("ywai")
+	if err != nil {
+		return "", fmt.Errorf("ywai not found in PATH: %w", err)
+	}
+
 	// Build the ywai command with selected flags
 	args := []string{"install", "--agent", m.installAgent, "--type", m.installType}
-	
-	cmd := exec.Command("ywai", args...)
+
+	cmd := exec.Command(ywaiBin, args...)
 	cmd.Env = os.Environ()
-	
+
 	output, err := cmd.CombinedOutput()
 	return string(output), err
 }
