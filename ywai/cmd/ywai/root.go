@@ -80,7 +80,10 @@ func linkSkillsForAgents(agents []agent.Agent, projectType string, dryRun bool) 
 	if filter == nil {
 		fmt.Println("  linking all skills (generic profile).")
 	} else {
-		fmt.Printf("  linking %d skills (%s profile).\n", len(filter), projectType)
+		fmt.Printf("  Skills for %s:\n", projectType)
+		for _, s := range filter {
+			fmt.Printf("    - %s\n", s)
+		}
 	}
 
 	for _, a := range agents {

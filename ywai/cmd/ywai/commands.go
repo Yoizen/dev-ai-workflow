@@ -72,6 +72,20 @@ var skillsCmd = &cobra.Command{
 	Short: "List available extra skills",
 	Run: func(cmd *cobra.Command, args []string) {
 		projectType, _ := cmd.Flags().GetString("type")
+
+		if projectType != "" {
+			filter := config.ProfileSkills(projectType)
+			if filter == nil {
+				fmt.Println("all skills (generic profile)")
+			} else {
+				fmt.Printf("Skills for %s:\n", projectType)
+				for _, s := range filter {
+					fmt.Printf("  - %s\n", s)
+				}
+			}
+			return
+		}
+
 		available, err := skills.ListAvailable()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -81,19 +95,6 @@ var skillsCmd = &cobra.Command{
 		fmt.Println("Extra skills available:")
 		for _, s := range available {
 			fmt.Printf("  - %s\n", s)
-		}
-
-		if projectType != "" {
-			filter := config.ProfileSkills(projectType)
-			if filter == nil {
-				fmt.Println("\nAll skills (generic profile)")
-			} else {
-				fmt.Printf("\nSkills for %s profile:\n", projectType)
-				for _, s := range filter {
-					fmt.Printf("  - %s\n", s)
-				}
-			}
-			return
 		}
 
 		profiles := config.AvailableProfiles()

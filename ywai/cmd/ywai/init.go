@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/project"
@@ -19,7 +20,8 @@ var initCmd = &cobra.Command{
 		}
 
 		if err := project.Init(projectType, targetDir); err != nil {
-			fmt.Fprintf(cmd.OutOrStderr(), "Error: %v\n", err)
+			fmt.Fprintln(os.Stderr, "Error:", err.Error())
+			os.Exit(1)
 		}
 	},
 }
