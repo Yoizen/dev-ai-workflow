@@ -12,6 +12,7 @@ import (
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/config"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/gentlai"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/orchestrator"
+	"github.com/Yoizen/dev-ai-workflow/ywai/internal/overrides"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/selfupdate"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/skills"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/tui"
@@ -155,6 +156,9 @@ func executeInstall(agentFlag, projectType string, dryRun bool) {
 	if !dryRun {
 		results := orchestrator.RenameAll(orchestrator.AgentSettingsPaths())
 		orchestrator.PrintResults(results)
+
+		fmt.Println("\n[3.5/4] Applying ywai overrides...")
+		applyOverrides(agents)
 	}
 
 	fmt.Println("\n[4/4] Initializing project...")
@@ -245,4 +249,15 @@ func reseedData() {
 	}
 
 	fmt.Println("  Data re-seeded from embedded.")
+}
+
+func applyOverrides(agents []agent.Agent) {
+	agentDirs := make(map[string]string)
+	for _, a := range agents {
+		agentDirs[a.Name] = a.SkillsDir
+	}
+
+	if err := overrides.ApplyOpenSpecToSDDOverride(agentDirs); err != nil {
+		fmt.Printf("  Warning: failed to apply openspec→.sdd override: %v\n", err)
+	}
 }

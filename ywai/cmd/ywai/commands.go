@@ -10,6 +10,7 @@ import (
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/config"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/gentlai"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/orchestrator"
+	"github.com/Yoizen/dev-ai-workflow/ywai/internal/overrides"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/skills"
 )
 
@@ -73,6 +74,17 @@ var updateCmd = &cobra.Command{
 		fmt.Println("\n[6/6] Renaming orchestrator...")
 		results := orchestrator.RenameAll(orchestrator.AgentSettingsPaths())
 		orchestrator.PrintResults(results)
+
+		fmt.Println("\n[6.5/6] Re-applying ywai overrides...")
+		agentDirs := overrides.AgentSkillsDirs()
+		for name, dir := range agentDirs {
+			if _, err := os.Stat(dir); err == nil {
+				agentDirs[name] = dir
+			}
+		}
+		if err := overrides.ApplyOpenSpecToSDDOverride(agentDirs); err != nil {
+			fmt.Printf("  Warning: failed to apply overrides: %v\n", err)
+		}
 
 		fmt.Println("\n=== Done! ===")
 	},
