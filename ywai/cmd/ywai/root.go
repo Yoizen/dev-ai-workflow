@@ -11,6 +11,7 @@ import (
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/agent"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/config"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/gentlai"
+	"github.com/Yoizen/dev-ai-workflow/ywai/internal/orchestrator"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/selfupdate"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/skills"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/tui"
@@ -150,6 +151,11 @@ func executeInstall(agentFlag, projectType string, dryRun bool) {
 	fmt.Println("\n[3/4] Installing ecosystem + linking extra skills...")
 	installEcosystem(agents, dryRun)
 	linkSkillsForAgents(agents, projectType, dryRun)
+
+	if !dryRun {
+		results := orchestrator.RenameAll(orchestrator.AgentSettingsPaths())
+		orchestrator.PrintResults(results)
+	}
 
 	fmt.Println("\n[4/4] Initializing project...")
 	if projectType != "" && projectType != "generic" {

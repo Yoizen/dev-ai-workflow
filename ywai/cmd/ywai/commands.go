@@ -9,6 +9,7 @@ import (
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/agent"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/config"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/gentlai"
+	"github.com/Yoizen/dev-ai-workflow/ywai/internal/orchestrator"
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/skills"
 )
 
@@ -41,23 +42,23 @@ var installCmd = &cobra.Command{
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Upgrade ywai + gentle-ai + sync + re-seed + re-link skills",
+	Short: "Upgrade ywai + gentle-ai + sync + re-seed + re-link + rename orchestrator",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("=== ywai update ===")
 
-		fmt.Println("\n[1/5] Self-updating ywai...")
+		fmt.Println("\n[1/6] Self-updating ywai...")
 		selfUpdate()
 
-		fmt.Println("\n[2/5] Upgrading gentle-ai...")
+		fmt.Println("\n[2/6] Upgrading gentle-ai...")
 		gentlai.Upgrade()
 
-		fmt.Println("\n[3/5] Syncing ecosystem...")
+		fmt.Println("\n[3/6] Syncing ecosystem...")
 		gentlai.Sync()
 
-		fmt.Println("\n[4/5] Re-seeding data cache...")
+		fmt.Println("\n[4/6] Re-seeding data cache...")
 		reseedData()
 
-		fmt.Println("\n[5/5] Re-linking extra skills...")
+		fmt.Println("\n[5/6] Re-linking extra skills...")
 		agents := agent.Detect()
 		if len(agents) == 0 {
 			fmt.Fprintln(os.Stderr, "Error: no supported agents detected.")
@@ -68,6 +69,10 @@ var updateCmd = &cobra.Command{
 			skills.LinkTo(a.SkillsDir)
 			fmt.Printf("  [%s] Re-linked skills\n", a.Name)
 		}
+
+		fmt.Println("\n[6/6] Renaming orchestrator...")
+		results := orchestrator.RenameAll(orchestrator.AgentSettingsPaths())
+		orchestrator.PrintResults(results)
 
 		fmt.Println("\n=== Done! ===")
 	},
