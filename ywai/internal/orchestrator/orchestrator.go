@@ -26,24 +26,23 @@ func RenameAll(agentConfigs map[string]string) []RenameResult {
 			continue
 		}
 
-		changed, err := renameInJSON(settingsPath)
-		if err != nil {
+		renamed, err1 := renameInJSON(settingsPath)
+		injected, err2 := injectAskAgent(settingsPath)
+		if err1 != nil || err2 != nil {
 			continue
 		}
-		if changed {
+		if renamed || injected {
 			results = append(results, RenameResult{Agent: agentName, File: settingsPath})
 		}
 	}
 
 	subAgentDirs := findSubAgentDirs()
 	for _, dir := range subAgentDirs {
-		renamed, err := renameSubAgentFile(dir)
-		if err != nil {
-			continue
-		}
+		renamed, _ := renameSubAgentFile(dir)
 		if renamed != "" {
 			results = append(results, RenameResult{Agent: filepath.Base(filepath.Dir(filepath.Dir(renamed))), File: renamed})
 		}
+		injectAskSubAgentFile(dir)
 	}
 
 	return results
@@ -157,6 +156,79 @@ func settingsPathIfExists(path string) string {
 		return ""
 	}
 	return path
+}
+
+func injectAskAgent(path string) (bool, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false, err
+	}
+
+	var root map[string]any
+	if err := json.Unmarshal(data, &root); err != nil {
+		return false, err
+	}
+
+	agentsRaw, ok := root["agent"]
+	if !ok {
+		agentsRaw = map[string]any{}
+		root["agent"] = agentsRaw
+	}
+	agentsMap, ok := agentsRaw.(map[string]any)
+	if !ok {
+		return false, nil
+	}
+
+	if _, exists := agentsMap["ask"]; exists {
+		return false, nil
+	}
+
+	agentsMap["ask"] = map[string]any{
+		"mode":        "primary",
+		"description": "Read-only Q&A — answers questions without modifying code or making plans",
+		"prompt":      "You are a read-only assistant. You can ONLY read files and answer questions. You must NOT edit files, write files, create plans, or suggest code changes. When asked to implement something, refuse and explain the user should switch to the main agent. Answer concisely and directly. Use evidence from the codebase.",
+		"tools": map[string]any{
+			"read":  true,
+			"bash":  false,
+			"edit":  false,
+			"write": false,
+		},
+	}
+
+	updated, err := json.MarshalIndent(root, "", "  ")
+	if err != nil {
+		return false, err
+	}
+	updated = append(updated, '\n')
+
+	if err := os.WriteFile(path, updated, 0o644); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func injectAskSubAgentFile(agentsDir string) {
+	askPath := filepath.Join(agentsDir, "ask.md")
+	if _, err := os.Stat(askPath); err == nil {
+		return
+	}
+
+	content := `---
+inclusion: always
+---
+
+You are a read-only assistant. You can ONLY read files and answer questions.
+
+Rules:
+- You must NOT edit files, write files, create plans, or suggest code changes.
+- When asked to implement something, refuse and explain the user should switch to the main agent.
+- Answer concisely and directly.
+- Use evidence from the codebase.
+- No tools that modify the filesystem are available to you.
+`
+
+	os.WriteFile(askPath, []byte(content), 0o644)
 }
 
 func PrintResults(results []RenameResult) {
