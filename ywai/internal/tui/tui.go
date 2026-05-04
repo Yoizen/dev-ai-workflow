@@ -139,7 +139,7 @@ func NewModel(detectedAgents []agent.Agent) Model {
 		step:   stepWelcome,
 		types:  types,
 		agents: agentOpts,
-	}, nil
+	}
 }
 
 func (m *Model) advanceToNextValidStep() {
