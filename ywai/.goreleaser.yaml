@@ -1,7 +1,5 @@
 version: 2
 
-name: ywai
-
 before:
   hooks:
     - bash scripts/prepare-embedded.sh
