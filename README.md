@@ -6,9 +6,27 @@ Wrapper around [gentle-ai](https://github.com/Gentleman-Programming/gentle-ai) t
 
 ## Quick Start
 
+### Con Go
+
 ```bash
 go install github.com/Yoizen/dev-ai-workflow/ywai/cmd/ywai@latest
+```
 
+### Con installer (requiere release v0.1.0+)
+
+```powershell
+# Windows (PowerShell)
+irm https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.ps1 | iex
+```
+
+```bash
+# macOS / Linux
+curl -sSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash
+```
+
+### Uso
+
+```bash
 ywai install                  # Interactive wizard
 ywai install --type react     # React profile
 ywai install --type nest      # NestJS profile
