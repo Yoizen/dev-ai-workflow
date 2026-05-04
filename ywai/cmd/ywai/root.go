@@ -166,8 +166,7 @@ func executeInstall(agentFlag, projectType string, dryRun bool) {
 	fmt.Println("\n=== Done! ===")
 	fmt.Println("\nNext steps:")
 	fmt.Println("  1. Open your AI agent in this project")
-	fmt.Println("  2. Run /sdd-init to detect stack and testing capabilities")
-	fmt.Println("  3. Run skill-registry to scan installed skills")
+	fmt.Println("  2. Run `ywai skills` to see available skills")
 }
 
 func ternary(cond bool, a, b string) string {
