@@ -55,16 +55,25 @@ release:
   draft: false
   prerelease: auto
   mode: replace
+  extra_files:
+    - glob: scripts/install.sh
+    - glob: scripts/install.ps1
   header: |
     ## ywai {{ .Tag }}
     
     One command to install gentle-ai + extra skills + project config.
   footer: |
     **Install:**
+    ```powershell
+    # Windows (PowerShell)
+    irm https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.ps1 | iex
+    ```
+    ```bash
+    # macOS / Linux
+    curl -fsSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash
+    ```
     ```bash
     # Go (any OS)
     go install github.com/Yoizen/dev-ai-workflow/ywai/cmd/ywai@latest
     ```
-    
-    **Or download a binary from the assets below.**
 

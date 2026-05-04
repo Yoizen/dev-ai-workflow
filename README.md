@@ -12,22 +12,16 @@ Wrapper around [gentle-ai](https://github.com/Gentleman-Programming/gentle-ai) t
 go install github.com/Yoizen/dev-ai-workflow/ywai/cmd/ywai@latest
 ```
 
-### Con installer (requiere release v0.1.0+)
+### Con installer
 
 ```powershell
 # Windows (PowerShell)
-irm https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/ywai_windows_amd64.zip -OutFile ywai.zip
-Expand-Archive ywai.zip
+irm https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.ps1 | iex
 ```
 
 ```bash
-# macOS (Apple Silicon)
-curl -fsSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/ywai_darwin_arm64.tar.gz | tar xz
-sudo mv ywai /usr/local/bin/
-
-# Linux (x86_64)
-curl -fsSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/ywai_linux_amd64.tar.gz | tar xz
-sudo mv ywai /usr/local/bin/
+# macOS / Linux
+curl -fsSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash
 ```
 
 ### Uso
