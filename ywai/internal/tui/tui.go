@@ -165,7 +165,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.installOutput = append(m.installOutput, "Installation completed successfully!")
 		}
-		return m, nil
+		m.quitting = true
+		return m, tea.Quit
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -584,9 +585,6 @@ func (m *Model) viewProgress() string {
 	}
 	
 	b.WriteString("\n\n")
-	if m.installDone && m.installError == nil {
-		b.WriteString(dimStyle.Render("  Press any key to exit..."))
-	}
 	
 	return b.String()
 }
