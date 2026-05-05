@@ -74,7 +74,7 @@ Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "  Seeding data..."
 $ExePath = Join-Path $InstallDir "$Binary.exe"
-& $ExePath version 2>&1 | Out-Null
+& $ExePath --version 2>&1 | Out-Null
 
 $Installed = Get-Command $Binary -ErrorAction SilentlyContinue
 if ($Installed) {
