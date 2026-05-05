@@ -68,6 +68,7 @@ type step int
 
 const (
 	stepWelcome step = iota
+	stepGlobal
 	stepType
 	stepAgent
 	stepMCP
@@ -102,6 +103,9 @@ type Model struct {
 
 	// MCP selection
 	installMicrosoftLearnMCP bool
+
+	// Global-only selection
+	globalOnly bool
 
 	// Progress state
 	installOutput []string
@@ -224,8 +228,10 @@ func (m *Model) handleEsc() (tea.Model, tea.Cmd) {
 	case stepWelcome:
 		m.quitting = true
 		return m, tea.Quit
-	case stepType:
+	case stepGlobal:
 		m.step = stepWelcome
+	case stepType:
+		m.step = stepGlobal
 	case stepAgent:
 		m.step = stepType
 	case stepMCP:
@@ -243,6 +249,8 @@ func (m *Model) handleEsc() (tea.Model, tea.Cmd) {
 func (m *Model) handleEnter() (tea.Model, tea.Cmd) {
 	switch m.step {
 	case stepWelcome:
+		m.step = stepGlobal
+	case stepGlobal:
 		m.step = stepType
 		m.advanceToNextValidStep()
 	case stepType:
@@ -297,6 +305,8 @@ func (m *Model) handleUp() (tea.Model, tea.Cmd) {
 		}
 	case stepMCP:
 		m.installMicrosoftLearnMCP = !m.installMicrosoftLearnMCP
+	case stepGlobal:
+		m.globalOnly = !m.globalOnly
 	}
 	return m, nil
 }
@@ -313,6 +323,8 @@ func (m *Model) handleDown() (tea.Model, tea.Cmd) {
 		}
 	case stepMCP:
 		m.installMicrosoftLearnMCP = !m.installMicrosoftLearnMCP
+	case stepGlobal:
+		m.globalOnly = !m.globalOnly
 	}
 	return m, nil
 }
@@ -336,6 +348,8 @@ func (m *Model) View() string {
 		b.WriteString(m.viewAgent())
 	case stepMCP:
 		b.WriteString(m.viewMCP())
+	case stepGlobal:
+		b.WriteString(m.viewGlobal())
 	case stepConfirm:
 		b.WriteString(m.viewConfirm())
 	case stepProgress:
@@ -346,8 +360,8 @@ func (m *Model) View() string {
 }
 
 func (m *Model) renderBreadcrumbs() string {
-	labels := []string{"Welcome", "Type", "Agent", "MCP", "Confirm", "Install"}
-	steps := []step{stepWelcome, stepType, stepAgent, stepMCP, stepConfirm, stepProgress}
+	labels := []string{"Welcome", "Scope", "Type", "Agent", "MCP", "Confirm", "Install"}
+	steps := []step{stepWelcome, stepGlobal, stepType, stepAgent, stepMCP, stepConfirm, stepProgress}
 
 	var parts []string
 	for i, label := range labels {
@@ -542,6 +556,47 @@ func (m *Model) viewMCP() string {
 	return b.String()
 }
 
+func (m *Model) viewGlobal() string {
+	var b strings.Builder
+	b.WriteString(titleStyle.Render("Installation scope"))
+	b.WriteString("\n\n")
+
+	b.WriteString("  Select installation scope:\n\n")
+
+	cursor := "  "
+	if m.globalOnly {
+		cursor = selStyle.Render("[x]")
+	} else {
+		cursor = "[ ]"
+	}
+
+	name := itemStyle.Render("Global only")
+	if m.globalOnly {
+		name = selStyle.Render("Global only")
+	}
+	desc := descStyle.Render("  Skip AGENTS.md/REVIEW.md in project (global skills only)")
+	b.WriteString(fmt.Sprintf("  %s %s%s\n\n", cursor, name, desc))
+
+	cursor = "  "
+	if !m.globalOnly {
+		cursor = selStyle.Render("[x]")
+	} else {
+		cursor = "[ ]"
+	}
+
+	name = itemStyle.Render("Project + global")
+	if !m.globalOnly {
+		name = selStyle.Render("Project + global")
+	}
+	desc = descStyle.Render("  Include AGENTS.md/REVIEW.md in project directory")
+	b.WriteString(fmt.Sprintf("  %s %s%s\n\n", cursor, name, desc))
+
+	b.WriteString(okStyle.Render("  Enter to continue"))
+	b.WriteString("\n")
+	b.WriteString(dimStyle.Render("  ↑/↓ toggle  •  Esc back"))
+	return b.String()
+}
+
 func (m *Model) viewConfirm() string {
 	var b strings.Builder
 	b.WriteString(titleStyle.Render("Confirm installation"))
@@ -560,6 +615,12 @@ func (m *Model) viewConfirm() string {
 		agentLabel = "all detected agents"
 	}
 	b.WriteString(fmt.Sprintf("  Agent:         %s\n", agentLabel))
+
+	scopeLabel := "Project + global"
+	if m.globalOnly {
+		scopeLabel = "Global only"
+	}
+	b.WriteString(fmt.Sprintf("  Scope:         %s\n", dimStyle.Render(scopeLabel)))
 
 	skills := config.ProfileSkills(m.selectedType)
 	if skills != nil {
@@ -596,15 +657,19 @@ func (m *Model) InstallMicrosoftLearnMCP() bool {
 	return m.installMicrosoftLearnMCP
 }
 
-func Run(detectedAgents []agent.Agent) (string, string, bool, error) {
+func (m *Model) GlobalOnly() bool {
+	return m.globalOnly
+}
+
+func Run(detectedAgents []agent.Agent) (string, string, bool, bool, error) {
 	m := NewModel(detectedAgents)
 	p := tea.NewProgram(&m, tea.WithAltScreen())
 	final, err := p.Run()
 	if err != nil {
-		return "", "", false, err
+		return "", "", false, false, err
 	}
 	model := final.(*Model)
-	return model.SelectedType(), model.SelectedAgent(), model.InstallMicrosoftLearnMCP(), nil
+	return model.SelectedType(), model.SelectedAgent(), model.InstallMicrosoftLearnMCP(), model.GlobalOnly(), nil
 }
 
 func shortPath(p string) string {

@@ -133,7 +133,7 @@ func linkSkillsForAgents(agents []agent.Agent, projectType string, dryRun bool) 
 	}
 }
 
-func runTUI(agents []agent.Agent) (string, string, bool, error) {
+func runTUI(agents []agent.Agent) (string, string, bool, bool, error) {
 	// Convert internal agent.Agent to tui agent format
 	tuiAgents := make([]agent.Agent, len(agents))
 	copy(tuiAgents, agents)
@@ -141,7 +141,7 @@ func runTUI(agents []agent.Agent) (string, string, bool, error) {
 	return tui.Run(tuiAgents)
 }
 
-func executeInstall(agentFlag, projectType string, dryRun bool, installMCP bool) {
+func executeInstall(agentFlag, projectType string, dryRun bool, installMCP bool, globalOnly bool) {
 	var agents []agent.Agent
 	if agentFlag != "" {
 		a, err := agent.FindByName(agentFlag)
@@ -190,15 +190,19 @@ func executeInstall(agentFlag, projectType string, dryRun bool, installMCP bool)
 		installPluginsForAgents(agents, dryRun, installMCP)
 	}
 
-	fmt.Println("\n[4/4] Initializing project...")
-	if projectType != "" && projectType != "generic" {
-		if dryRun {
-			fmt.Printf("  Would init project type %q in current directory.\n", projectType)
-		} else {
-			if err := project.Init(projectType, "."); err != nil {
-				fmt.Printf("  Warning: project init failed: %v\n", err)
+	if !globalOnly {
+		fmt.Println("\n[4/4] Initializing project...")
+		if projectType != "" && projectType != "generic" {
+			if dryRun {
+				fmt.Printf("  Would init project type %q in current directory.\n", projectType)
+			} else {
+				if err := project.Init(projectType, "."); err != nil {
+					fmt.Printf("  Warning: project init failed: %v\n", err)
+				}
 			}
 		}
+	} else {
+		fmt.Println("\n[4/4] Skipped (global-only mode).")
 	}
 
 	fmt.Println("\n=== Done! ===")
