@@ -153,9 +153,11 @@ func (m *Model) advanceToNextValidStep() {
 	}
 	if m.step == stepAgent && len(m.agents) == 0 {
 		m.quitting = true
+		return
 	}
 	// Skip MCP step if not opencode/kilocode
-	if m.step == stepAgent && !m.shouldShowMCPStep() {
+	// But ONLY after agent is selected (not when first entering Agent step)
+	if m.step == stepAgent && m.selectedAgent != "" && !m.shouldShowMCPStep() {
 		m.step = stepConfirm
 	}
 }
@@ -263,6 +265,7 @@ func (m *Model) handleEnter() (tea.Model, tea.Cmd) {
 		} else {
 			m.step = stepConfirm
 		}
+		m.advanceToNextValidStep()
 	case stepMCP:
 		m.step = stepConfirm
 	case stepConfirm:
@@ -471,14 +474,21 @@ func (m *Model) viewAgent() string {
 		return b.String()
 	}
 
-	b.WriteString(fmt.Sprintf("  Project type: %s\n\n", selStyle.Render(m.selectedType)))
+	typeInfo := dimStyle.Render(fmt.Sprintf("  Project type: %s", m.selectedType))
+	b.WriteString(typeInfo)
+	b.WriteString("\n\n")
+
+	maxNameLen := 0
+	for _, a := range m.agents {
+		if len(a.Name) > maxNameLen {
+			maxNameLen = len(a.Name)
+		}
+	}
 
 	for i, a := range m.agents {
-		cursor := "  "
+		cursor := " "
 		if i == m.agentCursor {
-			cursor = selStyle.Render(">")
-		} else {
-			cursor = " "
+			cursor = selStyle.Render("▶")
 		}
 
 		name := itemStyle.Render(a.Name)
@@ -486,13 +496,15 @@ func (m *Model) viewAgent() string {
 			name = selStyle.Render(a.Name)
 		}
 
+		pad := strings.Repeat(" ", maxNameLen-len(a.Name))
+
 		if a.Name == "all" {
 			desc := descStyle.Render("  Install for all detected agents")
-			b.WriteString(fmt.Sprintf("  %s %s%s\n", cursor, name, desc))
+			b.WriteString(fmt.Sprintf("  %s %s%s%s\n", cursor, name, pad, desc))
 		} else {
-			check := okStyle.Render("✓")
-			pathInfo := descStyle.Render(fmt.Sprintf("  %s detected  (%s)", check, shortPath(a.Binary)))
-			b.WriteString(fmt.Sprintf("  %s %s%s\n", cursor, name, pathInfo))
+			check := okStyle.Render("detected")
+			pathInfo := descStyle.Render(fmt.Sprintf("  %s  (%s)", check, shortPath(a.Binary)))
+			b.WriteString(fmt.Sprintf("  %s %s%s%s\n", cursor, name, pad, pathInfo))
 		}
 	}
 
@@ -542,10 +554,12 @@ func (m *Model) viewConfirm() string {
 	b.WriteString(fmt.Sprintf("  Project type:  %s%s\n", selStyle.Render(m.selectedType), typeDesc))
 
 	agentLabel := m.selectedAgent
-	if agentLabel == "all" {
+	if agentLabel == "" {
+		agentLabel = warningStyle.Render("(none - BUG!)")
+	} else if agentLabel == "all" {
 		agentLabel = "all detected agents"
 	}
-	b.WriteString(fmt.Sprintf("  Agent:         %s\n", selStyle.Render(agentLabel)))
+	b.WriteString(fmt.Sprintf("  Agent:         %s\n", agentLabel))
 
 	skills := config.ProfileSkills(m.selectedType)
 	if skills != nil {

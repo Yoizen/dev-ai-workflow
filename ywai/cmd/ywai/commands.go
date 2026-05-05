@@ -24,6 +24,7 @@ var installCmd = &cobra.Command{
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		tuiFlag, _ := cmd.Flags().GetBool("tui")
 		mcpFlag, _ := cmd.Flags().GetBool("mcp")
+		globalFlag, _ := cmd.Flags().GetBool("global")
 
 		agents := detectAgents(cmd)
 		if agents == nil {
@@ -31,8 +32,9 @@ var installCmd = &cobra.Command{
 		}
 
 		var installMCP bool
-		if tuiFlag || (projectType == "" && agentFlag == "" && !dryRun) {
-			selectedType, selectedAgent, selectedMCP, err := runTUI(agents)
+		var globalOnly bool
+		if tuiFlag || (projectType == "" && agentFlag == "" && !dryRun && !globalFlag) {
+			selectedType, selectedAgent, selectedMCP, selectedGlobal, err := runTUI(agents)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(1)
@@ -44,11 +46,13 @@ var installCmd = &cobra.Command{
 			projectType = selectedType
 			agentFlag = selectedAgent
 			installMCP = selectedMCP
+			globalOnly = selectedGlobal
 		} else {
 			installMCP = mcpFlag
+			globalOnly = globalFlag
 		}
 
-		executeInstall(agentFlag, projectType, dryRun, installMCP)
+		executeInstall(agentFlag, projectType, dryRun, installMCP, globalOnly)
 	},
 }
 
@@ -98,6 +102,30 @@ var updateCmd = &cobra.Command{
 		}
 
 		fmt.Println("\n=== Done! ===")
+	},
+}
+
+var agentsCmd = &cobra.Command{
+	Use:   "agents",
+	Short: "List detected AI agents",
+	Run: func(cmd *cobra.Command, args []string) {
+		detected := agent.Detect()
+		if len(detected) == 0 {
+			fmt.Println("No agents detected.")
+			fmt.Println("\nSupported agents:")
+			for _, name := range agent.AvailableNames() {
+				fmt.Printf("  - %s\n", name)
+			}
+			return
+		}
+		fmt.Printf("Detected %d agent(s):\n", len(detected))
+		for _, a := range detected {
+			fmt.Printf("  - %s\n", a.Name)
+			if a.BinaryName != "" {
+				fmt.Printf("    binary: %s\n", a.BinaryName)
+			}
+			fmt.Printf("    skills: %s\n", a.SkillsDir)
+		}
 	},
 }
 
@@ -160,9 +188,11 @@ func init() {
 	installCmd.Flags().Bool("dry-run", false, "Preview changes without applying")
 	installCmd.Flags().Bool("tui", false, "Force TUI mode")
 	installCmd.Flags().Bool("mcp", false, "Install Microsoft Learn MCP (for opencode/kilocode)")
+	installCmd.Flags().Bool("global", false, "Install global skills only (skip AGENTS.md/REVIEW.md in project)")
 	skillsCmd.Flags().StringP("type", "t", "", "Filter skills by project type")
 
 	rootCmd.AddCommand(installCmd)
 	rootCmd.AddCommand(updateCmd)
+	rootCmd.AddCommand(agentsCmd)
 	rootCmd.AddCommand(skillsCmd)
 }
