@@ -2,9 +2,9 @@ package config
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
-	"gopkg.in/yaml.v3"
 )
 
 type Profile struct {
@@ -47,6 +47,10 @@ func BuiltinConfig() *Config {
 		var pf profileFile
 		if err := yaml.Unmarshal(data, &pf); err != nil {
 			fmt.Printf("Warning: invalid %s: %v\n", profilePath, err)
+			continue
+		}
+
+		if pf.Description == "" && len(pf.Skills) == 0 {
 			continue
 		}
 

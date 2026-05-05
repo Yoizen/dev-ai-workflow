@@ -146,10 +146,6 @@ func extractFS(fsys fs.FS, srcDir, dstDir string) error {
 			return os.MkdirAll(dstPath, 0o755)
 		}
 
-		if _, err := os.Stat(dstPath); err == nil {
-			return nil
-		}
-
 		data, err := fs.ReadFile(fsys, path)
 		if err != nil {
 			return fmt.Errorf("error reading embedded file %s: %w", path, err)
@@ -182,10 +178,6 @@ func copyDirRecursive(src, dst string) error {
 
 		if info.IsDir() {
 			return os.MkdirAll(dstPath, info.Mode())
-		}
-
-		if _, err := os.Stat(dstPath); err == nil {
-			return nil
 		}
 
 		data, err := os.ReadFile(path)
