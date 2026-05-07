@@ -164,10 +164,15 @@ func executeInstall(agentFlag, projectType string, dryRun bool, installMCP bool,
 	}
 
 	fmt.Println("\n[1/4] Checking gentle-ai...")
+	gentleFailed := false
 	if dryRun {
 		fmt.Println("  Would install gentle-ai if not present.")
 	} else {
-		gentlai.Install()
+		if err := gentlai.Install(); err != nil {
+			fmt.Printf("  Warning: gentle-ai install failed: %v\n", err)
+			fmt.Println("  Extra skills will be linked, but ecosystem (engram, SDD, skills) will be skipped.")
+			gentleFailed = true
+		}
 	}
 
 	fmt.Println("\n[2/4] Detecting agents...")
@@ -176,7 +181,9 @@ func executeInstall(agentFlag, projectType string, dryRun bool, installMCP bool,
 	}
 
 	fmt.Println("\n[3/4] Installing ecosystem + linking extra skills...")
-	installEcosystem(agents, dryRun)
+	if !gentleFailed {
+		installEcosystem(agents, dryRun)
+	}
 	linkSkillsForAgents(agents, projectType, dryRun)
 
 	if !dryRun {
@@ -206,6 +213,11 @@ func executeInstall(agentFlag, projectType string, dryRun bool, installMCP bool,
 	}
 
 	fmt.Println("\n=== Done! ===")
+	if gentleFailed {
+		fmt.Println("\n⚠  gentle-ai could not be installed. Run:")
+		fmt.Println("     go install github.com/gentleman-programming/gentle-ai/cmd/gentle-ai@latest")
+		fmt.Println("   Then run 'ywai update' to complete setup.")
+	}
 	fmt.Println("\nNext steps:")
 	fmt.Println("  1. Open your AI agent in this project")
 	fmt.Println("  2. Run `ywai skills` to see available skills")

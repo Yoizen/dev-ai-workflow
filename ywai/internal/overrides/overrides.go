@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -24,6 +25,16 @@ func ApplyOpenSpecToSDDOverride(agentSkillsDirs map[string]string) error {
 	}
 
 	return nil
+}
+
+func vscodeSkillsDir(home string) string {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(os.Getenv("APPDATA"), "Code", "User", "skills")
+	}
+	if runtime.GOOS == "darwin" {
+		return filepath.Join(home, "Library", "Application Support", "Code", "User", "skills")
+	}
+	return filepath.Join(home, ".config", "Code", "skills")
 }
 
 func replaceInFile(path string, old, new string) error {
@@ -50,7 +61,7 @@ func AgentSkillsDirs() map[string]string {
 		"cursor":      filepath.Join(home, ".cursor", "skills"),
 		"windsurf":    filepath.Join(home, ".windsurf", "skills"),
 		"gemini-cli":  filepath.Join(home, ".gemini", "skills"),
-		"vscode-copilot": filepath.Join(home, os.Getenv("APPDATA"), "Code", "User", "skills"),
+		"vscode-copilot": vscodeSkillsDir(home),
 		"codex":       filepath.Join(home, ".codex", "skills"),
 		"kilocode":    filepath.Join(home, ".config", "kilo", "skills"),
 		"kimi":        filepath.Join(home, ".config", "agents", "skills"),

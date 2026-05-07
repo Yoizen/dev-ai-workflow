@@ -44,15 +44,21 @@ curl -fsSL "$DOWNLOAD_URL" -o "${TMPDIR}/${FILENAME}"
 echo "  Extracting..."
 tar xzf "${TMPDIR}/${FILENAME}" -C "$TMPDIR"
 
-echo "  Cleaning old cached data..."
-rm -rf "${DATA_DIR}/skills" "${DATA_DIR}/project-types"
-
 echo "  Installing to ${INSTALL_DIR}..."
-sudo mv "${TMPDIR}/${BINARY}" "${INSTALL_DIR}/${BINARY}"
-sudo chmod +x "${INSTALL_DIR}/${BINARY}"
-
-echo "  Seeding data..."
-"${INSTALL_DIR}/${BINARY}" --version >/dev/null 2>&1 || true
+if [ -w "$INSTALL_DIR" ]; then
+    mv "${TMPDIR}/${BINARY}" "${INSTALL_DIR}/${BINARY}"
+    chmod +x "${INSTALL_DIR}/${BINARY}"
+elif command -v sudo >/dev/null 2>&1; then
+    sudo mv "${TMPDIR}/${BINARY}" "${INSTALL_DIR}/${BINARY}"
+    sudo chmod +x "${INSTALL_DIR}/${BINARY}"
+else
+    echo "  Cannot write to ${INSTALL_DIR} and sudo not available."
+    echo "  Installing to ${HOME}/.local/bin/ instead."
+    mkdir -p "${HOME}/.local/bin"
+    mv "${TMPDIR}/${BINARY}" "${HOME}/.local/bin/${BINARY}"
+    chmod +x "${HOME}/.local/bin/${BINARY}"
+    echo "  Make sure ${HOME}/.local/bin is in your PATH."
+fi
 
 echo ""
 echo "  ${BINARY} ${VERSION} installed!"

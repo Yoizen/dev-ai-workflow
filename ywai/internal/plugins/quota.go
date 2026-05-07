@@ -10,9 +10,25 @@ import (
 // InstallQuota adds the opencode-quota plugin to opencode.json and creates quota-toast.json
 // with percentDisplayMode set to "used"
 func InstallQuota(configPath string) error {
-	// Read opencode.json
+	// Read opencode.json, create if missing
 	data, err := os.ReadFile(configPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			// Create minimal config with plugin
+			root := map[string]any{
+				"plugin": []any{"@slkiser/opencode-quota"},
+			}
+			updated, _ := json.MarshalIndent(root, "", "  ")
+			updated = append(updated, '\n')
+			if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+				return fmt.Errorf("failed to create config directory: %w", err)
+			}
+			if err := os.WriteFile(configPath, updated, 0o644); err != nil {
+				return fmt.Errorf("failed to create opencode.json: %w", err)
+			}
+			// Create quota-toast.json
+			return createQuotaToast(filepath.Dir(configPath))
+		}
 		return fmt.Errorf("failed to read opencode.json: %w", err)
 	}
 
@@ -60,7 +76,10 @@ func InstallQuota(configPath string) error {
 	}
 
 	// Create opencode-quota directory and quota-toast.json
-	configDir := filepath.Dir(configPath)
+	return createQuotaToast(filepath.Dir(configPath))
+}
+
+func createQuotaToast(configDir string) error {
 	quotaDir := filepath.Join(configDir, "opencode-quota")
 	if err := os.MkdirAll(quotaDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create opencode-quota directory: %w", err)

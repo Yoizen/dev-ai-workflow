@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -11,8 +12,21 @@ import (
 )
 
 func IsInstalled() bool {
-	_, err := exec.LookPath(config.GentleAIBin)
-	return err == nil
+	if _, err := exec.LookPath(config.GentleAIBin); err == nil {
+		return true
+	}
+	// Also check GOPATH/bin (common on Linux where it's not always in PATH)
+	if gopath := os.Getenv("GOPATH"); gopath != "" {
+		if _, err := os.Stat(filepath.Join(gopath, "bin", config.GentleAIBin)); err == nil {
+			return true
+		}
+	}
+	if home, err := os.UserHomeDir(); err == nil {
+		if _, err := os.Stat(filepath.Join(home, "go", "bin", config.GentleAIBin)); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 func Install() error {
@@ -27,7 +41,7 @@ func Install() error {
 	}
 
 	fmt.Println("Installing gentle-ai...")
-	cmd := exec.Command("go", "install", "github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest")
+	cmd := exec.Command("go", "install", "github.com/gentleman-programming/gentle-ai/cmd/gentle-ai@latest")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -69,8 +83,13 @@ func InstallEcosystem(agentName string) error {
 		args = append(args, "--component", c)
 	}
 
+	gentleBin := findGentleAI()
+	if gentleBin == "" {
+		return fmt.Errorf("gentle-ai binary not found in PATH or GOPATH")
+	}
+
 	fmt.Printf("Running gentle-ai install --agent %s...\n", agentName)
-	cmd := exec.Command(config.GentleAIBin, args...)
+	cmd := exec.Command(gentleBin, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -126,8 +145,13 @@ func Upgrade() error {
 		return fmt.Errorf("gentle-ai is not installed")
 	}
 
+	gentleBin := findGentleAI()
+	if gentleBin == "" {
+		return fmt.Errorf("gentle-ai binary not found")
+	}
+
 	fmt.Println("Upgrading gentle-ai...")
-	cmd := exec.Command(config.GentleAIBin, "upgrade")
+	cmd := exec.Command(gentleBin, "upgrade")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
@@ -138,11 +162,35 @@ func Sync() error {
 		return fmt.Errorf("gentle-ai is not installed")
 	}
 
+	gentleBin := findGentleAI()
+	if gentleBin == "" {
+		return fmt.Errorf("gentle-ai binary not found")
+	}
+
 	fmt.Println("Syncing gentle-ai assets...")
-	cmd := exec.Command(config.GentleAIBin, "sync")
+	cmd := exec.Command(gentleBin, "sync")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+func findGentleAI() string {
+	if p, err := exec.LookPath(config.GentleAIBin); err == nil {
+		return p
+	}
+	if gopath := os.Getenv("GOPATH"); gopath != "" {
+		p := filepath.Join(gopath, "bin", config.GentleAIBin)
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	if home, err := os.UserHomeDir(); err == nil {
+		p := filepath.Join(home, "go", "bin", config.GentleAIBin)
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	return ""
 }
 
 func findBinary(name string) string {
