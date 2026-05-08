@@ -175,7 +175,7 @@ var skillsCmd = &cobra.Command{
 			fmt.Println("Try running: ywai update")
 			fmt.Println("Or reinstall:")
 			fmt.Println("  macOS/Linux: curl -fsSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash")
-			fmt.Println("  Go:          go install -tags embedded github.com/Yoizen/dev-ai-workflow/ywai/cmd/ywai@latest")
+			fmt.Println("  Source:      cd ywai && bash scripts/prepare-embedded.sh && go install -tags embedded ./cmd/ywai")
 		}
 
 		fmt.Printf("\nTotal: %d skills\n", len(available))

@@ -9,6 +9,32 @@ $Repo = "Yoizen/dev-ai-workflow"
 $Binary = "ywai"
 $DataDir = Join-Path $env:USERPROFILE ".ywai"
 
+function Trim-TrailingSlash {
+    param([string]$Value)
+    if (-not $Value) {
+        return ""
+    }
+    return $Value.Trim().TrimEnd([char[]]@('\', '/'))
+}
+
+function Set-PathFirst {
+    param([string]$Directory)
+
+    $separator = [IO.Path]::PathSeparator
+    $normalizedDirectory = Trim-TrailingSlash $Directory
+
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    $userParts = @($userPath -split [regex]::Escape($separator) | Where-Object {
+        $_ -and ((Trim-TrailingSlash $_) -ine $normalizedDirectory)
+    })
+    [Environment]::SetEnvironmentVariable("Path", (($Directory) + $separator + ($userParts -join $separator)).TrimEnd($separator), "User")
+
+    $processParts = @($env:Path -split [regex]::Escape($separator) | Where-Object {
+        $_ -and ((Trim-TrailingSlash $_) -ine $normalizedDirectory)
+    })
+    $env:Path = (($Directory) + $separator + ($processParts -join $separator)).TrimEnd($separator)
+}
+
 if (-not $InstallDir) {
     $InstallDir = Join-Path $env:USERPROFILE "bin"
 }
@@ -61,28 +87,33 @@ if (-not (Test-Path $SourceExe)) {
 
 Copy-Item -Path $SourceExe -Destination (Join-Path $InstallDir "$Binary.exe") -Force
 
-$UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if ($UserPath -notlike "*$InstallDir*") {
-    Write-Host "  Adding $InstallDir to user PATH..."
-    [Environment]::SetEnvironmentVariable("Path", "$UserPath;$InstallDir", "User")
-    $env:Path = "$env:Path;$InstallDir"
-} else {
-    Write-Host "  $InstallDir already in PATH."
-}
+Write-Host "  Ensuring $InstallDir is first in user PATH..."
+Set-PathFirst $InstallDir
 
 Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "  Seeding data..."
 $ExePath = Join-Path $InstallDir "$Binary.exe"
-& $ExePath --version 2>&1 | Out-Null
+& $ExePath skills *> $null
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Data seed check failed. Try running: $ExePath skills"
+}
 
 $Installed = Get-Command $Binary -ErrorAction SilentlyContinue
 if ($Installed) {
     Write-Host ""
     Write-Host "  $Binary $Version installed!" -ForegroundColor Green
     Write-Host "  Location: $($Installed.Source)" -ForegroundColor Gray
+    $RunCommand = "ywai install"
+    if ((Trim-TrailingSlash $Installed.Source) -ine (Trim-TrailingSlash $ExePath)) {
+        Write-Host ""
+        Write-Host "  Warning: PowerShell currently resolves '$Binary' to:" -ForegroundColor Yellow
+        Write-Host "    $($Installed.Source)" -ForegroundColor Yellow
+        Write-Host "  Start a new terminal or move $InstallDir earlier in PATH." -ForegroundColor Yellow
+        $RunCommand = "& `"$ExePath`" install"
+    }
     Write-Host ""
-    Write-Host "  Run: ywai install" -ForegroundColor Yellow
+    Write-Host "  Run: $RunCommand" -ForegroundColor Yellow
 } else {
     Write-Host ""
     Write-Host "  $Binary installed to $InstallDir" -ForegroundColor Green

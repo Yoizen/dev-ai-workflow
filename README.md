@@ -6,12 +6,6 @@ Wrapper around [gentle-ai](https://github.com/Gentleman-Programming/gentle-ai) t
 
 ## Quick Start
 
-### Con Go
-
-```bash
-go install -tags embedded github.com/Yoizen/dev-ai-workflow/ywai/cmd/ywai@latest
-```
-
 ### Con installer
 
 ```powershell
@@ -22,6 +16,14 @@ irm https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.p
 ```bash
 # macOS / Linux
 curl -fsSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash
+```
+
+### Con Go desde el repo clonado
+
+```bash
+cd ywai
+bash scripts/prepare-embedded.sh
+go install -tags embedded ./cmd/ywai
 ```
 
 ### Uso

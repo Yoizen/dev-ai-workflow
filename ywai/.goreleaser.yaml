@@ -73,7 +73,9 @@ release:
     curl -fsSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash
     ```
     ```bash
-    # Go (any OS)
-    go install -tags embedded github.com/Yoizen/dev-ai-workflow/ywai/cmd/ywai@latest
+    # Go from a source checkout
+    cd ywai
+    bash scripts/prepare-embedded.sh
+    go install -tags embedded ./cmd/ywai
     ```
 

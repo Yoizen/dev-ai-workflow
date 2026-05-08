@@ -15,8 +15,13 @@
 ## Quick Start
 
 ```bash
-# Install ywai
-go install -tags embedded github.com/Yoizen/dev-ai-workflow/ywai/cmd/ywai@latest
+# Install ywai (macOS / Linux)
+curl -fsSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash
+
+# Or install from a source checkout
+cd ywai
+bash scripts/prepare-embedded.sh
+go install -tags embedded ./cmd/ywai
 
 # Full install: gentle-ai + ecosystem + extra skills
 ywai install

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/config"
 )
@@ -54,8 +55,8 @@ func linkFiltered(agentSkillsDir string, filter []string) error {
 			continue
 		}
 
-		if _, err := os.Stat(dst); err == nil {
-			if err := os.RemoveAll(dst); err != nil {
+		if pathExists(dst) {
+			if err := removeExistingSkillPath(dst); err != nil {
 				fmt.Printf("  Warning: failed to remove existing %s: %v\n", name, err)
 				continue
 			}
@@ -84,6 +85,9 @@ func createLink(src, dst string) error {
 }
 
 func createJunction(src, dst string) error {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
+	}
 	cmd := exec.Command("cmd", "/c", "mklink", "/J", dst, src)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -109,6 +113,34 @@ func isCurrentJunction(dst, src string) bool {
 		return false
 	}
 	return filepath.Clean(target) == filepath.Clean(src)
+}
+
+func pathExists(path string) bool {
+	_, err := os.Lstat(path)
+	return err == nil
+}
+
+func removeExistingSkillPath(path string) error {
+	if config.IsWindows() {
+		// Junctions are reparse points. `rmdir` removes the junction itself,
+		// while recursive filesystem walks can be unreliable and may follow the
+		// target depending on the existing path type.
+		cmd := exec.Command("cmd", "/c", "rmdir", path)
+		if output, err := cmd.CombinedOutput(); err == nil {
+			return nil
+		} else if !pathExists(path) {
+			return nil
+		} else if len(output) > 0 {
+			// Fall through to RemoveAll for real directories/files, but preserve
+			// the rmdir output if RemoveAll fails below.
+			if removeErr := os.RemoveAll(path); removeErr != nil {
+				return fmt.Errorf("rmdir failed: %s; remove all failed: %w", strings.TrimSpace(string(output)), removeErr)
+			}
+			return nil
+		}
+	}
+
+	return os.RemoveAll(path)
 }
 
 func ListAvailable() ([]string, error) {

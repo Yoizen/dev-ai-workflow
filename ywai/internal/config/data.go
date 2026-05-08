@@ -117,7 +117,7 @@ func SeedFromEmbedded() error {
 		return fmt.Errorf("no embedded data available; binary was built without embedded resources.\n" +
 			"  Reinstall with:\n" +
 			"    macOS/Linux: curl -fsSL https://github.com/Yoizen/dev-ai-workflow/releases/latest/download/install.sh | bash\n" +
-			"    Go:          go install -tags embedded github.com/Yoizen/dev-ai-workflow/ywai/cmd/ywai@latest")
+			"    Source:      cd ywai && bash scripts/prepare-embedded.sh && go install -tags embedded ./cmd/ywai")
 	}
 
 	return nil

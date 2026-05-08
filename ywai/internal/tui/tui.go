@@ -25,21 +25,21 @@ var (
 	surfaceColor   = lipgloss.Color("235")
 	textPrimary    = lipgloss.Color("255")
 
-	bannerStyle    = lipgloss.NewStyle().Foreground(primaryColor).Bold(true)
-	titleStyle     = lipgloss.NewStyle().Foreground(primaryColor).Bold(true).MarginBottom(1)
-	selStyle       = lipgloss.NewStyle().Foreground(secondaryColor).Bold(true).Background(surfaceColor).Padding(0, 1)
-	descStyle      = lipgloss.NewStyle().Foreground(textMuted)
-	infoStyle      = lipgloss.NewStyle().Foreground(tertiaryColor)
-	dimStyle       = lipgloss.NewStyle().Foreground(textMuted)
-	skillStyle     = lipgloss.NewStyle().Foreground(tertiaryColor)
-	okStyle        = lipgloss.NewStyle().Foreground(successColor)
-	activeStyle    = lipgloss.NewStyle().Foreground(secondaryColor).Bold(true)
-	pendingStyle   = lipgloss.NewStyle().Foreground(textMuted)
-	itemStyle      = lipgloss.NewStyle().Foreground(textPrimary)
-	subtitleStyle  = lipgloss.NewStyle().Foreground(textSecondary)
-	monoStyle      = lipgloss.NewStyle().Foreground(secondaryColor)
-	captionStyle   = lipgloss.NewStyle().Foreground(textMuted)
-	warningStyle   = lipgloss.NewStyle().Foreground(tertiaryColor).Bold(true)
+	bannerStyle   = lipgloss.NewStyle().Foreground(primaryColor).Bold(true)
+	titleStyle    = lipgloss.NewStyle().Foreground(primaryColor).Bold(true).MarginBottom(1)
+	selStyle      = lipgloss.NewStyle().Foreground(secondaryColor).Bold(true).Background(surfaceColor).Padding(0, 1)
+	descStyle     = lipgloss.NewStyle().Foreground(textMuted)
+	infoStyle     = lipgloss.NewStyle().Foreground(tertiaryColor)
+	dimStyle      = lipgloss.NewStyle().Foreground(textMuted)
+	skillStyle    = lipgloss.NewStyle().Foreground(tertiaryColor)
+	okStyle       = lipgloss.NewStyle().Foreground(successColor)
+	activeStyle   = lipgloss.NewStyle().Foreground(secondaryColor).Bold(true)
+	pendingStyle  = lipgloss.NewStyle().Foreground(textMuted)
+	itemStyle     = lipgloss.NewStyle().Foreground(textPrimary)
+	subtitleStyle = lipgloss.NewStyle().Foreground(textSecondary)
+	monoStyle     = lipgloss.NewStyle().Foreground(secondaryColor)
+	captionStyle  = lipgloss.NewStyle().Foreground(textMuted)
+	warningStyle  = lipgloss.NewStyle().Foreground(tertiaryColor).Bold(true)
 )
 
 var brandPalette = []string{
@@ -89,15 +89,15 @@ type agentOption struct {
 }
 
 type Model struct {
-	step        step
-	width       int
-	height      int
-	quitting    bool
+	step     step
+	width    int
+	height   int
+	quitting bool
 
-	types       []typeOption
-	agents      []agentOption
-	typeCursor  int
-	agentCursor int
+	types         []typeOption
+	agents        []agentOption
+	typeCursor    int
+	agentCursor   int
 	selectedType  string
 	selectedAgent string
 
@@ -109,10 +109,10 @@ type Model struct {
 
 	// Progress state
 	installOutput []string
-	installDone    bool
-	installError   error
-	installAgent   string
-	installType    string
+	installDone   bool
+	installError  error
+	installAgent  string
+	installType   string
 }
 
 func NewModel(detectedAgents []agent.Agent) Model {
@@ -431,7 +431,7 @@ func (m *Model) viewType() string {
 		b.WriteString("\n\n")
 		b.WriteString(infoStyle.Render("  This usually means ywai was installed without embedded data."))
 		b.WriteString("\n")
-		b.WriteString(infoStyle.Render("  Reinstall with: go install -tags embedded ...@latest"))
+		b.WriteString(infoStyle.Render("  Reinstall with the release install.sh script."))
 		b.WriteString("\n\n")
 		b.WriteString(dimStyle.Render("  Enter skip  •  Esc back"))
 		return b.String()
@@ -733,16 +733,16 @@ func (m *Model) runInstall() (string, error) {
 
 func (m *Model) viewProgress() string {
 	var b strings.Builder
-	
+
 	b.WriteString(titleStyle.Render("Installing..."))
 	b.WriteString("\n\n")
-	
+
 	// Show last 15 lines of output
 	startLine := len(m.installOutput) - 15
 	if startLine < 0 {
 		startLine = 0
 	}
-	
+
 	for i := startLine; i < len(m.installOutput); i++ {
 		line := m.installOutput[i]
 		if strings.Contains(line, "[") && strings.Contains(line, "]") {
@@ -753,7 +753,7 @@ func (m *Model) viewProgress() string {
 		}
 		b.WriteString("\n")
 	}
-	
+
 	// Show spinner at bottom
 	if !m.installDone && m.installError == nil {
 		spinChars := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
@@ -767,8 +767,8 @@ func (m *Model) viewProgress() string {
 		b.WriteString("\n")
 		b.WriteString(lipgloss.NewStyle().Foreground(successColor).Bold(true).Render("  ✓ Installation complete!"))
 	}
-	
+
 	b.WriteString("\n\n")
-	
+
 	return b.String()
 }
