@@ -42,6 +42,10 @@ func RenameAll(agentConfigs map[string]string) []RenameResult {
 		if renamed != "" {
 			results = append(results, RenameResult{Agent: filepath.Base(filepath.Dir(filepath.Dir(renamed))), File: renamed})
 		}
+		changed := replaceInDirFiles(dir)
+		for _, f := range changed {
+			results = append(results, RenameResult{Agent: filepath.Base(filepath.Dir(filepath.Dir(f))), File: f})
+		}
 		injectAskSubAgentFile(dir)
 	}
 
@@ -110,6 +114,34 @@ func findSubAgentDirs() []string {
 		}
 	}
 	return existing
+}
+
+func replaceInDirFiles(dir string) []string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	var changed []string
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		path := filepath.Join(dir, e.Name())
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		content := string(data)
+		if !strings.Contains(content, oldName) {
+			continue
+		}
+		updated := strings.ReplaceAll(content, oldName, newName)
+		if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
+			continue
+		}
+		changed = append(changed, path)
+	}
+	return changed
 }
 
 func renameSubAgentFile(agentsDir string) (string, error) {
