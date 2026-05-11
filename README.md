@@ -29,13 +29,10 @@ go install -tags embedded ./cmd/ywai
 ### Uso
 
 ```bash
-ywai install                  # Interactive wizard
-ywai install --type react     # React profile
-ywai install --type nest      # NestJS profile
+ywai install                  # Install gentle-ai + ecosystem + all extra skills
+ywai install --dry-run        # Preview changes without applying
 ywai update                   # Self-update + sync + re-link
-ywai init react               # Project init (AGENTS.md + REVIEW.md)
 ywai skills                   # List extra skills
-ywai skills --type react      # Skills for a profile
 ```
 
 ---
@@ -79,22 +76,6 @@ opencode, claude-code, cursor, windsurf, gemini-cli, vscode-copilot, codex, kilo
 | `playwright` | E2E testing |
 | `git-commit` | Conventional commits |
 | `yz-ui` | Yoizen UI design system |
-
----
-
-## Project Types
-
-| Type | Description | Extra Skills |
-|------|-------------|-------------|
-| `react` | React 19 frontend | react-19, tailwind-4, typescript, biome, playwright, git-commit |
-| `nest` | NestJS backend | typescript, biome, playwright, git-commit |
-| `nest-angular` | NestJS + Angular fullstack | angular, typescript, biome, playwright, git-commit |
-| `nest-react` | NestJS + React fullstack | react-19, tailwind-4, typescript, biome, playwright, git-commit |
-| `dotnet` | .NET / C# | dotnet, git-commit |
-| `python` | Python backend | git-commit |
-| `devops` | CI/CD, Docker, Helm | devops, git-commit |
-| `qa-playwright` | QA / E2E testing | playwright, typescript, biome, git-commit |
-| `generic` | Language-agnostic | all skills |
 
 ---
 
