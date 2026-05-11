@@ -161,6 +161,13 @@ func Detect() []Agent {
 
 		path := findBinary(ka.Binary)
 		if path == "" {
+			// Fallback: detect by config dir even if binary not in PATH
+			if detectByConfigDir(ka.Name, ka.SkillsPath()) {
+				found = append(found, Agent{
+					Name:      ka.Name,
+					SkillsDir: ka.SkillsPath(),
+				})
+			}
 			continue
 		}
 
