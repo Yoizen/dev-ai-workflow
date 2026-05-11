@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/Yoizen/dev-ai-workflow/ywai/internal/config"
 )
@@ -143,22 +144,35 @@ func findBinary(name string) string {
 			}
 		}
 	}
-	// Check known install locations
-	home := homeDir()
-	knownPaths := map[string][]string{
-		"opencode": {
-			filepath.Join(home, ".opencode", "bin", "opencode"),
-		},
+	// Fallback: run which/where via shell to pick up user's profile PATH
+	if p := whichViaShell(name); p != "" {
+		return p
 	}
-	if paths, ok := knownPaths[name]; ok {
-		for _, p := range paths {
-			if runtime.GOOS == "windows" {
-				p += ".exe"
-			}
-			if _, err := os.Stat(p); err == nil {
-				return p
-			}
-		}
+	return ""
+}
+
+func whichViaShell(name string) string {
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/c", "where", name)
+	} else {
+		cmd = exec.Command("sh", "-lc", "which "+name)
+	}
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	path := strings.TrimSpace(string(out))
+	if path == "" {
+		return ""
+	}
+	// where on Windows may return multiple lines, take the first
+	if i := strings.IndexByte(path, '\n'); i > 0 {
+		path = path[:i]
+	}
+	path = strings.TrimSpace(path)
+	if _, err := os.Stat(path); err == nil {
+		return path
 	}
 	return ""
 }
